@@ -24,6 +24,8 @@ pipenv install
 pipenv run flask --app wsgi run --debug
 ```
 
+The Flask server now serves the built Vite bundle from `client/dist`. Run `npm run build --prefix client` (or let the Procfile `assets` process handle it) before starting the web process in production so non-API routes resolve.
+
 #### PostgreSQL 17 setup
 
 1. Install PostgreSQL 17 (macOS Homebrew: `brew install postgresql@17`) and ensure the service is running (`brew services start postgresql@17`).
@@ -73,7 +75,7 @@ Available scripts:
 ## Deployment notes
 
 - Frontend: deploy `client/` build output to Netlify or Vercel with `VITE_API_BASE_URL` pointing to the live API.
-- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URI`.
+- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URI` and ensure `npm run build --prefix client` runs before Gunicorn boots so the SPA bundle is available.
 - Automated tests force `DATABASE_URI` to an in-memory SQLite instance so test runs stay isolated from shared databases.
 - Update CORS origins in `app/__init__.py` if production hosts differ from local defaults.
 # black-work-tattoo

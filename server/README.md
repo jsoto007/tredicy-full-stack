@@ -11,6 +11,8 @@ pipenv install
 pipenv run flask --app wsgi run --debug
 ```
 
+Build the React client (`npm run build --prefix client`) so Flask can serve the static bundle from `client/dist` when running in a single-service production deployment.
+
 ## Available routes
 
 - `GET /api/gallery?category=blackwork|fine-line|color` - filtered gallery items

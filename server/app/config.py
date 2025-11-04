@@ -76,7 +76,6 @@ def configure_app(app: Flask) -> SQLAlchemy:
 
     engine_options = _engine_defaults(app)
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
-    db.engine_options = engine_options
     db.init_app(app)
 
     return db
