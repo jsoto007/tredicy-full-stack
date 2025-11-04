@@ -84,7 +84,7 @@ export default function Header({ theme, onToggleTheme }) {
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-black/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="text-sm font-semibold uppercase tracking-[0.5em] text-gray-900 dark:text-gray-100">
-          BLACK INK TATTOO
+          BLACKWORKNYC
         </Link>
 
         <nav className="hidden items-center gap-8 text-xs font-semibold uppercase tracking-[0.3em] md:flex">
