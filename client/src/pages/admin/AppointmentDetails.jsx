@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
-import { apiGet } from '../../lib/api.js';
+import { apiGet, resolveApiUrl } from '../../lib/api.js';
 import { ASSET_KIND_OPTIONS, useAdminDashboard } from './AdminDashboardContext.jsx';
 
 const INITIAL_ASSET_DRAFT = {
@@ -29,6 +29,14 @@ function formatDateTime(value) {
     return 'Not scheduled';
   }
   return date.toLocaleString();
+}
+
+function isImageUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return false;
+  }
+  const sanitized = url.split('?')[0]?.split('#')[0] ?? '';
+  return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(sanitized);
 }
 
 export default function AppointmentDetails() {
@@ -138,7 +146,7 @@ export default function AppointmentDetails() {
   if (!appointmentNumericId || Number.isNaN(appointmentNumericId)) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-5xl px-1 sm:px-1">
           <p className="text-sm text-red-500">Invalid appointment identifier.</p>
         </div>
       </main>
@@ -148,7 +156,7 @@ export default function AppointmentDetails() {
   if (loading) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-        <div className="mx-auto max-w-5xl px-6 space-y-4">
+        <div className="mx-auto max-w-5xl space-y-4 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Loading appointment information..." />
         </div>
       </main>
@@ -158,7 +166,7 @@ export default function AppointmentDetails() {
   if (error) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-        <div className="mx-auto max-w-5xl px-6 space-y-6">
+        <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Something went wrong." />
           <p className="text-sm text-red-500">{error}</p>
           <Button type="button" onClick={() => navigate('/dashboard/admin/calendar')}>
@@ -172,7 +180,7 @@ export default function AppointmentDetails() {
   if (!appointment) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-        <div className="mx-auto max-w-5xl px-6 space-y-6">
+        <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Appointment not found." />
           <Button type="button" onClick={() => navigate('/dashboard/admin/calendar')}>
             Back to calendar
@@ -190,7 +198,7 @@ export default function AppointmentDetails() {
 
   return (
     <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto max-w-5xl space-y-8 px-6">
+      <div className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <SectionTitle
             eyebrow="Admin"
@@ -357,45 +365,66 @@ export default function AppointmentDetails() {
             </div>
           </form>
           <div className="space-y-3">
-            {appointment.assets?.map((asset) => (
-              <div
-                key={asset.id}
-                className="rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{asset.kind}</p>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      {asset.note_text || asset.file_url || 'No content'}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    {asset.file_url ? (
-                      <a
-                        href={asset.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+            {appointment.assets?.map((asset) => {
+              const fileUrl = resolveApiUrl(asset.file_url);
+              const showPreview = fileUrl && (asset.kind === 'inspiration_image' || isImageUrl(fileUrl));
+              const kindLabel = asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset';
+              return (
+                <div
+                  key={asset.id}
+                  className="rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="flex flex-1 flex-wrap items-start gap-4">
+                      {showPreview ? (
+                        <figure className="group relative flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-900">
+                          <img
+                            src={fileUrl}
+                            alt={`${kindLabel} preview`}
+                            className="h-32 w-32 object-cover transition duration-300 group-hover:scale-[1.02]"
+                          />
+                        </figure>
+                      ) : null}
+                      <div className="min-w-[200px] space-y-2">
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                          {kindLabel}
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          {asset.note_text || asset.file_url || 'No content'}
+                        </p>
+                        {fileUrl && !showPreview ? (
+                          <p className="text-xs text-gray-500 dark:text-gray-400 break-all">{fileUrl}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center">
+                      {fileUrl ? (
+                        <a
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                        >
+                          Open
+                        </a>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => handleAssetVisibilityToggle(asset)}
+                        disabled={busyAssetId === asset.id}
                       >
-                        Open
-                      </a>
-                    ) : null}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => handleAssetVisibilityToggle(asset)}
-                      disabled={busyAssetId === asset.id}
-                    >
-                      {asset.is_visible_to_client ? 'Hide from client' : 'Share with client'}
-                    </Button>
+                        {asset.is_visible_to_client ? 'Hide from client' : 'Share with client'}
+                      </Button>
+                    </div>
                   </div>
+                  <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+                    Uploaded by {asset.uploaded_by_admin?.name || asset.uploaded_by_client?.display_name || 'unknown'} ·{' '}
+                    {asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}
+                  </p>
                 </div>
-                <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
-                  Uploaded by {asset.uploaded_by_admin?.name || asset.uploaded_by_client?.display_name || 'unknown'} ·{' '}
-                  {asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}
-                </p>
-              </div>
-            ))}
+              );
+            })}
             {!appointment.assets?.length ? (
               <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
                 No assets linked to this appointment yet.

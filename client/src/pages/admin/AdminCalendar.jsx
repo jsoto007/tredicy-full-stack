@@ -133,6 +133,126 @@ function ensureArray(value) {
   return value;
 }
 
+function IconCalendar(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+      <path d="M8 2.5v4" />
+      <path d="M16 2.5v4" />
+      <path d="M3.5 9.5h17" />
+    </svg>
+  );
+}
+
+function IconPlus(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+function IconEye(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function IconPencil(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M4 20h4l10.5-10.5a2.828 2.828 0 0 0-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
+  );
+}
+
+function IconTrash(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M4 7h16" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M9 7V4h6v3" />
+    </svg>
+  );
+}
+
+function IconClock(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
+
+const CRUD_MODE_OPTIONS = [
+  { value: 'create', label: 'Create', icon: IconPlus },
+  { value: 'read', label: 'Read', icon: IconEye },
+  { value: 'update', label: 'Update', icon: IconPencil },
+  { value: 'delete', label: 'Delete', icon: IconTrash }
+];
+
 export default function AdminCalendar() {
   const {
     state: { appointments, admins, schedule },
@@ -151,6 +271,7 @@ export default function AdminCalendar() {
   const [hoursDraft, setHoursDraft] = useState(normaliseOperatingHours(schedule.operating_hours));
   const [daysOffDraft, setDaysOffDraft] = useState(ensureArray(schedule.days_off));
   const [newDayOff, setNewDayOff] = useState('');
+  const [mode, setMode] = useState('read');
   const [confirmation, setConfirmation] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
 
@@ -330,492 +451,647 @@ export default function AdminCalendar() {
     setDaysOffDraft((prev) => prev.filter((entry) => entry !== day));
   };
 
-  return (
-    <div className="space-y-8">
-      <SectionTitle
-        eyebrow="Admin"
-        title="Calendar & availability"
-        description="Coordinate sessions, confirm booking changes, and control studio availability."
-      />
+  const renderEmptyState = (message) => (
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
+      <IconCalendar className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+      <p>{message}</p>
+    </div>
+  );
 
-      <Card className="space-y-6">
+  const handleCreateSubmit = (event) => {
+    event.preventDefault();
+    requestAppointmentCreate();
+  };
+
+  const renderCreatePanel = () => (
+    <form className="space-y-6" onSubmit={handleCreateSubmit}>
+      <div className="flex items-center gap-3 text-gray-700 dark:text-gray-200">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+          <IconPlus className="h-5 w-5" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em]">Create appointment</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Schedule time for a client or guest.</p>
+        </div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-            Create appointment
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            Schedule a new session for an existing client or guest.
-          </p>
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.clientId}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Client ID
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.clientId}
+            type="number"
+            min="1"
+            value={newAppointmentDraft.client_id}
+            onChange={(event) => handleCreateDraftChange('client_id', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            placeholder="Existing client?"
+          />
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.clientId}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Client ID
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.clientId}
-              type="number"
-              min="1"
-              value={newAppointmentDraft.client_id}
-              onChange={(event) => handleCreateDraftChange('client_id', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-              placeholder="Optional"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.status}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Status
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.status}
-              type="text"
-              value={newAppointmentDraft.status}
-              onChange={(event) => handleCreateDraftChange('status', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestName}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Guest name
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.guestName}
-              type="text"
-              value={newAppointmentDraft.guest_name}
-              onChange={(event) => handleCreateDraftChange('guest_name', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-              placeholder="Required if no client ID"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Guest email
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
-              type="email"
-              value={newAppointmentDraft.guest_email}
-              onChange={(event) => handleCreateDraftChange('guest_email', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-              placeholder="Required if no client ID"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Scheduled start
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
-              type="datetime-local"
-              value={newAppointmentDraft.scheduled_start}
-              onChange={(event) => handleCreateDraftChange('scheduled_start', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.duration}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Duration (minutes)
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.duration}
-              type="number"
-              min="0"
-              step="15"
-              value={newAppointmentDraft.duration_minutes}
-              onChange={(event) => handleCreateDraftChange('duration_minutes', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Assign admin
-            </label>
-            <select
-              id={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
-              value={newAppointmentDraft.assigned_admin_id}
-              onChange={(event) => handleCreateDraftChange('assigned_admin_id', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            >
-              <option value="">Unassigned</option>
-              {adminOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Guest phone
-            </label>
-            <input
-              id={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
-              type="tel"
-              value={newAppointmentDraft.guest_phone}
-              onChange={(event) => handleCreateDraftChange('guest_phone', event.target.value)}
-              className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-          </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.status}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Status
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.status}
+            type="text"
+            value={newAppointmentDraft.status}
+            onChange={(event) => handleCreateDraftChange('status', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          />
         </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestName}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Guest name
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.guestName}
+            type="text"
+            value={newAppointmentDraft.guest_name}
+            onChange={(event) => handleCreateDraftChange('guest_name', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            placeholder="Required if no client ID"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Guest email
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
+            type="email"
+            value={newAppointmentDraft.guest_email}
+            onChange={(event) => handleCreateDraftChange('guest_email', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            placeholder="Required if no client ID"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Start
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
+            type="datetime-local"
+            value={newAppointmentDraft.scheduled_start}
+            onChange={(event) => handleCreateDraftChange('scheduled_start', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.duration}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Duration (min)
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.duration}
+            type="number"
+            min="0"
+            step="15"
+            value={newAppointmentDraft.duration_minutes}
+            onChange={(event) => handleCreateDraftChange('duration_minutes', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          />
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Assign admin
+          </label>
+          <select
+            id={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
+            value={newAppointmentDraft.assigned_admin_id}
+            onChange={(event) => handleCreateDraftChange('assigned_admin_id', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          >
+            <option value="">Unassigned</option>
+            {adminOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-2">
+          <label
+            htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
+            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Guest phone
+          </label>
+          <input
+            id={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
+            type="tel"
+            value={newAppointmentDraft.guest_phone}
+            onChange={(event) => handleCreateDraftChange('guest_phone', event.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
         <label
           htmlFor={NEW_APPOINTMENT_FIELD_IDS.description}
           className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
         >
-          Client notes
+          Notes
         </label>
         <textarea
           id={NEW_APPOINTMENT_FIELD_IDS.description}
           rows={3}
           value={newAppointmentDraft.client_description}
           onChange={(event) => handleCreateDraftChange('client_description', event.target.value)}
-          placeholder="Notes from the client (optional)"
-          className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          placeholder="Client or session notes (optional)"
+          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" onClick={requestAppointmentCreate}>
-            Create appointment
-          </Button>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Confirmation required before the appointment is added.
-          </p>
-        </div>
-      </Card>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-gray-500 dark:text-gray-400">A confirmation dialog appears before saving.</p>
+        <Button type="submit">
+          <IconPlus className="h-4 w-4" />
+          Add to calendar
+        </Button>
+      </div>
+    </form>
+  );
 
-      <Card className="space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Upcoming appointments
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Adjust details and open the full page for more context.</p>
-          </div>
-          <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-            {sortedAppointments.length} scheduled
-          </span>
-        </div>
-        <div className="space-y-4">
-          {sortedAppointments.map((appointment) => {
-            const draft = appointmentDrafts[appointment.id] || {
-              status: appointment.status || 'pending',
-              scheduled_start: '',
-              duration_minutes: '',
-              assigned_admin_id: '',
-              client_description: appointment.client_description || ''
-            };
-            const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
-            const isDayOff =
-              scheduledDate && daysOffDraft.includes(scheduledDate.toISOString().slice(0, 10));
-            const baseId = `appointment-${appointment.id}`;
-            const statusId = `${baseId}-status`;
-            const startId = `${baseId}-start`;
-            const durationId = `${baseId}-duration`;
-            const adminId = `${baseId}-assigned-admin`;
-            const notesId = `${baseId}-notes`;
+  const renderReadPanel = () => {
+    if (!sortedAppointments.length) {
+      return renderEmptyState('No appointments scheduled yet.');
+    }
 
-            return (
-              <div
-                key={appointment.id}
-                className="space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950"
+    return (
+      <ol className="space-y-3">
+        {sortedAppointments.map((appointment) => {
+          const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
+          const formattedDate = scheduledDate
+            ? scheduledDate.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+            : 'Awaiting schedule';
+          const clientName = appointment.client?.display_name || appointment.guest_name || 'Guest client';
+          const contact = appointment.client?.email || appointment.guest_email || appointment.guest_phone || 'No contact info';
+          const reference = appointment.reference_code || `#${appointment.id}`;
+          const assigned =
+            appointment.assigned_admin?.name ||
+            appointment.assigned_admin?.display_name ||
+            appointment.assigned_admin?.email ||
+            'Unassigned';
+          const isDayOff =
+            scheduledDate && daysOffDraft.includes(scheduledDate.toISOString().slice(0, 10));
+
+          return (
+            <li
+              key={appointment.id}
+            >
+              <button
+                type="button"
+                onClick={() => navigate(`${appointment.id}`)}
+                className="group flex w-full flex-wrap items-center gap-4 rounded-3xl border border-gray-200 bg-gray-50 p-4 text-left shadow-sm transition hover:border-gray-300 hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700 dark:hover:bg-gray-950 dark:focus-visible:outline-gray-100"
               >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-                      Ref {appointment.reference_code || appointment.id}
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-gray-700 shadow-sm transition group-hover:scale-[1.02] dark:bg-gray-950 dark:text-gray-200">
+                  <IconCalendar className="h-6 w-6" />
+                </span>
+                <div className="min-w-[200px] flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900 transition group-hover:text-gray-700 dark:text-gray-100 dark:group-hover:text-gray-200">
+                      {clientName}
                     </p>
-                    <p className="text-sm text-gray-700 dark:text-gray-200">
-                      {appointment.client?.display_name || appointment.guest_name} ·{' '}
-                      {appointment.client?.email || appointment.guest_email}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {appointment.assets?.length || 0} asset{appointment.assets?.length === 1 ? '' : 's'} attached
-                    </p>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-600 shadow-sm dark:bg-gray-950 dark:text-gray-300">
+                      {appointment.status || 'pending'}
+                      {isDayOff ? (
+                        <span className="ml-2 rounded-full bg-red-500 px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.3em] text-white">
+                          Day off
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-                  <div className="text-right text-xs text-gray-500 dark:text-gray-400">
-                    <p>Status: {appointment.status}</p>
-                    <p>
-                      {scheduledDate
-                        ? scheduledDate.toLocaleString()
-                        : 'Awaiting schedule'}
-                    </p>
-                    {isDayOff ? (
-                      <p className="text-[11px] uppercase tracking-[0.3em] text-red-500">Day off</p>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor={statusId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                    >
-                      Status
-                    </label>
-                    <input
-                      id={statusId}
-                      type="text"
-                      value={draft.status}
-                      onChange={(event) => handleAppointmentDraftChange(appointment.id, 'status', event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={startId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                    >
-                      Scheduled start
-                    </label>
-                    <input
-                      id={startId}
-                      type="datetime-local"
-                      value={draft.scheduled_start}
-                      onChange={(event) =>
-                        handleAppointmentDraftChange(appointment.id, 'scheduled_start', event.target.value)
-                      }
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={durationId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                    >
-                      Duration (minutes)
-                    </label>
-                    <input
-                      id={durationId}
-                      type="number"
-                      min="0"
-                      step="15"
-                      value={draft.duration_minutes}
-                      onChange={(event) =>
-                        handleAppointmentDraftChange(appointment.id, 'duration_minutes', event.target.value)
-                      }
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={adminId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                    >
-                      Assigned admin
-                    </label>
-                    <select
-                      id={adminId}
-                      value={draft.assigned_admin_id}
-                      onChange={(event) =>
-                        handleAppointmentDraftChange(appointment.id, 'assigned_admin_id', event.target.value)
-                      }
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-                    >
-                      <option value="">Unassigned</option>
-                      {adminOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label
-                    htmlFor={notesId}
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                  >
-                    Notes
-                  </label>
-                  <textarea
-                    id={notesId}
-                    rows={3}
-                    value={draft.client_description}
-                    onChange={(event) =>
-                      handleAppointmentDraftChange(appointment.id, 'client_description', event.target.value)
-                    }
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-                  />
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" onClick={() => requestAppointmentUpdate(appointment.id)}>
-                    Save changes
-                  </Button>
-                  <Button type="button" variant="secondary" onClick={() => navigate(`${appointment.id}`)}>
-                    View details
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => requestAppointmentDelete(appointment)}>
-                    Delete
-                  </Button>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Last updated {appointment.updated_at ? new Date(appointment.updated_at).toLocaleString() : 'n/a'}
+                    Ref {reference} · Assigned to {assigned}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{contact}</p>
+                </div>
+                <span className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500 transition group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-gray-100">
+                  <IconEye className="h-4 w-4" />
+                  <span className="hidden sm:inline">Open</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    );
+  };
+
+  const renderUpdatePanel = () => {
+    if (!sortedAppointments.length) {
+      return renderEmptyState('Nothing to update yet. Create an appointment to begin.');
+    }
+
+    return (
+      <div className="space-y-4">
+        {sortedAppointments.map((appointment) => {
+          const draft = appointmentDrafts[appointment.id] || {
+            status: appointment.status || 'pending',
+            scheduled_start: '',
+            duration_minutes: '',
+            assigned_admin_id: '',
+            client_description: appointment.client_description || ''
+          };
+          const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
+          const baseId = `appointment-${appointment.id}`;
+          const statusId = `${baseId}-status`;
+          const startId = `${baseId}-start`;
+          const durationId = `${baseId}-duration`;
+          const adminId = `${baseId}-assigned-admin`;
+          const notesId = `${baseId}-notes`;
+
+          return (
+            <div
+              key={appointment.id}
+              className="space-y-4 rounded-3xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                    Ref {appointment.reference_code || appointment.id}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {appointment.client?.display_name || appointment.guest_name || 'Guest client'}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {scheduledDate
+                      ? scheduledDate.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+                      : 'Awaiting schedule'}
                   </p>
                 </div>
+                <Button type="button" variant="ghost" onClick={() => navigate(`${appointment.id}`)}>
+                  <IconEye className="h-4 w-4" />
+                  <span className="hidden text-xs uppercase tracking-[0.3em] sm:inline">Details</span>
+                </Button>
               </div>
-            );
-          })}
-          {!sortedAppointments.length ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              No appointments scheduled yet. New bookings will appear here.
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label
+                    htmlFor={statusId}
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Status
+                  </label>
+                  <input
+                    id={statusId}
+                    type="text"
+                    value={draft.status}
+                    onChange={(event) => handleAppointmentDraftChange(appointment.id, 'status', event.target.value)}
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor={startId}
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Start
+                  </label>
+                  <input
+                    id={startId}
+                    type="datetime-local"
+                    value={draft.scheduled_start}
+                    onChange={(event) =>
+                      handleAppointmentDraftChange(appointment.id, 'scheduled_start', event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor={durationId}
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Duration (min)
+                  </label>
+                  <input
+                    id={durationId}
+                    type="number"
+                    min="0"
+                    step="15"
+                    value={draft.duration_minutes}
+                    onChange={(event) =>
+                      handleAppointmentDraftChange(appointment.id, 'duration_minutes', event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor={adminId}
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Assigned admin
+                  </label>
+                  <select
+                    id={adminId}
+                    value={draft.assigned_admin_id}
+                    onChange={(event) =>
+                      handleAppointmentDraftChange(appointment.id, 'assigned_admin_id', event.target.value)
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  >
+                    <option value="">Unassigned</option>
+                    {adminOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor={notesId}
+                  className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                >
+                  Notes
+                </label>
+                <textarea
+                  id={notesId}
+                  rows={3}
+                  value={draft.client_description}
+                  onChange={(event) =>
+                    handleAppointmentDraftChange(appointment.id, 'client_description', event.target.value)
+                  }
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Last update{' '}
+                  {appointment.updated_at
+                    ? new Date(appointment.updated_at).toLocaleString([], {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                      })
+                    : 'n/a'}
+                </p>
+                <Button type="button" onClick={() => requestAppointmentUpdate(appointment.id)}>
+                  <IconPencil className="h-4 w-4" />
+                  Save changes
+                </Button>
+              </div>
             </div>
-          ) : null}
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderDeletePanel = () => {
+    if (!sortedAppointments.length) {
+      return renderEmptyState('You have no appointments to remove.');
+    }
+
+    return (
+      <div className="space-y-3">
+        {sortedAppointments.map((appointment) => {
+          const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
+          const formattedDate = scheduledDate
+            ? scheduledDate.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+            : 'Awaiting schedule';
+          const clientName = appointment.client?.display_name || appointment.guest_name || 'Guest client';
+
+          return (
+            <div
+              key={appointment.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+            >
+              <div>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {clientName}
+                  <span className="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">
+                    Ref {appointment.reference_code || appointment.id}
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</p>
+              </div>
+              <Button type="button" variant="secondary" onClick={() => requestAppointmentDelete(appointment)}>
+                <IconTrash className="h-4 w-4" />
+                Delete
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderModePanel = () => {
+    if (mode === 'create') {
+      return renderCreatePanel();
+    }
+    if (mode === 'update') {
+      return renderUpdatePanel();
+    }
+    if (mode === 'delete') {
+      return renderDeletePanel();
+    }
+    return renderReadPanel();
+  };
+
+  const appointmentCountLabel =
+    sortedAppointments.length === 1 ? '1 appointment scheduled' : `${sortedAppointments.length} appointments scheduled`;
+
+  return (
+    <div className="space-y-8">
+      <SectionTitle
+        eyebrow="Admin"
+        title="Calendar & availability"
+        description="Keep the studio schedule organised with a single, focused control centre."
+      />
+
+      <Card className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+              <IconCalendar className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                Studio calendar
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{appointmentCountLabel}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 p-1 dark:border-gray-700">
+            {CRUD_MODE_OPTIONS.map(({ value, label, icon: Icon }) => {
+              const isActive = mode === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setMode(value)}
+                  aria-pressed={isActive}
+                  aria-label={`${label} mode`}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                    isActive
+                      ? 'bg-gray-900 text-white shadow-sm dark:bg-gray-100 dark:text-gray-900'
+                      : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          {renderModePanel()}
         </div>
       </Card>
 
-      <Card className="space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Studio operating hours
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Select open days and adjust the available time range for bookings.
-            </p>
+      <Card className="space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+              <IconClock className="h-6 w-6" />
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                Studio availability
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Manage weekly hours and closures.</p>
+            </div>
           </div>
-          <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-            Applied weekly
-          </span>
+          <Button type="button" onClick={requestScheduleUpdate}>
+            <IconPencil className="h-4 w-4" />
+            Save availability
+          </Button>
         </div>
-        <div className="flex flex-col gap-4">
-          {hoursDraft.map((entry) => {
-            const openId = `${entry.day}-open-time`;
-            const closeId = `${entry.day}-close-time`;
-            return (
-              <div
-                key={entry.day}
-                className="flex flex-col gap-3 rounded-xl border border-gray-200 p-3 sm:flex-row sm:items-center sm:justify-between dark:border-gray-800 dark:bg-gray-950"
-              >
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+        <div className="grid gap-6 lg:grid-cols-2">
+          <section className="space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Operating hours
+            </h3>
+            <div className="space-y-3">
+              {hoursDraft.map((entry) => (
+                <div
+                  key={entry.day}
+                  className="flex flex-wrap items-center gap-3 rounded-3xl bg-gray-50 p-4 dark:bg-gray-900"
+                >
+                  <div className="flex items-center gap-2">
                     <input
+                      id={`hours-${entry.day}`}
                       type="checkbox"
                       checked={entry.is_open}
                       onChange={(event) => handleHoursDraftChange(entry.day, 'is_open', event.target.checked)}
-                      className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                      className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-950 dark:focus:ring-gray-100"
                     />
-                    {WEEK_LABELS[entry.day]}
-                  </label>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
                     <label
-                      htmlFor={openId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                      htmlFor={`hours-${entry.day}`}
+                      className="text-sm font-semibold text-gray-800 dark:text-gray-100"
                     >
-                      Open
+                      {WEEK_LABELS[entry.day]}
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor={`open-${entry.day}`} className="sr-only">
+                      {WEEK_LABELS[entry.day]} open time
                     </label>
                     <input
-                      id={openId}
+                      id={`open-${entry.day}`}
                       type="time"
                       value={entry.open_time}
                       onChange={(event) => handleHoursDraftChange(entry.day, 'open_time', event.target.value)}
                       disabled={!entry.is_open}
-                      className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                      className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
                     />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label
-                      htmlFor={closeId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                    >
-                      Close
+                    <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">to</span>
+                    <label htmlFor={`close-${entry.day}`} className="sr-only">
+                      {WEEK_LABELS[entry.day]} close time
                     </label>
                     <input
-                      id={closeId}
+                      id={`close-${entry.day}`}
                       type="time"
                       value={entry.close_time}
                       onChange={(event) => handleHoursDraftChange(entry.day, 'close_time', event.target.value)}
                       disabled={!entry.is_open}
-                      className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                      className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
                     />
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      <Card className="space-y-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Days off
+              ))}
+            </div>
+          </section>
+          <section className="space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Scheduled closures
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Block out studio closures before booking slots are offered.</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label
-              htmlFor={NEW_DAY_OFF_ID}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Date
-            </label>
-            <input
-              id={NEW_DAY_OFF_ID}
-              type="date"
-              value={newDayOff}
-              onChange={(event) => setNewDayOff(event.target.value)}
-              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-          </div>
-          <Button type="button" onClick={handleAddDayOff}>
-            Add day off
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {daysOffDraft.map((day) => (
-            <span
-              key={day}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 dark:border-gray-800 dark:text-gray-300"
-            >
-              {new Date(day).toLocaleDateString()}
-              <button
-                type="button"
-                onClick={() => handleRemoveDayOff(day)}
-                className="text-gray-500 transition hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          {!daysOffDraft.length ? (
-            <span className="rounded-full border border-dashed border-gray-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              No days off recorded
-            </span>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" onClick={requestScheduleUpdate}>
-            Save schedule
-          </Button>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            A confirmation modal appears before the changes are published.
-          </p>
+            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="grow space-y-2">
+                  <label
+                    htmlFor={NEW_DAY_OFF_ID}
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Date
+                  </label>
+                  <input
+                    id={NEW_DAY_OFF_ID}
+                    type="date"
+                    value={newDayOff}
+                    onChange={(event) => setNewDayOff(event.target.value)}
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  />
+                </div>
+                <Button type="button" variant="secondary" onClick={handleAddDayOff}>
+                  <IconPlus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3">
+                {daysOffDraft.map((day) => (
+                  <span
+                    key={day}
+                    className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-gray-600 shadow-sm dark:bg-gray-950 dark:text-gray-300"
+                  >
+                    {new Date(day).toLocaleDateString()}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDayOff(day)}
+                      className="rounded-full bg-gray-900 px-2 py-[2px] text-[10px] font-bold text-white transition hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+                      aria-label={`Remove ${day}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {!daysOffDraft.length ? (
+                  <span className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                    <IconCalendar className="h-4 w-4" />
+                    No closures yet
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </section>
         </div>
       </Card>
 
@@ -847,7 +1123,10 @@ export default function AdminCalendar() {
           <p>
             Status set to <strong>{confirmation.payload.status}</strong>.{' '}
             {confirmation.payload.scheduled_start
-              ? `Proposed start: ${new Date(confirmation.payload.scheduled_start).toLocaleString()}.`
+              ? `Scheduled start: ${new Date(confirmation.payload.scheduled_start).toLocaleString([], {
+                  dateStyle: 'medium',
+                  timeStyle: 'short'
+                })}.`
               : 'No start date provided.'}
           </p>
         ) : null}

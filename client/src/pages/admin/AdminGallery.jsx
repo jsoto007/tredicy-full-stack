@@ -3,6 +3,7 @@ import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
+import { resolveApiUrl } from '../../lib/api.js';
 import { useAdminDashboard } from './AdminDashboardContext.jsx';
 
 const INITIAL_CATEGORY = { name: '', description: '', is_active: true };
@@ -602,6 +603,7 @@ export default function AdminGallery() {
             const publishedId = `${itemBaseId}-published`;
             const altId = `${itemBaseId}-alt`;
             const captionId = `${itemBaseId}-caption`;
+            const imageUrl = resolveApiUrl(item.image_url);
             return (
               <div
                 key={item.id}
@@ -609,7 +611,7 @@ export default function AdminGallery() {
               >
                 <div>
                   <img
-                    src={item.image_url}
+                    src={imageUrl}
                     alt={item.alt}
                     className="h-40 w-full rounded-xl object-cover"
                   />
@@ -694,7 +696,7 @@ export default function AdminGallery() {
                       Delete
                     </Button>
                     <a
-                      href={item.image_url}
+                      href={imageUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"

@@ -43,7 +43,7 @@ function AdminDashboardContent() {
   if (loading && !currentAdmin) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-2 sm:px-2">
           <SectionTitle eyebrow="Admin" title="Studio control center" description="Loading secure tools..." />
         </div>
       </main>
@@ -56,7 +56,7 @@ function AdminDashboardContent() {
 
   return (
     <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto max-w-6xl space-y-8 px-6">
+      <div className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col items-start gap-3 sm:items-end">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">

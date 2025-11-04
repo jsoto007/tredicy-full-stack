@@ -11,6 +11,21 @@ function buildUrl(path) {
   return `${BASE_URL}${path}`;
 }
 
+const ABSOLUTE_URL_PATTERN = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
+
+export function resolveApiUrl(path) {
+  if (!path) {
+    return '';
+  }
+  if (ABSOLUTE_URL_PATTERN.test(path)) {
+    return path;
+  }
+  if (!BASE_URL) {
+    return path.startsWith('/') ? path : `/${path}`;
+  }
+  return buildUrl(path);
+}
+
 async function request(path, options = {}) {
   const url = BASE_URL ? buildUrl(path) : path;
   const headers = {
