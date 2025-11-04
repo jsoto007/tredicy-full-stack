@@ -1,6 +1,7 @@
 import json
+import math
 import secrets
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta
 from functools import wraps
 from pathlib import Path
 from uuid import uuid4
@@ -20,6 +21,9 @@ from .models import (
     Consultation,
     GalleryItem,
     SystemSetting,
+    StudioAvailabilityBlock,
+    StudioClosure,
+    StudioWorkingHour,
     TattooAppointment,
     TattooCategory,
     Testimonial,
@@ -49,6 +53,36 @@ DEFAULT_OPERATING_HOURS = [
 ]
 
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+
+DAY_TO_INDEX = {day: index for index, day in enumerate(WEEK_DAYS)}
+INDEX_TO_DAY = {index: day for day, index in DAY_TO_INDEX.items()}
+NON_BLOCKING_APPOINTMENT_STATUSES = {"cancelled", "cancelled_by_client", "declined", "no_show"}
+DEFAULT_SLOT_INTERVAL_MINUTES = 60
+MINIMUM_APPOINTMENT_DURATION_MINUTES = 60
+
+PLACEMENT_BASE_MINUTES = {
+    "finger": 60,
+    "wrist": 60,
+    "ankle": 75,
+    "forearm": 90,
+    "upper_arm": 120,
+    "shoulder": 120,
+    "hand": 120,
+    "calf": 120,
+    "thigh": 150,
+    "rib": 150,
+    "neck": 150,
+    "chest": 180,
+    "back": 240,
+    "full_sleeve": 300,
+}
+
+SIZE_MULTIPLIERS = {
+    "small": 1.0,  # up to palm-sized
+    "medium": 1.5,  # hand-sized to quarter sleeve
+    "large": 2.0,  # half sleeve / medium panel
+    "xl": 3.0,  # full back / large format
+}
 
 
 def parse_bool(value, default=False):
@@ -208,7 +242,24 @@ def serialize_appointment(appointment):
         "scheduled_start": appointment.scheduled_start.isoformat() if appointment.scheduled_start else None,
         "scheduled_end": appointment.scheduled_end.isoformat() if appointment.scheduled_end else None,
         "duration_minutes": appointment.duration_minutes,
+        "suggested_duration_minutes": appointment.suggested_duration_minutes,
         "client_description": appointment.client_description,
+        "contact_name": appointment.contact_name,
+        "contact_email": appointment.contact_email,
+        "contact_phone": appointment.contact_phone,
+        "tattoo_placement": appointment.tattoo_placement,
+        "tattoo_size": appointment.tattoo_size,
+        "placement_notes": appointment.placement_notes,
+        "contact": {
+            "name": appointment.display_contact_name,
+            "email": appointment.display_contact_email,
+            "phone": appointment.display_contact_phone,
+        },
+        "tattoo": {
+            "placement": appointment.tattoo_placement,
+            "size": appointment.tattoo_size,
+            "notes": appointment.placement_notes,
+        },
         "client": {
             "id": client.id,
             "display_name": client.display_name,
@@ -313,6 +364,203 @@ def parse_iso_datetime(value):
         return None
 
 
+def _coerce_time(value, default: time) -> time:
+    if isinstance(value, time):
+        return value
+    if not value or not isinstance(value, str):
+        return default
+    try:
+        hours, minutes = value.split(":")
+        return time(hour=int(hours), minute=int(minutes))
+    except (ValueError, TypeError):
+        return default
+
+
+def _working_hours_from_records(records):
+    result = {}
+    for record in records:
+        result[record.weekday] = {
+            "day": INDEX_TO_DAY.get(record.weekday, WEEK_DAYS[record.weekday % 7]),
+            "is_open": record.is_open,
+            "open_time": record.opens_at,
+            "close_time": record.closes_at,
+        }
+    return result
+
+
+def fetch_working_hours_map():
+    records = StudioWorkingHour.query.order_by(StudioWorkingHour.weekday.asc()).all()
+    if records:
+        return _working_hours_from_records(records)
+
+    legacy_hours = load_json_setting("studio_operating_hours", DEFAULT_OPERATING_HOURS)
+    result = {}
+    for entry in legacy_hours:
+        day = entry.get("day")
+        if day not in DAY_TO_INDEX:
+            continue
+        weekday = DAY_TO_INDEX[day]
+        result[weekday] = {
+            "day": day,
+            "is_open": bool(entry.get("is_open", True)),
+            "open_time": _coerce_time(entry.get("open_time"), time(hour=10)),
+            "close_time": _coerce_time(entry.get("close_time"), time(hour=18)),
+        }
+    return result
+
+
+def fetch_working_hours_json():
+    hours = fetch_working_hours_map()
+    if not hours:
+        return []
+    output = []
+    for weekday in range(7):
+        if weekday in hours:
+            record = hours[weekday]
+            output.append(
+                {
+                    "day": record["day"],
+                    "is_open": record["is_open"],
+                    "open_time": record["open_time"].strftime("%H:%M"),
+                    "close_time": record["close_time"].strftime("%H:%M"),
+                }
+            )
+        else:
+            output.append(
+                {
+                    "day": INDEX_TO_DAY.get(weekday, WEEK_DAYS[weekday % 7]),
+                    "is_open": False,
+                    "open_time": "00:00",
+                    "close_time": "00:00",
+                }
+            )
+    return output
+
+
+def fetch_closure_dates():
+    closures = StudioClosure.query.order_by(StudioClosure.date.asc()).all()
+    if closures:
+        return {closure.date for closure in closures}
+    legacy_days_off = load_json_setting("studio_days_off", [])
+    parsed = set()
+    for value in legacy_days_off:
+        try:
+            parsed.add(date.fromisoformat(value))
+        except ValueError:
+            continue
+    return parsed
+
+
+def calculate_suggested_duration_minutes(placement: str | None, size: str | None) -> int:
+    placement_key = (placement or "").strip().lower()
+    size_key = (size or "").strip().lower()
+    base_minutes = PLACEMENT_BASE_MINUTES.get(placement_key, 120)
+    multiplier = SIZE_MULTIPLIERS.get(size_key, 1.0)
+    blocks = max(1, math.ceil((base_minutes * multiplier) / DEFAULT_SLOT_INTERVAL_MINUTES))
+    suggested = int(blocks * DEFAULT_SLOT_INTERVAL_MINUTES)
+    if suggested < MINIMUM_APPOINTMENT_DURATION_MINUTES:
+        suggested = MINIMUM_APPOINTMENT_DURATION_MINUTES
+    return suggested
+
+
+def _slot_overlaps(start: datetime, end: datetime, intervals):
+    for blocked_start, blocked_end in intervals:
+        if start < blocked_end and end > blocked_start:
+            return True
+    return False
+
+
+def collect_blocked_intervals(day_start: datetime, day_end: datetime, *, ignore_appointment_id: int | None = None):
+    intervals = []
+
+    appointment_query = TattooAppointment.query.filter(
+        TattooAppointment.scheduled_start.isnot(None),
+        TattooAppointment.duration_minutes.isnot(None),
+        TattooAppointment.scheduled_start < day_end,
+    )
+    if ignore_appointment_id is not None:
+        appointment_query = appointment_query.filter(TattooAppointment.id != ignore_appointment_id)
+
+    appointments = appointment_query.all()
+    for appointment in appointments:
+        status = (appointment.status or "").lower()
+        if status in NON_BLOCKING_APPOINTMENT_STATUSES:
+            continue
+        start = appointment.scheduled_start
+        if not start:
+            continue
+        duration = appointment.duration_minutes or 0
+        end = appointment.scheduled_end or start + timedelta(minutes=duration)
+        if duration <= 0 or end <= day_start or start >= day_end:
+            continue
+        intervals.append((start, end))
+
+    blocks = StudioAvailabilityBlock.query.filter(
+        StudioAvailabilityBlock.end > day_start,
+        StudioAvailabilityBlock.start < day_end,
+    ).all()
+    for block in blocks:
+        intervals.append((block.start, block.end))
+
+    return intervals
+
+
+def build_available_slots(target_date: date, duration_minutes: int | None, *, ignore_appointment_id: int | None = None):
+    hours_map = fetch_working_hours_map()
+    weekday = target_date.weekday()
+    window = hours_map.get(weekday)
+    if not window or not window.get("is_open"):
+        return [], None
+
+    closures = fetch_closure_dates()
+    if target_date in closures:
+        return [], None
+
+    open_time: time = window["open_time"]
+    close_time: time = window["close_time"]
+    if close_time <= open_time:
+        return [], None
+
+    day_start = datetime.combine(target_date, open_time)
+    day_end = datetime.combine(target_date, close_time)
+
+    slot_interval = timedelta(minutes=DEFAULT_SLOT_INTERVAL_MINUTES)
+    requested_duration_minutes = max(
+        duration_minutes or MINIMUM_APPOINTMENT_DURATION_MINUTES,
+        MINIMUM_APPOINTMENT_DURATION_MINUTES,
+    )
+    if requested_duration_minutes % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
+        requested_duration_minutes = (
+            (requested_duration_minutes // DEFAULT_SLOT_INTERVAL_MINUTES) + 1
+        ) * DEFAULT_SLOT_INTERVAL_MINUTES
+    slot_duration = timedelta(minutes=requested_duration_minutes)
+
+    blocked_intervals = collect_blocked_intervals(day_start, day_end, ignore_appointment_id=ignore_appointment_id)
+    now = datetime.utcnow()
+
+    slots = []
+    cursor = day_start
+    while cursor + slot_duration <= day_end:
+        slot_end = cursor + slot_duration
+        if cursor < now:
+            cursor += slot_interval
+            continue
+        if not _slot_overlaps(cursor, slot_end, blocked_intervals):
+            slots.append(
+                {
+                    "start": cursor,
+                    "end": slot_end,
+                }
+            )
+        cursor += slot_interval
+
+    return slots, {
+        "day": window["day"],
+        "open_time": open_time.strftime("%H:%M"),
+        "close_time": close_time.strftime("%H:%M"),
+    }
+
+
 @api_bp.route("/api/gallery/categories", methods=["GET"])
 def list_gallery_categories():
     include_inactive = parse_bool(request.args.get("include_inactive"), default=False)
@@ -391,6 +639,87 @@ def create_consultation():
         return jsonify({"error": "Unable to process request"}), 500
 
     return jsonify({"id": consultation.id, "status": "received"}), 201
+
+
+@api_bp.route("/api/availability/config", methods=["GET"])
+def public_availability_config():
+    operating_hours = fetch_working_hours_json()
+    closures = sorted({closure.isoformat() for closure in fetch_closure_dates()})
+    return jsonify(
+        {
+            "operating_hours": operating_hours,
+            "closures": closures,
+            "slot_interval_minutes": DEFAULT_SLOT_INTERVAL_MINUTES,
+            "minimum_duration_minutes": MINIMUM_APPOINTMENT_DURATION_MINUTES,
+        }
+    )
+
+
+@api_bp.route("/api/availability", methods=["GET"])
+def public_availability_slots():
+    date_raw = request.args.get("date", type=str)
+    if not date_raw:
+        return jsonify({"error": "Query parameter 'date' is required (YYYY-MM-DD)."}), 400
+    try:
+        target_date = date.fromisoformat(date_raw)
+    except ValueError:
+        return jsonify({"error": "Invalid date format; use YYYY-MM-DD."}), 400
+
+    duration_param = request.args.get("duration_minutes", type=int)
+    placement = request.args.get("placement")
+    size = request.args.get("size")
+
+    if duration_param is not None and duration_param < MINIMUM_APPOINTMENT_DURATION_MINUTES:
+        return (
+            jsonify(
+                {
+                    "error": f"Minimum appointment duration is {MINIMUM_APPOINTMENT_DURATION_MINUTES // 60} hour.",
+                }
+            ),
+            400,
+        )
+
+    duration_minutes = duration_param or calculate_suggested_duration_minutes(placement, size)
+    if duration_minutes % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
+        duration_minutes = int(
+            max(
+                MINIMUM_APPOINTMENT_DURATION_MINUTES,
+                round(duration_minutes / DEFAULT_SLOT_INTERVAL_MINUTES) * DEFAULT_SLOT_INTERVAL_MINUTES,
+            )
+        )
+
+    slots, window = build_available_slots(target_date, duration_minutes)
+    return jsonify(
+        {
+            "date": target_date.isoformat(),
+            "duration_minutes": duration_minutes,
+            "slot_interval_minutes": DEFAULT_SLOT_INTERVAL_MINUTES,
+            "minimum_duration_minutes": MINIMUM_APPOINTMENT_DURATION_MINUTES,
+            "working_window": window,
+            "slots": [
+                {
+                    "start": slot["start"].isoformat(),
+                    "end": slot["end"].isoformat(),
+                }
+                for slot in slots
+            ],
+            "fully_booked": window is not None and not slots,
+            "is_closed": window is None,
+        }
+    )
+
+
+@api_bp.route("/api/appointments/suggest-duration", methods=["GET"])
+def suggest_duration():
+    placement = request.args.get("placement")
+    size = request.args.get("size")
+    suggested_minutes = calculate_suggested_duration_minutes(placement, size)
+    return jsonify(
+        {
+            "suggested_duration_minutes": suggested_minutes,
+            "suggested_duration_hours": round(suggested_minutes / 60.0, 2),
+        }
+    )
 
 
 @api_bp.route("/api/auth/register", methods=["POST"])
@@ -693,8 +1022,8 @@ def admin_dashboard():
 @api_bp.route("/api/admin/schedule", methods=["GET"])
 @admin_required
 def admin_get_schedule():
-    operating_hours = load_json_setting("studio_operating_hours", DEFAULT_OPERATING_HOURS)
-    days_off = load_json_setting("studio_days_off", [])
+    operating_hours = fetch_working_hours_json()
+    days_off = sorted({value.isoformat() for value in fetch_closure_dates()})
     return jsonify({"operating_hours": operating_hours, "days_off": days_off})
 
 
@@ -711,6 +1040,7 @@ def admin_update_schedule():
         return jsonify({"error": "days_off must be a list."}), 400
 
     normalised_hours = []
+    working_hour_updates = []
     seen_days = set()
     for entry in operating_hours:
         if not isinstance(entry, dict):
@@ -736,6 +1066,20 @@ def admin_update_schedule():
                 return jsonify({"error": f"{label} must be a valid time."}), 400
         if is_open and open_time >= close_time:
             return jsonify({"error": f"close_time must be after open_time for {day}."}), 400
+        weekday_index = DAY_TO_INDEX[day]
+        open_time_obj = _coerce_time(open_time, time(hour=10))
+        close_time_obj = _coerce_time(close_time, time(hour=18))
+        working_hour_updates.append(
+            {
+                "weekday": weekday_index,
+                "is_open": is_open,
+                "open_time": open_time_obj,
+                "close_time": close_time_obj,
+                "day": day,
+                "open_time_str": open_time,
+                "close_time_str": close_time,
+            }
+        )
         normalised_hours.append(
             {
                 "day": day,
@@ -747,6 +1091,7 @@ def admin_update_schedule():
 
     normalised_days_off = []
     seen_dates = set()
+    closure_dates = set()
     for value in days_off:
         if not isinstance(value, str):
             return jsonify({"error": "days_off must only include ISO date strings."}), 400
@@ -760,6 +1105,34 @@ def admin_update_schedule():
             continue
         seen_dates.add(iso_value)
         normalised_days_off.append(iso_value)
+        closure_dates.add(parsed)
+
+    normalised_hours.sort(key=lambda entry: DAY_TO_INDEX.get(entry["day"], 0))
+    normalised_days_off.sort()
+
+    existing_hours = {record.weekday: record for record in StudioWorkingHour.query.all()}
+    provided_weekdays = set()
+    for update in working_hour_updates:
+        weekday = update["weekday"]
+        provided_weekdays.add(weekday)
+        record = existing_hours.get(weekday)
+        if not record:
+            record = StudioWorkingHour(weekday=weekday)
+            db.session.add(record)
+        record.is_open = update["is_open"]
+        record.opens_at = update["open_time"]
+        record.closes_at = update["close_time"]
+    for weekday, record in existing_hours.items():
+        if weekday not in provided_weekdays:
+            record.is_open = False
+
+    existing_closures = {closure.date: closure for closure in StudioClosure.query.all()}
+    for closure_date in closure_dates:
+        if closure_date not in existing_closures:
+            db.session.add(StudioClosure(date=closure_date))
+    for closure_date, closure in existing_closures.items():
+        if closure_date not in closure_dates:
+            db.session.delete(closure)
 
     upsert_json_setting(
         "studio_operating_hours",
@@ -1194,13 +1567,21 @@ def admin_create_appointment():
     guest_name = (payload.get("guest_name") or "").strip()
     guest_email = (payload.get("guest_email") or "").strip()
     guest_phone = (payload.get("guest_phone") or "").strip() or None
+    contact_name = (payload.get("contact_name") or "").strip()
+    contact_email = (payload.get("contact_email") or "").strip()
+    contact_phone = (payload.get("contact_phone") or "").strip() or None
     client_description = (payload.get("client_description") or "").strip() or None
     status = (payload.get("status") or "pending").strip() or "pending"
+    tattoo_placement = (payload.get("tattoo_placement") or "").strip()
+    tattoo_size = (payload.get("tattoo_size") or "").strip()
+    placement_notes = (payload.get("placement_notes") or "").strip()
 
     scheduled_start_raw = payload.get("scheduled_start")
     scheduled_start = parse_iso_datetime(scheduled_start_raw)
     if scheduled_start_raw and not scheduled_start:
         return jsonify({"error": "Invalid scheduled_start; use ISO 8601."}), 400
+    if scheduled_start and (scheduled_start.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or scheduled_start.second or scheduled_start.microsecond):
+        return jsonify({"error": "Start time must align with the hour."}), 400
 
     duration_minutes = payload.get("duration_minutes")
     if duration_minutes is not None:
@@ -1208,6 +1589,10 @@ def admin_create_appointment():
             duration_minutes = int(duration_minutes)
         except (TypeError, ValueError):
             return jsonify({"error": "duration_minutes must be an integer."}), 400
+
+    suggested_duration = calculate_suggested_duration_minutes(tattoo_placement, tattoo_size) if (tattoo_placement or tattoo_size) else None
+    if duration_minutes is None and suggested_duration is not None:
+        duration_minutes = suggested_duration
 
     assigned_admin_id = payload.get("assigned_admin_id")
     assigned_admin = None
@@ -1225,8 +1610,52 @@ def admin_create_appointment():
         if not client_account:
             return jsonify({"error": "Client not found."}), 404
 
-    if not client_account and not guest_name:
-        return jsonify({"error": "Provide either client_id or guest details."}), 400
+    if duration_minutes is not None:
+        if duration_minutes < MINIMUM_APPOINTMENT_DURATION_MINUTES:
+            return jsonify(
+                {
+                    "error": f"Minimum session length is {MINIMUM_APPOINTMENT_DURATION_MINUTES // 60} hour.",
+                }
+            ), 400
+        if duration_minutes % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
+            return jsonify({"error": "Duration must use whole-hour increments."}), 400
+
+    if scheduled_start and duration_minutes:
+        available_slots, _window = build_available_slots(scheduled_start.date(), duration_minutes)
+        slot_available = any(
+            abs(int((slot["start"] - scheduled_start).total_seconds())) < 60 for slot in available_slots
+        )
+        if not slot_available:
+            return jsonify({"error": "Selected time slot is unavailable."}), 409
+
+    if not client_account:
+        if not guest_name and not contact_name:
+            return jsonify({"error": "Provide either client_id or guest contact."}), 400
+        if not guest_email and not contact_email:
+            return jsonify({"error": "Guest email is required."}), 400
+
+    if client_account:
+        if not contact_name:
+            contact_name = client_account.display_name
+        if not contact_email:
+            contact_email = client_account.email or guest_email
+        if not contact_phone:
+            contact_phone = client_account.phone or guest_phone
+    else:
+        if not contact_name:
+            contact_name = guest_name
+        if not contact_email:
+            contact_email = guest_email
+        if not contact_phone:
+            contact_phone = guest_phone
+
+    if not client_account:
+        if not guest_name:
+            guest_name = contact_name
+        if not guest_email:
+            guest_email = contact_email
+        if not guest_phone:
+            guest_phone = contact_phone
 
     appointment = TattooAppointment(
         reference_code=generate_reference_code(),
@@ -1239,6 +1668,13 @@ def admin_create_appointment():
         scheduled_start=scheduled_start,
         duration_minutes=duration_minutes,
         assigned_admin=assigned_admin,
+        contact_name=contact_name or None,
+        contact_email=contact_email or None,
+        contact_phone=contact_phone or None,
+        tattoo_placement=tattoo_placement or None,
+        tattoo_size=tattoo_size or None,
+        placement_notes=placement_notes or None,
+        suggested_duration_minutes=suggested_duration,
     )
 
     db.session.add(appointment)
@@ -1313,6 +1749,14 @@ def create_appointment():
     email = (payload.get("email") or "").strip().lower()
     phone = (payload.get("phone") or "").strip() or None
 
+    contact_name = (payload.get("contact_name") or "").strip()
+    contact_email_override = (payload.get("contact_email") or "").strip()
+    contact_phone_override = (payload.get("contact_phone") or "").strip() or None
+
+    tattoo_placement = (payload.get("tattoo_placement") or "").strip()
+    tattoo_size = (payload.get("tattoo_size") or "").strip()
+    placement_notes = (payload.get("placement_notes") or "").strip()
+
     id_front_url = (payload.get("id_front_url") or "").strip()
     id_back_url = (payload.get("id_back_url") or "").strip()
     inspiration_urls = payload.get("inspiration_urls") or []
@@ -1340,8 +1784,12 @@ def create_appointment():
 
     scheduled_start_raw = payload.get("scheduled_start")
     scheduled_start = parse_iso_datetime(scheduled_start_raw)
-    if scheduled_start_raw and not scheduled_start:
-        errors.append({"field": "scheduled_start", "message": "Invalid datetime format (use ISO 8601)."})
+    if not scheduled_start:
+        errors.append({"field": "scheduled_start", "message": "Please choose a session date and start time."})
+    elif scheduled_start.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or scheduled_start.second or scheduled_start.microsecond:
+        errors.append({"field": "scheduled_start", "message": "Start time must align with the hour."})
+    elif scheduled_start < datetime.utcnow():
+        errors.append({"field": "scheduled_start", "message": "Select a future time slot."})
 
     duration_minutes = payload.get("duration_minutes")
     if duration_minutes is not None:
@@ -1349,6 +1797,11 @@ def create_appointment():
             duration_minutes = int(duration_minutes)
         except (TypeError, ValueError):
             errors.append({"field": "duration_minutes", "message": "Duration must be an integer."})
+
+    if not tattoo_placement:
+        errors.append({"field": "tattoo_placement", "message": "Placement is required."})
+    if not tattoo_size:
+        errors.append({"field": "tattoo_size", "message": "Approximate size is required."})
 
     if not client_account:
         if not email:
@@ -1390,6 +1843,36 @@ def create_appointment():
         email = client_account.email or email
         phone = client_account.phone or phone
 
+    suggested_duration = calculate_suggested_duration_minutes(tattoo_placement, tattoo_size)
+    if duration_minutes is None:
+        duration_minutes = suggested_duration
+
+    if duration_minutes < MINIMUM_APPOINTMENT_DURATION_MINUTES:
+        errors.append(
+            {
+                "field": "duration_minutes",
+                "message": f"Minimum session length is {MINIMUM_APPOINTMENT_DURATION_MINUTES // 60} hour.",
+            }
+        )
+    if duration_minutes % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
+        errors.append({"field": "duration_minutes", "message": "Duration must use whole-hour increments."})
+
+    if scheduled_start and duration_minutes and not errors:
+        available_slots, _window = build_available_slots(scheduled_start.date(), duration_minutes)
+        slot_available = any(
+            abs(int((slot["start"] - scheduled_start).total_seconds())) < 60 for slot in available_slots
+        )
+        if not slot_available:
+            errors.append(
+                {
+                    "field": "scheduled_start",
+                    "message": "The selected time is unavailable. Please choose another slot.",
+                }
+            )
+
+    if errors:
+        return jsonify({"errors": errors}), 400
+
     appointment = TattooAppointment(
         reference_code=generate_reference_code(),
         client=client_account,
@@ -1397,12 +1880,21 @@ def create_appointment():
         scheduled_start=scheduled_start,
         duration_minutes=duration_minutes,
         status="pending",
+        tattoo_placement=tattoo_placement or None,
+        tattoo_size=tattoo_size or None,
+        placement_notes=placement_notes or None,
+        suggested_duration_minutes=suggested_duration,
     )
 
-    if client_account.is_guest:
-        appointment.guest_name = " ".join(filter(None, [first_name, last_name])) or client_account.display_name
-        appointment.guest_email = email or client_account.email
-        appointment.guest_phone = phone or client_account.phone
+    contact_name_value = contact_name or " ".join(filter(None, [first_name, last_name]))
+    appointment.contact_name = contact_name_value or (client_account.display_name if client_account else None)
+    appointment.contact_email = contact_email_override or email or (client_account.email if client_account else None)
+    appointment.contact_phone = contact_phone_override or phone or (client_account.phone if client_account else None)
+
+    if client_account and client_account.is_guest:
+        appointment.guest_name = appointment.contact_name
+        appointment.guest_email = appointment.contact_email
+        appointment.guest_phone = appointment.contact_phone
 
     db.session.add(appointment)
     db.session.flush()
@@ -1503,6 +1995,12 @@ def admin_update_appointment(appointment_id):
     appointment = TattooAppointment.query.get_or_404(appointment_id)
     payload = request.get_json(silent=True) or {}
 
+    new_start = appointment.scheduled_start
+    new_duration = appointment.duration_minutes
+    new_placement = appointment.tattoo_placement
+    new_size = appointment.tattoo_size
+    new_notes = appointment.placement_notes
+
     if "status" in payload:
         status = (payload.get("status") or "").strip()
         if not status:
@@ -1515,19 +2013,29 @@ def admin_update_appointment(appointment_id):
             parsed = parse_iso_datetime(scheduled_start_raw)
             if not parsed:
                 return jsonify({"error": "Invalid datetime format (use ISO 8601)."}), 400
-            appointment.scheduled_start = parsed
+            if parsed.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or parsed.second or parsed.microsecond:
+                return jsonify({"error": "Start time must align with the hour."}), 400
+            new_start = parsed
         else:
-            appointment.scheduled_start = None
+            new_start = None
 
     if "duration_minutes" in payload:
         duration = payload.get("duration_minutes")
         if duration is None:
-            appointment.duration_minutes = None
+            new_duration = None
         else:
             try:
-                appointment.duration_minutes = int(duration)
+                new_duration = int(duration)
             except (TypeError, ValueError):
                 return jsonify({"error": "Duration must be an integer."}), 400
+            if new_duration < MINIMUM_APPOINTMENT_DURATION_MINUTES:
+                return jsonify(
+                    {
+                        "error": f"Minimum session length is {MINIMUM_APPOINTMENT_DURATION_MINUTES // 60} hour.",
+                    }
+                ), 400
+            if new_duration % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
+                return jsonify({"error": "Duration must use whole-hour increments."}), 400
 
     if "assigned_admin_id" in payload:
         admin_id = payload.get("assigned_admin_id")
@@ -1541,6 +2049,53 @@ def admin_update_appointment(appointment_id):
 
     if "client_description" in payload:
         appointment.client_description = (payload.get("client_description") or "").strip() or None
+
+    if "contact_name" in payload:
+        appointment.contact_name = (payload.get("contact_name") or "").strip() or None
+    if "contact_email" in payload:
+        appointment.contact_email = (payload.get("contact_email") or "").strip() or None
+    if "contact_phone" in payload:
+        appointment.contact_phone = (payload.get("contact_phone") or "").strip() or None
+
+    if "tattoo_placement" in payload:
+        new_placement = (payload.get("tattoo_placement") or "").strip() or None
+    if "tattoo_size" in payload:
+        new_size = (payload.get("tattoo_size") or "").strip() or None
+    if "placement_notes" in payload:
+        new_notes = (payload.get("placement_notes") or "").strip() or None
+
+    if "suggested_duration_minutes" in payload:
+        suggested_value = payload.get("suggested_duration_minutes")
+        if suggested_value is None:
+            appointment.suggested_duration_minutes = None
+        else:
+            try:
+                appointment.suggested_duration_minutes = int(suggested_value)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Suggested duration must be an integer."}), 400
+
+    if new_start and new_duration:
+        available_slots, _window = build_available_slots(
+            new_start.date(),
+            new_duration,
+            ignore_appointment_id=appointment.id,
+        )
+        slot_available = any(abs(int((slot["start"] - new_start).total_seconds())) < 60 for slot in available_slots)
+        if not slot_available:
+            return jsonify({"error": "Selected time slot is unavailable."}), 409
+
+    appointment.scheduled_start = new_start
+    appointment.duration_minutes = new_duration
+    appointment.tattoo_placement = new_placement
+    appointment.tattoo_size = new_size
+    appointment.placement_notes = new_notes
+
+    if (
+        "suggested_duration_minutes" not in payload
+        and (appointment.suggested_duration_minutes is None or "tattoo_placement" in payload or "tattoo_size" in payload)
+    ):
+        if new_placement or new_size:
+            appointment.suggested_duration_minutes = calculate_suggested_duration_minutes(new_placement, new_size)
 
     acting_admin: AdminAccount = g.current_admin
 

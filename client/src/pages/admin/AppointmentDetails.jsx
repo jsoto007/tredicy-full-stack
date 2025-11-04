@@ -32,6 +32,17 @@ function formatDateTime(value) {
   return date.toLocaleString();
 }
 
+function formatDuration(minutes) {
+  if (!minutes) {
+    return 'Not set';
+  }
+  const hours = minutes / 60;
+  if (Number.isInteger(hours)) {
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+  return `${minutes} minutes`;
+}
+
 function isImageUrl(url) {
   if (!url || typeof url !== 'string') {
     return false;
@@ -196,6 +207,11 @@ export default function AppointmentDetails() {
     email: appointment.guest_email,
     phone: appointment.guest_phone
   };
+  const contact = appointment.contact || {
+    name: appointment.contact_name || client.display_name,
+    email: appointment.contact_email || client.email,
+    phone: appointment.contact_phone || client.phone
+  };
 
   return (
     <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
@@ -215,7 +231,7 @@ export default function AppointmentDetails() {
           <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
             Appointment overview
           </h3>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Status</p>
               <p className="text-sm text-gray-800 dark:text-gray-200">{appointment.status}</p>
@@ -226,14 +242,38 @@ export default function AppointmentDetails() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Duration</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">{formatDuration(appointment.duration_minutes)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Suggested duration</p>
               <p className="text-sm text-gray-800 dark:text-gray-200">
-                {appointment.duration_minutes ? `${appointment.duration_minutes} minutes` : 'Not set'}
+                {formatDuration(appointment.suggested_duration_minutes)}
               </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assigned admin</p>
               <p className="text-sm text-gray-800 dark:text-gray-200">
                 {appointment.assigned_admin?.name || 'Unassigned'}
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Tattoo placement</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">
+                {appointment.tattoo?.placement || appointment.tattoo_placement || 'Not provided'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Approximate size</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">
+                {appointment.tattoo?.size || appointment.tattoo_size || 'Not provided'}
+              </p>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Placement notes</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {appointment.tattoo?.notes || appointment.placement_notes || 'No placement notes.'}
               </p>
             </div>
           </div>
@@ -247,19 +287,19 @@ export default function AppointmentDetails() {
 
         <Card className="space-y-4">
           <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-            Client profile
+            Contact & account
           </h3>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Name</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{client.display_name}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Primary contact</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">{contact.name || 'Not provided'}</p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Email</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact email</p>
               <p className="text-sm text-gray-800 underline dark:text-gray-200">
-                {client.email ? (
-                  <a href={`mailto:${client.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
-                    {client.email}
+                {contact.email ? (
+                  <a href={`mailto:${contact.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
+                    {contact.email}
                   </a>
                 ) : (
                   'Not provided'
@@ -267,8 +307,24 @@ export default function AppointmentDetails() {
               </p>
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Phone</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{client.phone || 'Not provided'}</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact phone</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">{contact.phone || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Linked account</p>
+              <p className="text-sm text-gray-800 dark:text-gray-200">{client.display_name}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account email</p>
+              <p className="text-sm text-gray-800 underline dark:text-gray-200">
+                {client.email ? (
+                  <a href={`mailto:${client.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
+                    {client.email}
+                  </a>
+                ) : (
+                  'Guest booking'
+                )}
+              </p>
             </div>
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account type</p>

@@ -3,6 +3,29 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from './Button.jsx';
 
+function IconCalendar(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+      <path d="M8 2.5v4" />
+      <path d="M16 2.5v4" />
+      <path d="M3.5 9.5h17" />
+      <path d="M8 13.5h3" />
+      <path d="M13 13.5h3" />
+      <path d="M8 17.5h3" />
+    </svg>
+  );
+}
+
 const DEFAULT_NAV_ITEMS = [
   { label: 'Work', href: '#work', type: 'anchor' },
   { label: 'Services', href: '#services', type: 'anchor' },
@@ -80,6 +103,9 @@ export default function Header({ theme, onToggleTheme }) {
   const menuButtonClass =
     'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-300 dark:hover:text-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black md:hidden';
 
+  const calendarButtonClass =
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-300 dark:hover:text-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black md:hidden';
+
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-black/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -137,6 +163,11 @@ export default function Header({ theme, onToggleTheme }) {
             <Button as="a" href="#booking" className="hidden md:inline-flex">
               Book Consult
             </Button>
+          ) : null}
+          {shouldShowConsult ? (
+            <a href="#booking" className={calendarButtonClass} aria-label="Book consultation">
+              <IconCalendar className="h-5 w-5" />
+            </a>
           ) : null}
 
           <button

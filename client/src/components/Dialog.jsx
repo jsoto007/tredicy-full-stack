@@ -71,7 +71,7 @@ export default function Dialog({ open, onClose, title, children, footer }) {
     <div
       ref={overlayRef}
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-6 py-10"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-6 sm:px-6 sm:py-10 md:items-center"
       onMouseDown={(event) => {
         if (event.target === overlayRef.current) {
           onClose?.();
@@ -83,7 +83,7 @@ export default function Dialog({ open, onClose, title, children, footer }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl focus:outline-none dark:border-gray-800 dark:bg-gray-950"
+        className="w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl focus:outline-none dark:border-gray-800 dark:bg-gray-950 sm:p-8 md:max-h-[90vh] max-h-[92vh]"
       >
         <div className="flex items-start justify-between gap-4">
           <h2 id={titleId} className="text-lg font-semibold uppercase tracking-[0.3em] text-gray-900 dark:text-gray-100">

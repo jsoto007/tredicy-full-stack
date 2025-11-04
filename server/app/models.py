@@ -46,6 +46,12 @@ class AdminAccount(TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         lazy="dynamic",
     )
+    availability_blocks = db.relationship(
+        "StudioAvailabilityBlock",
+        back_populates="created_by_admin",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
 
     def set_password(self, raw_password: str) -> None:
         self.password_hash = generate_password_hash(raw_password)
@@ -172,6 +178,9 @@ class TattooAppointment(TimestampMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     reference_code = db.Column(db.String(40), unique=True)
+    contact_name = db.Column(db.String(255))
+    contact_email = db.Column(db.String(255))
+    contact_phone = db.Column(db.String(40))
     client_id = db.Column(
         db.Integer,
         db.ForeignKey("client_accounts.id"),
@@ -183,6 +192,10 @@ class TattooAppointment(TimestampMixin, db.Model):
     status = db.Column(db.String(40), default="pending", nullable=False)
     scheduled_start = db.Column(db.DateTime)
     duration_minutes = db.Column(db.Integer)
+    suggested_duration_minutes = db.Column(db.Integer)
+    tattoo_placement = db.Column(db.String(120))
+    tattoo_size = db.Column(db.String(120))
+    placement_notes = db.Column(db.Text)
     assigned_admin_id = db.Column(
         db.Integer,
         db.ForeignKey("admin_accounts.id"),
@@ -218,6 +231,22 @@ class TattooAppointment(TimestampMixin, db.Model):
             asset.kind in {"id_front", "id_back"}
             for asset in self.assets
         )
+
+    @property
+    def display_contact_name(self) -> str | None:
+        return (
+            self.contact_name
+            or (self.client.display_name if self.client else None)
+            or self.guest_name
+        )
+
+    @property
+    def display_contact_email(self) -> str | None:
+        return self.contact_email or (self.client.email if self.client else None) or self.guest_email
+
+    @property
+    def display_contact_phone(self) -> str | None:
+        return self.contact_phone or (self.client.phone if self.client else None) or self.guest_phone
 
 
 class AppointmentAsset(TimestampMixin, db.Model):
@@ -305,3 +334,36 @@ class SystemSetting(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<SystemSetting {self.key}>"
+
+
+class StudioWorkingHour(TimestampMixin, db.Model):
+    __tablename__ = "studio_working_hours"
+
+    id = db.Column(db.Integer, primary_key=True)
+    weekday = db.Column(db.Integer, unique=True, nullable=False)  # 0 = Monday
+    is_open = db.Column(db.Boolean, default=True, nullable=False)
+    opens_at = db.Column(db.Time, nullable=False)
+    closes_at = db.Column(db.Time, nullable=False)
+
+
+class StudioClosure(TimestampMixin, db.Model):
+    __tablename__ = "studio_closures"
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, unique=True, nullable=False)
+    reason = db.Column(db.String(255))
+
+
+class StudioAvailabilityBlock(TimestampMixin, db.Model):
+    __tablename__ = "studio_availability_blocks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    start = db.Column(db.DateTime, nullable=False)
+    end = db.Column(db.DateTime, nullable=False)
+    reason = db.Column(db.String(255))
+    created_by_admin_id = db.Column(
+        db.Integer,
+        db.ForeignKey("admin_accounts.id"),
+    )
+
+    created_by_admin = db.relationship("AdminAccount", back_populates="availability_blocks")
