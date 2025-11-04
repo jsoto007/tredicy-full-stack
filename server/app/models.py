@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import db
+from .config import db
 
 
 class TimestampMixin:
@@ -305,4 +305,3 @@ class SystemSetting(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<SystemSetting {self.key}>"
-

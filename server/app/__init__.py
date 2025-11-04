@@ -1,10 +1,9 @@
 from flask import Flask
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 
-db = SQLAlchemy()
+from .config import configure_app, db
 migrate = Migrate()
 
 
@@ -12,12 +11,7 @@ def create_app():
     load_dotenv()
     app = Flask(__name__)
 
-    from .config import Config
-
-    config = Config()
-    app.config.from_object(config)
-
-    db.init_app(app)
+    configure_app(app)
     migrate.init_app(app, db)
 
     from .routes import api_bp

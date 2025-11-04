@@ -7,7 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
-from . import db
+from .config import db
 from .models import (
     AdminAccount,
     AdminActivityLog,

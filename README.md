@@ -24,6 +24,14 @@ pipenv install
 pipenv run flask --app wsgi run --debug
 ```
 
+#### PostgreSQL 17 setup
+
+1. Install PostgreSQL 17 (macOS Homebrew: `brew install postgresql@17`) and ensure the service is running (`brew services start postgresql@17`).
+2. Create the development database: `createdb blackink_dev`.
+3. Copy `.env.example` to `.env` inside `server/` and adjust `DATABASE_URI` if your credentials differ. The example points to `postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/blackink_dev`.
+4. Apply migrations (or allow `db.create_all()` on first boot): `pipenv run flask db upgrade`.
+5. Seed demo data: `pipenv run python seed.py`.
+
 ### Client
 
 ```bash
@@ -46,7 +54,7 @@ Available scripts:
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `client/.env` | Base URL for the Flask API (default `http://127.0.0.1:5000`) |
 | `FLASK_ENV` | `server/.env` | Flask environment (`development`, `production`, etc.) |
-| `DATABASE_URL` | `server/.env` | Database connection string; defaults to in-memory SQLite when unset |
+| `DATABASE_URI` | `server/.env` | Database connection string; fallback is a local SQLite file (`server/blackink_dev.db`) |
 | `SECRET_KEY` | `server/.env` | Secret key for Flask session security |
 
 ## Architecture
@@ -65,6 +73,7 @@ Available scripts:
 ## Deployment notes
 
 - Frontend: deploy `client/` build output to Netlify or Vercel with `VITE_API_BASE_URL` pointing to the live API.
-- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URL`.
+- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URI`.
+- Automated tests force `DATABASE_URI` to an in-memory SQLite instance so test runs stay isolated from shared databases.
 - Update CORS origins in `app/__init__.py` if production hosts differ from local defaults.
 # black-work-tattoo
