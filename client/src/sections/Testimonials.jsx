@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import Stars from '../components/Stars.jsx';
@@ -33,6 +34,11 @@ export default function Testimonials() {
     return () => controller.abort();
   }, []);
 
+  const entriesKey = useMemo(
+    () => entries.map((entry) => entry.id ?? entry.email ?? entry.name ?? '').join('|') || 'testimonials',
+    [entries]
+  );
+
   return (
     <section id="testimonials" className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
@@ -42,7 +48,7 @@ export default function Testimonials() {
           description="A few words from clients who return for linework refreshers, large-scale projects, and thoughtful cover-ups."
         />
         {status ? <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{status}</p> : null}
-        <div className="grid gap-8 md:grid-cols-3">
+        <FadeIn key={entriesKey} className="grid gap-8 md:grid-cols-3" childClassName="h-full" delayStep={0.12}>
           {entries.map((entry) => (
             <Card key={entry.id} className="h-full space-y-6">
               <div className="space-y-4">
@@ -52,7 +58,7 @@ export default function Testimonials() {
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{entry.name}</p>
             </Card>
           ))}
-        </div>
+        </FadeIn>
       </div>
     </section>
   );

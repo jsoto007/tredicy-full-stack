@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, apiPost } from '../lib/api.js';
 
@@ -93,7 +94,7 @@ export default function UserDashboard() {
 
   return (
     <main className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6">
+      <FadeIn as="div" className="mx-auto flex max-w-5xl flex-col gap-8 px-6" childClassName="w-full">
         <SectionTitle
           eyebrow="Dashboard"
           title="Welcome back"
@@ -171,7 +172,7 @@ export default function UserDashboard() {
             ))}
           </ul>
         </Card>
-      </div>
+      </FadeIn>
     </main>
   );
 }

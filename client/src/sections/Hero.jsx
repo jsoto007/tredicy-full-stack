@@ -1,3 +1,4 @@
+import FadeIn from '../components/FadeIn.jsx';
 import Button from '../components/Button.jsx';
 import { prefersReducedMotion } from '../lib/a11y.js';
 
@@ -17,7 +18,11 @@ export default function Hero() {
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(17,17,17,0.65),_rgba(0,0,0,0.9))]" />
       </div>
-      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6 text-left md:flex-row md:items-center md:justify-between">
+      <FadeIn
+        immediate
+        delayStep={0.18}
+        className="mx-auto flex max-w-6xl flex-col gap-12 px-6 text-left md:flex-row md:items-center md:justify-between"
+      >
         <div className="max-w-2xl space-y-6">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">Minimal craft</p>
           <h1 className="text-4xl font-semibold uppercase tracking-[0.2em] sm:text-5xl">
@@ -44,7 +49,7 @@ export default function Hero() {
             while staying true to our monochrome aesthetic.
           </p>
         </div>
-      </div>
+      </FadeIn>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import FadeIn from '../components/FadeIn.jsx';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import Dialog from '../components/Dialog.jsx';
@@ -214,7 +215,7 @@ export default function Booking() {
 
   return (
     <section id="booking" className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
-      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
+      <FadeIn className="mx-auto flex max-w-6xl flex-col gap-12 px-6" delayStep={0.18}>
         <SectionTitle
           eyebrow="Booking"
           title="Reserve your session"
@@ -234,7 +235,8 @@ export default function Booking() {
           </Button>
         </Card>
         {notice ? (
-          <div
+          <FadeIn
+            immediate
             className={`rounded-2xl border px-6 py-4 text-xs uppercase tracking-[0.3em] ${
               noticeTone === 'success'
                 ? 'border-gray-200 bg-gray-50 text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300'
@@ -242,9 +244,9 @@ export default function Booking() {
             }`}
           >
             {notice}
-          </div>
+          </FadeIn>
         ) : null}
-      </div>
+      </FadeIn>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
@@ -260,7 +262,14 @@ export default function Booking() {
           </>
         }
       >
-        <form id="booking-form" className="space-y-5" onSubmit={handleSubmit}>
+        <FadeIn
+          as="form"
+          id="booking-form"
+          className="space-y-5"
+          onSubmit={handleSubmit}
+          immediate
+          delayStep={0.08}
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label
@@ -472,7 +481,7 @@ export default function Booking() {
           {errors.files ? (
             <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.files}</p>
           ) : null}
-        </form>
+        </FadeIn>
       </Dialog>
     </section>
   );

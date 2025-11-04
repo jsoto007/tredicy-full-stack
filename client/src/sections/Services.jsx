@@ -1,3 +1,4 @@
+import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import services from '../data/services.json';
@@ -5,13 +6,13 @@ import services from '../data/services.json';
 export default function Services() {
   return (
     <section id="services" className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
+      <FadeIn className="mx-auto flex max-w-6xl flex-col gap-12 px-6" delayStep={0.16}>
         <SectionTitle
           eyebrow="Services"
           title="Crafted with restraint"
           description="Every piece is drawn in-studio with an emphasis on balance, contrast, and longevity on skin. Explore the core offerings below."
         />
-        <div className="grid gap-8 md:grid-cols-3">
+        <FadeIn className="grid gap-8 md:grid-cols-3" childClassName="h-full" delayStep={0.12}>
           {services.map((service) => (
             <Card key={service.id} className="h-full space-y-4">
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{service.tagline}</p>
@@ -22,8 +23,8 @@ export default function Services() {
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{service.duration}</p>
             </Card>
           ))}
-        </div>
-      </div>
+        </FadeIn>
+      </FadeIn>
     </section>
   );
 }

@@ -1,3 +1,4 @@
+import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 
@@ -25,13 +26,13 @@ const CONTACT_POINTS = [
 export default function Contact() {
   return (
     <section id="contact" className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
+      <FadeIn className="mx-auto flex max-w-6xl flex-col gap-12 px-6" delayStep={0.16}>
         <SectionTitle
           eyebrow="Contact"
           title="Stay connected"
           description="We keep the studio patient and low volume. Reach out ahead of your visit so we can prepare the experience you need."
         />
-        <div className="grid gap-8 md:grid-cols-3">
+        <FadeIn className="grid gap-8 md:grid-cols-3" childClassName="h-full" delayStep={0.1}>
           {CONTACT_POINTS.map((item) => (
             <Card key={item.id} className="space-y-3">
               <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{item.heading}</p>
@@ -39,8 +40,8 @@ export default function Contact() {
               <p className="text-sm text-gray-600 dark:text-gray-300">{item.body}</p>
             </Card>
           ))}
-        </div>
-        <div className="flex items-center gap-4">
+        </FadeIn>
+        <FadeIn className="flex items-center gap-4" immediate delayStep={0.2}>
           <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-300 text-xs font-semibold uppercase tracking-[0.3em] text-gray-600 dark:border-gray-700 dark:text-gray-300">
             IG
           </span>
@@ -53,8 +54,8 @@ export default function Contact() {
           >
             instagram.com/blackworknyc
           </a>
-        </div>
-      </div>
+        </FadeIn>
+      </FadeIn>
     </section>
   );
 }

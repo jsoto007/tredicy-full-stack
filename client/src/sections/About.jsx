@@ -1,3 +1,4 @@
+import FadeIn from '../components/FadeIn.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
@@ -5,7 +6,10 @@ import SectionTitle from '../components/SectionTitle.jsx';
 export default function About() {
   return (
     <section id="about" className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
-      <div className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[1.25fr_1fr] md:items-center">
+      <FadeIn
+        className="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[1.25fr_1fr] md:items-center"
+        delayStep={0.18}
+      >
         <SectionTitle
           eyebrow="About"
           title="Led by precision"
@@ -23,7 +27,7 @@ export default function About() {
             </div>
           </Card>
         </div>
-      </div>
+      </FadeIn>
     </section>
   );
 }

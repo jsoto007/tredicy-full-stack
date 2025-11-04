@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import AdminCalendar from './admin/AdminCalendar.jsx';
 import AdminGallery from './admin/AdminGallery.jsx';
@@ -36,10 +37,10 @@ function FeedbackBanner({ feedback, onDismiss }) {
 function AdminDashboardContent() {
   const {
     state: { currentAdmin, loading, error, feedback },
-    actions: { clearFeedback, logout }
+    actions: { clearFeedback }
   } = useAdminDashboard();
 
-  if (loading && !currentAdmin) {
+  if (loading) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-2 sm:px-2">
@@ -55,7 +56,7 @@ function AdminDashboardContent() {
 
   return (
     <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6">
+      <FadeIn as="div" className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6" childClassName="w-full">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col items-start gap-3 sm:items-end">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
@@ -79,7 +80,7 @@ function AdminDashboardContent() {
           <Route path="gallery" element={<AdminGallery />} />
           <Route path="*" element={<Navigate to="settings" replace />} />
         </Routes>
-      </div>
+      </FadeIn>
     </main>
   );
 }

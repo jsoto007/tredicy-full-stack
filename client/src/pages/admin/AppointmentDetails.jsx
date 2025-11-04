@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
+import FadeIn from '../../components/FadeIn.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../../lib/api.js';
 import { ASSET_KIND_OPTIONS, useAdminDashboard } from './AdminDashboardContext.jsx';
@@ -198,7 +199,7 @@ export default function AppointmentDetails() {
 
   return (
     <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <div className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6">
+      <FadeIn as="div" className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6" childClassName="w-full">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <SectionTitle
             eyebrow="Admin"
@@ -432,7 +433,7 @@ export default function AppointmentDetails() {
             ) : null}
           </div>
         </Card>
-      </div>
+      </FadeIn>
     </main>
   );
 }
