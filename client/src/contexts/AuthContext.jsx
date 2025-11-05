@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { apiGet, apiPost } from '../lib/api.js';
+import { apiGet, apiPost, resetCsrfToken, setCsrfToken } from '../lib/api.js';
 
 const AuthContext = createContext(null);
 
@@ -32,6 +32,9 @@ export function AuthProvider({ children }) {
         account: session?.account ?? null,
         error: null
       });
+      if (session?.csrf_token) {
+        setCsrfToken(session.csrf_token);
+      }
       return session;
     } catch (error) {
       if (error.status === 401) {
@@ -41,6 +44,7 @@ export function AuthProvider({ children }) {
           account: null,
           error: null
         });
+        resetCsrfToken();
         return null;
       }
 
@@ -50,6 +54,7 @@ export function AuthProvider({ children }) {
         account: null,
         error: 'Unable to verify session.'
       });
+      resetCsrfToken();
 
       return null;
     }
@@ -65,6 +70,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore network failures; local auth state still resets below.
     } finally {
+      resetCsrfToken();
       setState({
         status: STATUS.unauthenticated,
         role: null,

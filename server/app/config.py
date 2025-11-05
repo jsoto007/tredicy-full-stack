@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Dict
 
@@ -73,6 +74,19 @@ def configure_app(app: Flask) -> SQLAlchemy:
     app.config["FLASK_ENV"] = os.getenv("FLASK_ENV", "development")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
     app.secret_key = app.config["SECRET_KEY"]
+
+    if app.config["FLASK_ENV"] == "production" and app.config["SECRET_KEY"] == "dev-secret-key":
+        raise RuntimeError("SECRET_KEY must be configured in production environments.")
+
+    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+    secure_env = os.getenv("SESSION_COOKIE_SECURE")
+    if secure_env is None:
+        secure_cookie = app.config["FLASK_ENV"] == "production"
+    else:
+        secure_cookie = secure_env.lower() in {"1", "true", "yes"}
+    app.config.setdefault("SESSION_COOKIE_SECURE", secure_cookie)
+    app.config.setdefault("SESSION_COOKIE_SAMESITE", os.getenv("SESSION_COOKIE_SAMESITE", "Strict"))
+    app.config.setdefault("PERMANENT_SESSION_LIFETIME", timedelta(days=int(os.getenv("SESSION_LIFETIME_DAYS", "7"))))
 
     engine_options = _engine_defaults(app)
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options

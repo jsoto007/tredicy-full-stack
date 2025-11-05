@@ -4,6 +4,43 @@ const DEFAULT_BASE_URL =
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? DEFAULT_BASE_URL;
 const BASE_URL = rawBaseUrl ? rawBaseUrl.replace(/\/+$/, '') : '';
 
+const CSRF_HEADER = 'X-CSRF-Token';
+let csrfToken = null;
+let csrfFetchPromise = null;
+
+export function setCsrfToken(token) {
+  csrfToken = token || null;
+}
+
+export function resetCsrfToken() {
+  csrfToken = null;
+  csrfFetchPromise = null;
+}
+
+async function fetchCsrfToken() {
+  const response = await fetch(resolveApiUrl('/api/auth/csrf'), {
+    credentials: 'include'
+  });
+  if (!response.ok) {
+    throw new Error('Unable to fetch CSRF token');
+  }
+  const payload = await response.json().catch(() => ({}));
+  csrfToken = payload?.csrf_token || null;
+  return csrfToken;
+}
+
+async function ensureCsrfToken() {
+  if (csrfToken) {
+    return csrfToken;
+  }
+  if (!csrfFetchPromise) {
+    csrfFetchPromise = fetchCsrfToken().finally(() => {
+      csrfFetchPromise = null;
+    });
+  }
+  return csrfFetchPromise;
+}
+
 function buildUrl(path) {
   if (!path.startsWith('/')) {
     return `${BASE_URL}/${path}`;
@@ -33,11 +70,28 @@ async function request(path, options = {}) {
     ...(options.headers || {})
   };
 
+  const method = (options.method || 'GET').toUpperCase();
+  const shouldSendCsrf = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
+  if (shouldSendCsrf) {
+    try {
+      const token = await ensureCsrfToken();
+      if (token) {
+        headers[CSRF_HEADER] = token;
+      }
+    } catch (error) {
+      // If we cannot fetch a CSRF token we still attempt the request to surface the failure.
+    }
+  }
+
   const response = await fetch(url, {
     credentials: 'include',
     ...options,
     headers
   });
+
+  if (response.status === 401) {
+    resetCsrfToken();
+  }
 
   if (!response.ok) {
     const error = new Error(`Request failed with status ${response.status}`);
@@ -89,11 +143,21 @@ export function apiPut(path, body, { signal } = {}) {
 
 export async function apiUpload(path, formData, { signal } = {}) {
   const url = BASE_URL ? buildUrl(path) : path;
+  const uploadHeaders = {};
+  try {
+    const token = await ensureCsrfToken();
+    if (token) {
+      uploadHeaders[CSRF_HEADER] = token;
+    }
+  } catch (error) {
+    // Ignore; the server will respond with an error if CSRF verification fails.
+  }
   const response = await fetch(url, {
     method: 'POST',
     body: formData,
     credentials: 'include',
-    signal
+    signal,
+    headers: uploadHeaders
   });
 
   if (!response.ok) {

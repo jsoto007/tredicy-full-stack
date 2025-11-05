@@ -66,7 +66,7 @@ class ClientAccount(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(120))
     last_name = db.Column(db.String(120))
-    email = db.Column(db.String(255))
+    email = db.Column(db.String(255), unique=True)
     phone = db.Column(db.String(40))
     password_hash = db.Column(db.String(255))
     is_guest = db.Column(db.Boolean, default=False, nullable=False)
@@ -175,6 +175,10 @@ class Testimonial(db.Model):
 
 class TattooAppointment(TimestampMixin, db.Model):
     __tablename__ = "tattoo_appointments"
+    __table_args__ = (
+        db.Index("ix_tattoo_appointments_scheduled_start", "scheduled_start"),
+        db.Index("ix_tattoo_appointments_status", "status"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     reference_code = db.Column(db.String(40), unique=True)

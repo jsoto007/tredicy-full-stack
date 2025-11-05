@@ -6,15 +6,12 @@ import Testimonials from '../sections/Testimonials.jsx';
 import Booking from '../sections/Booking.jsx';
 import FAQ from '../sections/FAQ.jsx';
 import Contact from '../sections/Contact.jsx';
-import { GalleryProvider } from '../contexts/GalleryContext.jsx';
 
 export default function Landing() {
   return (
     <main className="space-y-24">
       <Hero />
-      <GalleryProvider>
-        <Gallery />
-      </GalleryProvider>
+      <Gallery />
       <Services />
       <About />
       <Testimonials />

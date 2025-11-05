@@ -331,8 +331,17 @@ export default function ShareYourIdea() {
 
   const resetBookingState = useCallback(() => {
     const baseDuration = availabilityConfig?.minimumDurationMinutes ?? SLOT_INTERVAL_MINUTES;
+    setFiles((prev) => {
+      if (prev.idFront?.previewUrl) {
+        URL.revokeObjectURL(prev.idFront.previewUrl);
+      }
+      if (prev.idBack?.previewUrl) {
+        URL.revokeObjectURL(prev.idBack.previewUrl);
+      }
+      prev.inspiration.forEach((entry) => entry.previewUrl && URL.revokeObjectURL(entry.previewUrl));
+      return createInitialFiles();
+    });
     setForm(createInitialForm());
-    setFiles(createInitialFiles());
     setErrors({});
     setSelectedDate('');
     setSelectedSlot(null);
@@ -349,6 +358,18 @@ export default function ShareYourIdea() {
   useEffect(() => {
     loadAvailabilityConfig();
   }, [loadAvailabilityConfig]);
+
+  useEffect(() => {
+    return () => {
+      if (files.idFront?.previewUrl) {
+        URL.revokeObjectURL(files.idFront.previewUrl);
+      }
+      if (files.idBack?.previewUrl) {
+        URL.revokeObjectURL(files.idBack.previewUrl);
+      }
+      files.inspiration.forEach((entry) => entry.previewUrl && URL.revokeObjectURL(entry.previewUrl));
+    };
+  }, [files]);
 
   useEffect(() => {
     if (!availabilityConfig) {
@@ -492,21 +513,29 @@ export default function ShareYourIdea() {
     });
   };
 
-  const handleFileChange = (field) => async (event) => {
+  const handleFileChange = (field) => (event) => {
     const selectedFiles = Array.from(event.target.files || []);
     if (!selectedFiles.length) {
-      setFiles((prev) => ({
-        ...prev,
-        [field]: field === 'inspiration' ? [] : null
-      }));
+      setFiles((prev) => {
+        const next = { ...prev };
+        if (field === 'inspiration') {
+          prev.inspiration.forEach((entry) => entry.previewUrl && URL.revokeObjectURL(entry.previewUrl));
+          next.inspiration = [];
+        } else if (prev[field]?.previewUrl) {
+          URL.revokeObjectURL(prev[field].previewUrl);
+          next[field] = null;
+        }
+        return next;
+      });
       event.target.value = '';
       return;
     }
 
     const errorsForSelection = [];
 
-    try {
-      if (field === 'inspiration') {
+    if (field === 'inspiration') {
+      setFiles((prev) => {
+        prev.inspiration.forEach((entry) => entry.previewUrl && URL.revokeObjectURL(entry.previewUrl));
         const uploads = [];
         for (const file of selectedFiles.slice(0, 3)) {
           const validationError = validateFile(file);
@@ -514,69 +543,72 @@ export default function ShareYourIdea() {
             errorsForSelection.push(`${file.name}: ${validationError}`);
             continue;
           }
-          const dataUrl = await readFileAsDataUrl(file);
+          const previewUrl = URL.createObjectURL(file);
           uploads.push({
+            file,
+            previewUrl,
             name: file.name,
             size: file.size,
-            type: file.type,
-            dataUrl
+            type: file.type
           });
         }
-        setFiles((prev) => ({
-          ...prev,
-          inspiration: uploads
-        }));
-        setErrors((prev) => {
-          const next = { ...prev };
+        setErrors((prevErrors) => {
+          const nextErrors = { ...prevErrors };
           if (uploads.length) {
-            delete next.description;
+            delete nextErrors.description;
           }
           if (errorsForSelection.length) {
-            next.files = errorsForSelection.join(' ');
+            nextErrors.files = errorsForSelection.join(' ');
           } else {
-            delete next.files;
+            delete nextErrors.files;
           }
-          return next;
+          return nextErrors;
         });
-      } else {
-        const file = selectedFiles[0];
-        const validationError = validateFile(file);
-        if (validationError) {
-          setErrors((prev) => ({
-            ...prev,
-            files: `${file.name}: ${validationError}`
-          }));
-          return;
+        return {
+          ...prev,
+          inspiration: uploads
+        };
+      });
+    } else {
+      const file = selectedFiles[0];
+      const validationError = validateFile(file);
+      if (validationError) {
+        setErrors((prev) => ({
+          ...prev,
+          files: `${file.name}: ${validationError}`
+        }));
+        event.target.value = '';
+        return;
+      }
+      const previewUrl = URL.createObjectURL(file);
+      setFiles((prev) => {
+        if (prev[field]?.previewUrl) {
+          URL.revokeObjectURL(prev[field].previewUrl);
         }
-        const dataUrl = await readFileAsDataUrl(file);
-        setFiles((prev) => ({
+        return {
           ...prev,
           [field]: {
+            file,
+            previewUrl,
             name: file.name,
             size: file.size,
-            type: file.type,
-            dataUrl
+            type: file.type
           }
-        }));
-        setErrors((prev) => {
-          const next = { ...prev };
-          if (field === 'idFront') {
-            delete next.id_front;
-          } else if (field === 'idBack') {
-            delete next.id_back;
-          }
-          delete next.files;
-          return next;
-        });
-      }
-    } catch (error) {
-      setErrors((prev) => ({
-        ...prev,
-        files: 'Unable to read selected file(s).'
-      }));
-    } finally {
-      event.target.value = '';
+        };
+      });
+      setErrors((prev) => {
+        const next = { ...prev };
+        if (field === 'idFront') {
+          delete next.id_front;
+        } else if (field === 'idBack') {
+          delete next.id_back;
+        }
+        delete next.files;
+        return next;
+      });
     }
+
+    event.target.value = '';
   };
 
   const handleSelectDate = (day) => {
@@ -624,10 +656,10 @@ export default function ShareYourIdea() {
     if (!form.email.trim()) {
       validationErrors.email = 'Required';
     }
-    if (!files.idFront) {
+    if (!files.idFront?.file) {
       validationErrors.id_front = 'Required';
     }
-    if (!files.idBack) {
+    if (!files.idBack?.file) {
       validationErrors.id_back = 'Required';
     }
     if (!form.description.trim() && !files.inspiration.length) {
@@ -657,6 +689,12 @@ export default function ShareYourIdea() {
 
     setSubmitting(true);
     const contactName = `${form.first_name.trim()} ${form.last_name.trim()}`.replace(/\s+/g, ' ').trim();
+    const [idFrontDataUrl, idBackDataUrl, inspirationDataUrls] = await Promise.all([
+      files.idFront?.file ? readFileAsDataUrl(files.idFront.file) : Promise.resolve(null),
+      files.idBack?.file ? readFileAsDataUrl(files.idBack.file) : Promise.resolve(null),
+      Promise.all(files.inspiration.map((entry) => readFileAsDataUrl(entry.file)))
+    ]);
+
     const payload = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
@@ -670,9 +708,9 @@ export default function ShareYourIdea() {
       placement_notes: form.placement_notes.trim() || null,
       scheduled_start: selectedSlot?.start,
       duration_minutes: durationMinutes,
-      id_front_url: files.idFront?.dataUrl,
-      id_back_url: files.idBack?.dataUrl,
-      inspiration_urls: files.inspiration.map((file) => file.dataUrl)
+      id_front_url: idFrontDataUrl,
+      id_back_url: idBackDataUrl,
+      inspiration_urls: inspirationDataUrls.filter(Boolean)
     };
 
     if (form.create_account) {
@@ -1138,7 +1176,7 @@ export default function ShareYourIdea() {
               </div>
               {files.idFront ? (
                 <img
-                  src={files.idFront.dataUrl}
+              src={files.idFront.previewUrl}
                   alt="Government ID front preview"
                   className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
                 />
@@ -1176,7 +1214,7 @@ export default function ShareYourIdea() {
               </div>
               {files.idBack ? (
                 <img
-                  src={files.idBack.dataUrl}
+              src={files.idBack.previewUrl}
                   alt="Government ID back preview"
                   className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
                 />
@@ -1221,7 +1259,7 @@ export default function ShareYourIdea() {
                     className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
                   >
                     <img
-                      src={file.dataUrl}
+                      src={file.previewUrl}
                       alt={`Inspiration preview ${file.name}`}
                       className="h-28 w-full object-cover object-center"
                     />

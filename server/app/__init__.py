@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from flask import Flask, request, send_from_directory
@@ -6,6 +7,7 @@ from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 from .config import configure_app, db
+from .extensions import limiter
 migrate = Migrate()
 
 
@@ -29,6 +31,8 @@ def create_app():
         )
 
     configure_app(app)
+    app.config.setdefault("RATELIMIT_STORAGE_URI", os.getenv("RATELIMIT_STORAGE_URI", "memory://"))
+    limiter.init_app(app)
     migrate.init_app(app, db)
 
     from .routes import api_bp
@@ -46,8 +50,9 @@ def create_app():
         supports_credentials=True,
     )
 
-    with app.app_context():
-        db.create_all()
+    if os.getenv("FLASK_RUN_CREATE_ALL", "").lower() in {"1", "true", "yes"}:
+        with app.app_context():
+            db.create_all()
 
     app.register_blueprint(api_bp)
 

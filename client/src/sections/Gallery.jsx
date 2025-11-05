@@ -1,23 +1,56 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useGalleryCategories, useGalleryItems } from '../contexts/GalleryContext.jsx';
 import FadeIn from '../components/FadeIn.jsx';
 import Tabs from '../components/Tabs.jsx';
 import Lightbox from '../components/Lightbox.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
-import { useGallery } from '../contexts/GalleryContext.jsx';
 import { resolveApiUrl } from '../lib/api.js';
 
 export default function Gallery() {
   const {
     categories,
-    galleryBySlug,
-    messagesBySlug,
-    statusBySlug,
-    activeSlug,
-    initializing,
-    globalMessage,
-    selectCategory
-  } = useGallery();
+    isLoading: categoriesLoading,
+    isError: categoriesError
+  } = useGalleryCategories();
+  const [activeSlug, setActiveSlug] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
+
+  useEffect(() => {
+    if (!categories.length) {
+      setActiveSlug('');
+      return;
+    }
+    setActiveSlug((prev) => {
+      if (prev && categories.some((category) => category.slug === prev)) {
+        return prev;
+      }
+      return categories[0].slug;
+    });
+  }, [categories]);
+
+  const activeCategory = useMemo(
+    () => categories.find((category) => category.slug === activeSlug) || categories[0] || null,
+    [categories, activeSlug]
+  );
+
+  const {
+    items,
+    isLoading: itemsLoading,
+    isFetching: itemsFetching,
+    error: itemsError,
+    prefetch
+  } = useGalleryItems({
+    categoryId: activeCategory?.id,
+    slug: activeCategory?.slug,
+    enabled: Boolean(activeCategory)
+  });
+
+  useEffect(() => {
+    const upcoming = categories.filter((category) => category.slug !== activeCategory?.slug).slice(0, 2);
+    upcoming.forEach((category) => {
+      void prefetch(category);
+    });
+  }, [categories, activeCategory?.slug, prefetch]);
 
   const tabs = useMemo(
     () =>
@@ -28,6 +61,21 @@ export default function Gallery() {
     [categories]
   );
   const hasTabs = tabs.length > 0;
+  const isLoading = categoriesLoading || itemsLoading;
+  const isRefreshing = itemsFetching && !itemsLoading;
+  const showMessage = itemsError ? 'Unable to load this gallery right now.' : !items.length ? 'No artwork published yet.' : null;
+  const globalMessage = categoriesError ? 'Unable to load gallery right now.' : null;
+
+  const handleTabChange = (slug) => {
+    if (!slug || slug === activeSlug) {
+      return;
+    }
+    setActiveSlug(slug);
+    const upcoming = categories.find((category) => category.slug === slug);
+    if (upcoming) {
+      void prefetch(upcoming);
+    }
+  };
 
   return (
     <section id="work" className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
@@ -41,20 +89,19 @@ export default function Gallery() {
           <Tabs
             tabs={tabs}
             activeTab={activeSlug}
-            onTabChange={selectCategory}
+            onTabChange={handleTabChange}
             renderPanel={(tabId, { isActive }) => {
-              const items = galleryBySlug[tabId] || [];
-              const message = messagesBySlug[tabId];
-              const isLoading = Boolean(statusBySlug[tabId]?.loading);
-              const showLoader = !items.length && (isLoading || initializing);
-              const showRefreshingNotice = isActive && isLoading && items.length > 0;
+              const panelActive = tabId === activeSlug;
+              const panelItems = panelActive ? items : [];
+              const showLoader = panelActive && !items.length && isLoading;
+              const showRefreshingNotice = panelActive && isRefreshing && items.length > 0;
               const fadeKey =
-                items.map((item) => item.id ?? item.image_url ?? '').join('|') || `${tabId}-empty`;
+                panelItems.map((item) => item.id ?? item.image_url ?? '').join('|') || `${tabId}-empty`;
 
               return (
                 <div className="space-y-6">
-                  {message ? (
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{message}</p>
+                  {panelActive && showMessage ? (
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{showMessage}</p>
                   ) : null}
                   {showRefreshingNotice ? (
                     <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
@@ -72,7 +119,7 @@ export default function Gallery() {
                       childClassName="mb-6 break-inside-avoid"
                       delayStep={0.08}
                     >
-                      {items.map((item) => {
+                      {panelItems.map((item) => {
                         const imageUrl = resolveApiUrl(item.image_url);
                         return (
                           <button
@@ -93,7 +140,7 @@ export default function Gallery() {
           />
         ) : (
           <div className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-            {initializing ? 'Loading gallery…' : globalMessage || 'Gallery will be published soon.'}
+            {isLoading ? 'Loading gallery…' : globalMessage || 'Gallery will be published soon.'}
           </div>
         )}
       </div>

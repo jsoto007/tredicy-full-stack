@@ -100,7 +100,19 @@ export function AdminDashboardProvider({ children }) {
   const [admins, setAdmins] = useState([]);
   const [categories, setCategories] = useState([]);
   const [galleryItems, setGalleryItems] = useState([]);
+  const [galleryPagination, setGalleryPagination] = useState({
+    page: 1,
+    per_page: 50,
+    total: 0,
+    pages: 1
+  });
   const [appointments, setAppointments] = useState([]);
+  const [appointmentsPagination, setAppointmentsPagination] = useState({
+    page: 1,
+    per_page: 25,
+    total: 0,
+    pages: 1
+  });
   const [overview, setOverview] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
@@ -199,12 +211,33 @@ export function AdminDashboardProvider({ children }) {
     return response;
   }, [markFetched]);
 
-  const refreshAppointments = useCallback(async () => {
-    const response = await apiGet('/api/admin/appointments');
-    setAppointments(ensureArray(response));
-    markFetched('appointments');
-    return response;
-  }, [markFetched]);
+  const refreshAppointments = useCallback(
+    async ({ page = 1, perPage = appointmentsPagination.per_page, append = false } = {}) => {
+      const params = new URLSearchParams();
+      params.set('page', page);
+      params.set('per_page', perPage);
+      const response = await apiGet(`/api/admin/appointments?${params.toString()}`);
+      const items = ensureArray(response?.items);
+      setAppointments((prev) => (append && page > 1 ? [...prev, ...items] : items));
+      setAppointmentsPagination({
+        page,
+        per_page: perPage,
+        total: response?.meta?.total ?? items.length,
+        pages: response?.meta?.pages ?? 1
+      });
+      markFetched('appointments');
+      return response;
+    },
+    [appointmentsPagination.per_page, markFetched]
+  );
+
+  const loadMoreAppointments = useCallback(async () => {
+    const nextPage = appointmentsPagination.page + 1;
+    if (nextPage > appointmentsPagination.pages) {
+      return;
+    }
+    await refreshAppointments({ page: nextPage, append: true });
+  }, [appointmentsPagination.page, appointmentsPagination.pages, refreshAppointments]);
 
   const refreshSchedule = useCallback(async () => {
     const response = await apiGet('/api/admin/schedule');
@@ -216,12 +249,34 @@ export function AdminDashboardProvider({ children }) {
     return response;
   }, [markFetched]);
 
-  const refreshGalleryItems = useCallback(async () => {
-    const response = await apiGet('/api/gallery?include_unpublished=true');
-    setGalleryItems(ensureArray(response));
-    markFetched('gallery');
-    return response;
-  }, [markFetched]);
+  const refreshGalleryItems = useCallback(
+    async ({ page = 1, perPage = galleryPagination.per_page, append = false } = {}) => {
+      const params = new URLSearchParams();
+      params.set('include_unpublished', 'true');
+      params.set('page', page);
+      params.set('per_page', perPage);
+      const response = await apiGet(`/api/gallery?${params.toString()}`);
+      const items = ensureArray(response?.items);
+      setGalleryItems((prev) => (append && page > 1 ? [...prev, ...items] : items));
+      setGalleryPagination({
+        page,
+        per_page: perPage,
+        total: response?.meta?.total ?? items.length,
+        pages: response?.meta?.pages ?? 1
+      });
+      markFetched('gallery');
+      return response;
+    },
+    [galleryPagination.per_page, markFetched]
+  );
+
+  const loadMoreGalleryItems = useCallback(async () => {
+    const nextPage = galleryPagination.page + 1;
+    if (nextPage > galleryPagination.pages) {
+      return;
+    }
+    await refreshGalleryItems({ page: nextPage, append: true });
+  }, [galleryPagination.page, galleryPagination.pages, refreshGalleryItems]);
 
   const resourceLoaders = useMemo(
     () => ({
@@ -443,6 +498,10 @@ export function AdminDashboardProvider({ children }) {
         optimistic: true
       };
       setGalleryItems((prev) => [optimisticItem, ...prev]);
+      setGalleryPagination((prev) => ({
+        ...prev,
+        total: prev.total + 1
+      }));
       markFetched('gallery');
       try {
         const created = await apiPost('/api/admin/gallery', payload);
@@ -483,12 +542,20 @@ export function AdminDashboardProvider({ children }) {
     async (itemId) => {
       const previousItems = galleryItems;
       setGalleryItems((prev) => prev.filter((item) => item.id !== itemId));
+      setGalleryPagination((prev) => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
       try {
         await apiDelete(`/api/admin/gallery/${itemId}`);
         showNotice({ tone: 'success', message: 'Gallery item removed.' });
         markFetched('gallery');
       } catch (err) {
         setGalleryItems(previousItems);
+        setGalleryPagination((prev) => ({
+          ...prev,
+          total: prev.total + 1
+        }));
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to delete gallery item.') });
         throw err;
       }
@@ -507,6 +574,10 @@ export function AdminDashboardProvider({ children }) {
         optimistic: true
       };
       setAppointments((prev) => [optimisticAppointment, ...prev]);
+      setAppointmentsPagination((prev) => ({
+        ...prev,
+        total: prev.total + 1
+      }));
       markFetched('appointments');
       try {
         const appointment = await apiPost('/api/admin/appointments', payload);
@@ -516,6 +587,10 @@ export function AdminDashboardProvider({ children }) {
         return appointment;
       } catch (err) {
         setAppointments((prev) => prev.filter((entry) => entry.id !== tempId));
+        setAppointmentsPagination((prev) => ({
+          ...prev,
+          total: Math.max(0, prev.total - 1)
+        }));
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to create appointment.') });
         throw err;
       }
@@ -557,6 +632,10 @@ export function AdminDashboardProvider({ children }) {
     async (appointmentId) => {
       const previousAppointments = appointments;
       setAppointments((prev) => prev.filter((appointment) => appointment.id !== appointmentId));
+      setAppointmentsPagination((prev) => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
       try {
         await apiDelete(`/api/admin/appointments/${appointmentId}`);
         showNotice({ tone: 'success', message: 'Appointment deleted.' });
@@ -564,6 +643,10 @@ export function AdminDashboardProvider({ children }) {
         refreshDashboardMetrics().catch(() => {});
       } catch (err) {
         setAppointments(previousAppointments);
+        setAppointmentsPagination((prev) => ({
+          ...prev,
+          total: prev.total + 1
+        }));
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to delete appointment.') });
         throw err;
       }
@@ -705,7 +788,9 @@ export function AdminDashboardProvider({ children }) {
         admins,
         categories,
         galleryItems,
+        galleryPagination,
         appointments,
+        appointmentsPagination,
         schedule
       },
       actions: {
@@ -720,6 +805,8 @@ export function AdminDashboardProvider({ children }) {
         refreshAppointments,
         refreshGalleryItems,
         refreshSchedule,
+        loadMoreAppointments,
+        loadMoreGalleryItems,
         logout,
         updateUserRole,
         createCategory,
@@ -752,7 +839,9 @@ export function AdminDashboardProvider({ children }) {
       admins,
       categories,
       galleryItems,
+      galleryPagination,
       appointments,
+      appointmentsPagination,
       schedule,
       showNotice,
       dismissNotice,
@@ -764,6 +853,8 @@ export function AdminDashboardProvider({ children }) {
       refreshAppointments,
       refreshGalleryItems,
       refreshSchedule,
+      loadMoreAppointments,
+      loadMoreGalleryItems,
       logout,
       updateUserRole,
       createCategory,

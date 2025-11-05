@@ -279,13 +279,14 @@ function ActionIconButton({ icon: Icon, label, onClick, tone = 'default', active
 
 export default function AdminCalendar() {
   const {
-    state: { appointments, admins, schedule },
+    state: { appointments, appointmentsPagination, admins, schedule },
     actions: {
       setFeedback,
       createAppointment,
       updateAppointment,
       deleteAppointment,
-      updateSchedule
+      updateSchedule,
+      loadMoreAppointments
     }
   } = useAdminDashboard();
   const navigate = useNavigate();
@@ -692,8 +693,9 @@ export default function AdminCalendar() {
     }
 
     return (
-      <ol className="space-y-4">
-        {sortedAppointments.map((appointment) => {
+      <div className="space-y-4">
+        <ol className="space-y-4">
+          {sortedAppointments.map((appointment) => {
           const draft = appointmentDrafts[appointment.id] || buildDraftFromAppointment(appointment);
           const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
           const formattedDate = scheduledDate
@@ -889,13 +891,22 @@ export default function AdminCalendar() {
               </div>
             </li>
           );
-        })}
-      </ol>
+          })}
+        </ol>
+        {appointmentsPagination.page < appointmentsPagination.pages ? (
+          <div className="flex justify-center">
+            <Button type="button" variant="ghost" onClick={() => loadMoreAppointments()}>
+              Load more appointments
+            </Button>
+          </div>
+        ) : null}
+      </div>
     );
   };
 
+  const totalAppointments = appointmentsPagination.total || sortedAppointments.length;
   const appointmentCountLabel =
-    sortedAppointments.length === 1 ? '1 appointment scheduled' : `${sortedAppointments.length} appointments scheduled`;
+    totalAppointments === 1 ? '1 appointment scheduled' : `${totalAppointments} appointments scheduled`;
 
   return (
     <div className="space-y-8">

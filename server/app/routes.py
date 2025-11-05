@@ -1,3 +1,4 @@
+import hmac
 import json
 import math
 import secrets
@@ -7,12 +8,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from flask import Blueprint, current_app, g, jsonify, request, send_from_directory, session
-from sqlalchemy import func
+from sqlalchemy import case, func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
 from .config import db
+from .extensions import limiter
 from .models import (
     AdminAccount,
     AdminActivityLog,
@@ -77,6 +79,12 @@ PLACEMENT_BASE_MINUTES = {
     "full_sleeve": 300,
 }
 
+CSRF_EXEMPT_ENDPOINTS = {
+    "api.auth_login",
+    "api.auth_register",
+    "api.auth_csrf",
+}
+
 SIZE_MULTIPLIERS = {
     "small": 1.0,  # up to palm-sized
     "medium": 1.5,  # hand-sized to quarter sleeve
@@ -106,11 +114,26 @@ def set_session(role: str, identifier: int):
     session["role"] = role
     session["user_id"] = identifier
     session.permanent = True
+    issue_csrf_token()
 
 
 def clear_session():
     session.pop("role", None)
     session.pop("user_id", None)
+    session.pop("csrf_token", None)
+
+
+def issue_csrf_token():
+    token = secrets.token_urlsafe(32)
+    session["csrf_token"] = token
+    return token
+
+
+def get_csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = issue_csrf_token()
+    return token
 
 
 def get_current_admin():
@@ -318,6 +341,19 @@ def log_admin_activity(admin: AdminAccount, action: str, details: str | None = N
     db.session.add(log)
 
 
+@api_bp.before_app_request
+def enforce_csrf_protection():
+    if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return
+    endpoint = request.endpoint or ""
+    if endpoint in CSRF_EXEMPT_ENDPOINTS:
+        return
+    token = session.get("csrf_token")
+    header_token = request.headers.get("X-CSRF-Token")
+    if not token or not header_token or not hmac.compare_digest(token, header_token):
+        return jsonify({"error": "Invalid or missing CSRF token."}), 400
+
+
 def allowed_file(filename: str) -> bool:
     if not filename or "." not in filename:
         return False
@@ -473,34 +509,45 @@ def _slot_overlaps(start: datetime, end: datetime, intervals):
 def collect_blocked_intervals(day_start: datetime, day_end: datetime, *, ignore_appointment_id: int | None = None):
     intervals = []
 
-    appointment_query = TattooAppointment.query.filter(
+    non_blocking_statuses = tuple(NON_BLOCKING_APPOINTMENT_STATUSES)
+
+    appointment_query = TattooAppointment.query.with_entities(
+        TattooAppointment.id,
+        TattooAppointment.scheduled_start,
+        TattooAppointment.duration_minutes,
+    ).filter(
         TattooAppointment.scheduled_start.isnot(None),
         TattooAppointment.duration_minutes.isnot(None),
         TattooAppointment.scheduled_start < day_end,
     )
+
+    if non_blocking_statuses:
+        appointment_query = appointment_query.filter(TattooAppointment.status.notin_(non_blocking_statuses))
+
     if ignore_appointment_id is not None:
         appointment_query = appointment_query.filter(TattooAppointment.id != ignore_appointment_id)
 
-    appointments = appointment_query.all()
-    for appointment in appointments:
-        status = (appointment.status or "").lower()
-        if status in NON_BLOCKING_APPOINTMENT_STATUSES:
+    lookback_start = day_start - timedelta(hours=12)
+    appointment_query = appointment_query.filter(TattooAppointment.scheduled_start >= lookback_start)
+
+    for _, start, duration_minutes in appointment_query:
+        if not start or duration_minutes is None:
             continue
-        start = appointment.scheduled_start
-        if not start:
+        if duration_minutes <= 0:
             continue
-        duration = appointment.duration_minutes or 0
-        end = appointment.scheduled_end or start + timedelta(minutes=duration)
-        if duration <= 0 or end <= day_start or start >= day_end:
+        end = start + timedelta(minutes=duration_minutes)
+        if end <= day_start or start >= day_end:
             continue
         intervals.append((start, end))
 
-    blocks = StudioAvailabilityBlock.query.filter(
+    block_rows = StudioAvailabilityBlock.query.with_entities(
+        StudioAvailabilityBlock.start,
+        StudioAvailabilityBlock.end,
+    ).filter(
         StudioAvailabilityBlock.end > day_start,
         StudioAvailabilityBlock.start < day_end,
-    ).all()
-    for block in blocks:
-        intervals.append((block.start, block.end))
+    )
+    intervals.extend([(start, end) for start, end in block_rows])
 
     return intervals
 
@@ -571,25 +618,56 @@ def list_gallery_categories():
     return jsonify([serialize_category(category) for category in categories])
 
 
+def _parse_pagination(default_per_page: int = 24):
+    page = request.args.get("page", type=int) or 1
+    per_page = request.args.get("per_page", type=int) or default_per_page
+    page = page if page > 0 else 1
+    per_page = max(1, min(per_page, 100))
+    return page, per_page
+
+
 @api_bp.route("/api/gallery", methods=["GET"])
 def list_gallery():
     category_id = request.args.get("category_id", type=int)
     category_name = request.args.get("category", type=str)
     include_unpublished = parse_bool(request.args.get("include_unpublished"), default=False)
 
-    query = GalleryItem.query.options(joinedload(GalleryItem.category), joinedload(GalleryItem.uploaded_by))
+    base_query = GalleryItem.query
 
     if not include_unpublished:
-        query = query.filter(GalleryItem.is_published.is_(True))
+        base_query = base_query.filter(GalleryItem.is_published.is_(True))
 
     if category_id:
-        query = query.filter(GalleryItem.category_id == category_id)
+        base_query = base_query.filter(GalleryItem.category_id == category_id)
     elif category_name:
         category_name = category_name.strip()
-        query = query.join(GalleryItem.category).filter(func.lower(TattooCategory.name) == category_name.lower())
+        if category_name:
+            base_query = base_query.join(GalleryItem.category).filter(func.lower(TattooCategory.name) == category_name.lower())
 
-    items = query.order_by(GalleryItem.created_at.desc()).all()
-    return jsonify([serialize_gallery_item(item) for item in items])
+    page, per_page = _parse_pagination()
+    total = base_query.count()
+
+    items = (
+        base_query.options(joinedload(GalleryItem.category), joinedload(GalleryItem.uploaded_by))
+        .order_by(GalleryItem.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    total_pages = math.ceil(total / per_page) if per_page else 1
+
+    return jsonify(
+        {
+            "items": [serialize_gallery_item(item) for item in items],
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": total_pages,
+            },
+        }
+    )
 
 
 @api_bp.route("/api/testimonials", methods=["GET"])
@@ -609,6 +687,7 @@ def list_testimonials():
 
 
 @api_bp.route("/api/consultations", methods=["POST"])
+@limiter.limit("3 per minute")
 def create_consultation():
     payload = request.get_json(silent=True) or {}
     required_fields = ("name", "email", "placement", "description")
@@ -723,6 +802,7 @@ def suggest_duration():
 
 
 @api_bp.route("/api/auth/register", methods=["POST"])
+@limiter.limit("5 per minute")
 def register_account():
     payload = request.get_json(silent=True) or {}
     first_name = (payload.get("first_name") or "").strip()
@@ -765,17 +845,20 @@ def register_account():
         return jsonify({"error": "Unable to create account."}), 500
 
     set_session("user", client.id)
+    csrf_token = get_csrf_token()
 
     return jsonify(
         {
             "role": "user",
             "redirect_to": "/dashboard/user",
             "profile": serialize_user_profile(client),
+            "csrf_token": csrf_token,
         }
     ), 201
 
 
 @api_bp.route("/api/auth/login", methods=["POST"])
+@limiter.limit("10 per minute")
 def auth_login():
     payload = request.get_json(silent=True) or {}
     email = (payload.get("email") or "").strip().lower()
@@ -794,11 +877,13 @@ def auth_login():
         except SQLAlchemyError:
             db.session.rollback()
             return jsonify({"error": "Unable to establish session."}), 500
+        csrf_token = get_csrf_token()
         return jsonify(
             {
                 "role": "admin",
                 "redirect_to": "/dashboard/admin",
                 "admin": serialize_admin(admin),
+                "csrf_token": csrf_token,
             }
         )
 
@@ -811,11 +896,13 @@ def auth_login():
         except SQLAlchemyError:
             db.session.rollback()
             return jsonify({"error": "Unable to establish session."}), 500
+        csrf_token = get_csrf_token()
         return jsonify(
             {
                 "role": "user",
                 "redirect_to": "/dashboard/user",
                 "profile": serialize_user_profile(client),
+                "csrf_token": csrf_token,
             }
         )
 
@@ -834,14 +921,14 @@ def auth_session():
         if not admin:
             clear_session()
             return jsonify({"role": None, "account": None}), 401
-        return jsonify({"role": "admin", "account": serialize_admin(admin)})
+        return jsonify({"role": "admin", "account": serialize_admin(admin), "csrf_token": get_csrf_token()})
 
     if role == "user":
         user = ClientAccount.query.get(identifier)
         if not user:
             clear_session()
             return jsonify({"role": None, "account": None}), 401
-        return jsonify({"role": "user", "account": serialize_user_profile(user)})
+        return jsonify({"role": "user", "account": serialize_user_profile(user), "csrf_token": get_csrf_token()})
 
     clear_session()
     return jsonify({"role": None, "account": None}), 401
@@ -851,6 +938,14 @@ def auth_session():
 def auth_logout():
     clear_session()
     return jsonify({"status": "logged_out"})
+
+
+@api_bp.route("/api/auth/csrf", methods=["GET"])
+def auth_csrf():
+    token = get_csrf_token()
+    response = jsonify({"csrf_token": token})
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @api_bp.route("/api/uploads/<path:filename>", methods=["GET"])
@@ -963,12 +1058,37 @@ def user_dashboard():
 def admin_dashboard():
     admin: AdminAccount = g.current_admin
 
-    total_users = ClientAccount.query.count()
-    total_guests = ClientAccount.query.filter_by(is_guest=True).count()
-    total_admins = AdminAccount.query.count()
-    total_appointments = TattooAppointment.query.count()
-    pending_appointments = TattooAppointment.query.filter_by(status="pending").count()
-    published_gallery = GalleryItem.query.filter_by(is_published=True).count()
+    client_totals = db.session.execute(
+        select(
+            func.count(ClientAccount.id),
+            func.coalesce(
+                func.sum(
+                    case((ClientAccount.is_guest.is_(True), 1), else_=0)
+                ),
+                0,
+            ),
+        )
+    ).one()
+    total_users = int(client_totals[0] or 0)
+    total_guests = int(client_totals[1] or 0)
+
+    total_admins = int(db.session.execute(select(func.count(AdminAccount.id))).scalar_one() or 0)
+
+    appointment_totals = db.session.execute(
+        select(
+            func.count(TattooAppointment.id),
+            func.coalesce(
+                func.sum(case((TattooAppointment.status == "pending", 1), else_=0)),
+                0,
+            ),
+        )
+    ).one()
+    total_appointments = int(appointment_totals[0] or 0)
+    pending_appointments = int(appointment_totals[1] or 0)
+
+    published_gallery = int(
+        db.session.execute(select(func.count(GalleryItem.id)).where(GalleryItem.is_published.is_(True))).scalar_one() or 0
+    )
 
     recent_activity = (
         AdminActivityLog.query.options(joinedload(AdminActivityLog.admin))
@@ -982,6 +1102,23 @@ def admin_dashboard():
     )
 
     settings = SystemSetting.query.order_by(SystemSetting.key.asc()).all()
+
+    appointment_status_rows = db.session.execute(
+        select(TattooAppointment.status, func.count(TattooAppointment.id)).group_by(TattooAppointment.status)
+    ).all()
+
+    gallery_by_category_rows = db.session.execute(
+        select(TattooCategory.name, func.count(GalleryItem.id))
+        .join(GalleryItem, GalleryItem.category_id == TattooCategory.id, isouter=True)
+        .group_by(TattooCategory.id)
+    ).all()
+
+    gallery_preview = (
+        GalleryItem.query.options(joinedload(GalleryItem.category), joinedload(GalleryItem.uploaded_by))
+        .order_by(GalleryItem.created_at.desc())
+        .limit(20)
+        .all()
+    )
 
     return jsonify(
         {
@@ -1000,19 +1137,14 @@ def admin_dashboard():
             },
             "activity_tracking": [serialize_activity(entry) for entry in recent_activity],
             "analytics": {
-                "appointments_by_status": dict(
-                    db.session.query(TattooAppointment.status, func.count(TattooAppointment.id)).group_by(
-                        TattooAppointment.status
-                    )
-                ),
+                "appointments_by_status": {status or "unspecified": int(count or 0) for status, count in appointment_status_rows},
                 "gallery_items_by_category": {
-                    category.name: len(category.gallery_items)
-                    for category in TattooCategory.query.options(joinedload(TattooCategory.gallery_items))
+                    name or "Uncategorized": int(count or 0) for name, count in gallery_by_category_rows
                 },
             },
             "content_control": {
                 "categories": [serialize_category(category) for category in TattooCategory.query.all()],
-                "gallery_items": [serialize_gallery_item(item) for item in GalleryItem.query.limit(20).all()],
+                "gallery_items": [serialize_gallery_item(item) for item in gallery_preview],
             },
             "system_settings": [serialize_setting(setting) for setting in settings],
         }
@@ -1960,18 +2092,40 @@ def create_appointment():
 @admin_required
 def admin_list_appointments():
     status = request.args.get("status", type=str)
-    query = TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.assigned_admin),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-    ).order_by(TattooAppointment.created_at.desc())
+    page, per_page = _parse_pagination(default_per_page=25)
 
+    query = TattooAppointment.query
     if status:
         query = query.filter(TattooAppointment.status == status)
 
-    appointments = query.all()
-    return jsonify([serialize_appointment(appointment) for appointment in appointments])
+    total = query.count()
+
+    appointments = (
+        query.options(
+            joinedload(TattooAppointment.client),
+            joinedload(TattooAppointment.assigned_admin),
+            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
+            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+        )
+        .order_by(TattooAppointment.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    total_pages = math.ceil(total / per_page) if per_page else 1
+
+    return jsonify(
+        {
+            "items": [serialize_appointment(appointment) for appointment in appointments],
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": total_pages,
+            },
+        }
+    )
 
 
 @api_bp.route("/api/admin/appointments/<int:appointment_id>", methods=["GET"])

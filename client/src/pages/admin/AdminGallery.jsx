@@ -34,7 +34,7 @@ const NEW_GALLERY_FIELD_IDS = {
 
 export default function AdminGallery() {
   const {
-    state: { categories, galleryItems, admins, currentAdmin },
+    state: { categories, galleryItems, galleryPagination, admins, currentAdmin },
     actions: {
       setFeedback,
       createCategory,
@@ -44,7 +44,8 @@ export default function AdminGallery() {
       uploadMedia,
       createGalleryItem,
       updateGalleryItem,
-      deleteGalleryItem
+      deleteGalleryItem,
+      loadMoreGalleryItems
     }
   } = useAdminDashboard();
 
@@ -591,13 +592,13 @@ export default function AdminGallery() {
           <p className="text-sm text-gray-600 dark:text-gray-300">Edit published pieces, toggle visibility, or remove items.</p>
         </div>
         <div className="space-y-4">
-          {galleryItems.map((item) => {
-            const draft = galleryDrafts[item.id] || {
-              category_id: item.category?.id ? String(item.category.id) : '',
-              alt: item.alt || '',
-              caption: item.caption || '',
-              is_published: Boolean(item.is_published)
-            };
+        {galleryItems.map((item) => {
+          const draft = galleryDrafts[item.id] || {
+            category_id: item.category?.id ? String(item.category.id) : '',
+            alt: item.alt || '',
+            caption: item.caption || '',
+            is_published: Boolean(item.is_published)
+          };
             const itemBaseId = `gallery-${item.id}`;
             const categoryId = `${itemBaseId}-category`;
             const publishedId = `${itemBaseId}-published`;
@@ -711,6 +712,13 @@ export default function AdminGallery() {
           {!galleryItems.length ? (
             <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
               Gallery items will appear here as soon as they are published.
+            </div>
+          ) : null}
+          {galleryItems.length > 0 && galleryPagination.page < galleryPagination.pages ? (
+            <div className="flex justify-center">
+              <Button type="button" variant="ghost" onClick={() => loadMoreGalleryItems()}>
+                Load more items
+              </Button>
             </div>
           ) : null}
         </div>
