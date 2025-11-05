@@ -7,7 +7,7 @@ import AdminCalendar from './admin/AdminCalendar.jsx';
 import AdminGallery from './admin/AdminGallery.jsx';
 import AdminSettings from './admin/AdminSettings.jsx';
 import AppointmentDetails from './admin/AppointmentDetails.jsx';
-import { AdminDashboardProvider, useAdminDashboard } from './admin/AdminDashboardContext.jsx';
+import { AdminDashboardProvider, useAdminDashboard, getAdminResourcesForPath } from './admin/AdminDashboardContext.jsx';
 
 function AdminDashboardContent() {
   const location = useLocation();
@@ -17,23 +17,13 @@ function AdminDashboardContent() {
   } = useAdminDashboard();
 
   useEffect(() => {
+    if (loading) {
+      return;
+    }
     const path = location.pathname;
-    const resources = new Set(['dashboard']);
-    if (path.includes('/dashboard/admin/calendar')) {
-      resources.add('appointments');
-      resources.add('schedule');
-      resources.add('admins');
-    }
-    if (path.includes('/dashboard/admin/gallery')) {
-      resources.add('gallery');
-      resources.add('categories');
-    }
-    if (path.includes('/dashboard/admin/settings')) {
-      resources.add('admins');
-      resources.add('categories');
-    }
-    prefetchResources(Array.from(resources));
-  }, [location.pathname, prefetchResources]);
+    const resources = getAdminResourcesForPath(path);
+    prefetchResources(resources);
+  }, [loading, location.pathname, prefetchResources]);
 
   if (loading) {
     return (

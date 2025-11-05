@@ -20,6 +20,28 @@ export const ASSET_KIND_OPTIONS = [
 const AdminDashboardContext = createContext(null);
 
 const NOTICE_DEFAULT_DURATION = 6000;
+const DEFAULT_CACHE_TTL = 5 * 60_000;
+
+export function getAdminResourcesForPath(path) {
+  const resources = new Set(['dashboard']);
+  if (!path) {
+    return Array.from(resources);
+  }
+  if (path.includes('/dashboard/admin/calendar')) {
+    resources.add('appointments');
+    resources.add('schedule');
+    resources.add('admins');
+  }
+  if (path.includes('/dashboard/admin/gallery')) {
+    resources.add('gallery');
+    resources.add('categories');
+  }
+  if (path.includes('/dashboard/admin/settings')) {
+    resources.add('admins');
+    resources.add('categories');
+  }
+  return Array.from(resources);
+}
 
 function ensureArray(value) {
   if (!Array.isArray(value)) {
@@ -96,7 +118,7 @@ export function AdminDashboardProvider({ children }) {
   }, []);
 
   const shouldFetch = useCallback(
-    (key, ttl = 60_000) => {
+    (key, ttl = DEFAULT_CACHE_TTL) => {
       const last = cacheRef.current[key];
       if (!last) {
         return true;
@@ -201,37 +223,6 @@ export function AdminDashboardProvider({ children }) {
     return response;
   }, [markFetched]);
 
-  const refreshAll = useCallback(async () => {
-    const [dashboard, adminList, categoryList, appointmentList, scheduleData, galleryList] = await Promise.all([
-      apiGet('/api/dashboard/admin'),
-      apiGet('/api/admin/admins'),
-      apiGet('/api/admin/categories'),
-      apiGet('/api/admin/appointments'),
-      apiGet('/api/admin/schedule'),
-      apiGet('/api/gallery?include_unpublished=true')
-    ]);
-
-    applyDashboard(dashboard);
-    setAdmins(ensureArray(adminList));
-    setCategories(ensureArray(categoryList));
-    setAppointments(ensureArray(appointmentList));
-    setSchedule({
-      operating_hours: ensureArray(scheduleData?.operating_hours),
-      days_off: ensureArray(scheduleData?.days_off)
-    });
-    setGalleryItems(ensureArray(galleryList));
-
-    markFetched('dashboard');
-    markFetched('admins');
-    markFetched('categories');
-    markFetched('appointments');
-    markFetched('schedule');
-    markFetched('gallery');
-
-    setError(null);
-    return dashboard;
-  }, [applyDashboard, markFetched]);
-
   const resourceLoaders = useMemo(
     () => ({
       dashboard: refreshDashboardMetrics,
@@ -245,7 +236,7 @@ export function AdminDashboardProvider({ children }) {
   );
 
   const prefetchResources = useCallback(
-    async (resources, { force = false, ttl = 60_000 } = {}) => {
+    async (resources, { force = false, ttl = DEFAULT_CACHE_TTL } = {}) => {
       const tasks = resources.map((resource) => {
         const key = typeof resource === 'string' ? resource : resource.key;
         const resourceTtl = typeof resource === 'string' ? ttl : resource.ttl ?? ttl;
@@ -268,17 +259,41 @@ export function AdminDashboardProvider({ children }) {
 
     async function bootstrap() {
       setLoading(true);
+      setError(null);
       try {
         const session = await apiGet('/api/auth/session');
         if (ignore) {
           return;
         }
         if (session?.role !== 'admin') {
+          if (!ignore) {
+            setLoading(false);
+          }
           navigate('/auth', { replace: true });
           return;
         }
         setCurrentAdmin(session.account);
-        await refreshAll();
+
+        const initialPath = window.location?.pathname ?? '/dashboard/admin';
+        const initialResources = getAdminResourcesForPath(initialPath).filter((resource) => resource !== 'dashboard');
+        cacheRef.current.dashboard = Date.now();
+        refreshDashboardMetrics().catch((err) => {
+          if (ignore) {
+            return;
+          }
+          delete cacheRef.current.dashboard;
+          if (err?.status === 401) {
+            navigate('/auth', { replace: true });
+          } else {
+            setError('Unable to load admin dashboard.');
+          }
+        });
+        if (initialResources.length) {
+          prefetchResources(initialResources, { force: true }).catch(() => {});
+        }
+        if (!ignore) {
+          setLoading(false);
+        }
       } catch (err) {
         if (ignore) {
           return;
@@ -288,7 +303,6 @@ export function AdminDashboardProvider({ children }) {
         } else {
           setError('Unable to load admin dashboard.');
         }
-      } finally {
         if (!ignore) {
           setLoading(false);
         }
@@ -300,7 +314,7 @@ export function AdminDashboardProvider({ children }) {
     return () => {
       ignore = true;
     };
-  }, [navigate, refreshAll]);
+  }, [navigate, refreshDashboardMetrics, prefetchResources]);
 
   const logout = useCallback(async () => {
     await authLogout();
@@ -700,7 +714,6 @@ export function AdminDashboardProvider({ children }) {
         setFeedback: showNotice,
         clearFeedback,
         prefetchResources,
-        refreshAll,
         refreshDashboardMetrics,
         refreshAdmins,
         refreshCategories,
@@ -745,7 +758,6 @@ export function AdminDashboardProvider({ children }) {
       dismissNotice,
       clearFeedback,
       prefetchResources,
-      refreshAll,
       refreshDashboardMetrics,
       refreshAdmins,
       refreshCategories,
