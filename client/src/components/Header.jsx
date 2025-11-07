@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from './Button.jsx';
@@ -67,6 +67,8 @@ function NavItem({ item, onNavigate }) {
 export default function Header({ theme, onToggleTheme }) {
   const { isAuthenticated, isAdmin, isUser, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuPanelRef = useRef(null);
+  const toggleButtonRef = useRef(null);
   const navigate = useNavigate();
 
   const navItems = useMemo(() => {
@@ -98,6 +100,28 @@ export default function Header({ theme, onToggleTheme }) {
   useEffect(() => {
     setMenuOpen(false);
   }, [isAuthenticated, isAdmin, isUser]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handlePointerDown = (event) => {
+      if (
+        menuPanelRef.current &&
+        !menuPanelRef.current.contains(event.target) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [menuOpen]);
 
   const shouldShowConsult = !isAuthenticated || isUser;
 
@@ -188,6 +212,7 @@ export default function Header({ theme, onToggleTheme }) {
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
+            ref={toggleButtonRef}
           >
             {menuOpen ? (
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -206,6 +231,7 @@ export default function Header({ theme, onToggleTheme }) {
         <div
           id="mobile-navigation"
           className="border-t border-gray-200 bg-white px-6 py-4 text-xs uppercase tracking-[0.3em] dark:border-gray-800 dark:bg-black md:hidden"
+          ref={menuPanelRef}
         >
           <nav className="flex flex-col gap-3">
             {navItems.map((item) => (

@@ -95,6 +95,24 @@ def configure_app(app: Flask) -> SQLAlchemy:
     uploads_dir.mkdir(parents=True, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = str(uploads_dir)
     app.config.setdefault("MAX_CONTENT_LENGTH", 10 * 1024 * 1024)  # 10 MB upload ceiling
+    app.config["UPLOADS_S3_BUCKET"] = os.getenv("UPLOADS_S3_BUCKET")
+    app.config["UPLOADS_S3_REGION"] = os.getenv("UPLOADS_S3_REGION")
+    app.config["UPLOADS_S3_PREFIX"] = os.getenv("UPLOADS_S3_PREFIX", "uploads")
+    app.config["UPLOADS_PUBLIC_BASE_URL"] = os.getenv("UPLOADS_PUBLIC_BASE_URL")
+    app.config["UPLOADS_S3_ACL"] = os.getenv("UPLOADS_S3_ACL", "public-read")
+
+    app.config["SQUARE_APPLICATION_ID"] = os.getenv("SQUARE_APPLICATION_ID")
+    app.config["SQUARE_LOCATION_ID"] = os.getenv("SQUARE_LOCATION_ID")
+    app.config["SQUARE_ACCESS_TOKEN"] = os.getenv("SQUARE_ACCESS_TOKEN")
+    app.config["SQUARE_ENVIRONMENT"] = os.getenv("SQUARE_ENVIRONMENT", "sandbox").lower()
+    app.config["SQUARE_DEPOSIT_AMOUNT_CENTS"] = max(1, _int_from_env("SQUARE_DEPOSIT_AMOUNT_CENTS", 10000))
+    app.config["SQUARE_DEPOSIT_CURRENCY"] = (os.getenv("SQUARE_DEPOSIT_CURRENCY") or "USD").upper()
+    fake_default = app.config["FLASK_ENV"] != "production"
+    fake_flag = os.getenv("SQUARE_FAKE_PAYMENTS")
+    if fake_flag is None:
+        app.config["SQUARE_FAKE_PAYMENTS"] = fake_default
+    else:
+        app.config["SQUARE_FAKE_PAYMENTS"] = fake_flag.strip().lower() in {"1", "true", "yes", "y"}
 
     db.init_app(app)
 

@@ -1,13 +1,14 @@
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { BOOKING_REQUIREMENTS } from '../data/bookingRequirements.js';
 import { apiGet, apiPost } from '../lib/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 const SLOT_INTERVAL_MINUTES = 60;
 const JS_DAY_SLUGS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -70,6 +71,8 @@ const SIZE_OPTIONS = [
   { value: 'large', label: 'Large (7-10 inches)' },
   { value: 'xl', label: 'Extended (11"+ or more)' }
 ];
+
+const BOOKING_RECEIPT_KEY = 'black-ink:last-booking';
 
 function createInitialForm() {
   return {
@@ -188,6 +191,14 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+function storeBookingReceipt(appointment) {
+  try {
+    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment, savedAt: Date.now() }));
+  } catch {
+    // Ignore persistence failures (e.g. Safari private mode).
+  }
+}
+
 function validateFile(file) {
   if (!file) {
     return 'File missing.';
@@ -209,6 +220,9 @@ export default function ShareYourIdea() {
   const today = useMemo(() => startOfDay(new Date()), []);
   const minMonth = useMemo(() => startOfMonth(today), [today]);
   const maxMonth = useMemo(() => shiftMonth(minMonth, MAX_MONTH_HORIZON), [minMonth]);
+
+  const navigate = useNavigate();
+  const { isAuthenticated, account } = useAuth();
 
   const [form, setForm] = useState(() => createInitialForm());
   const [files, setFiles] = useState(() => createInitialFiles());
@@ -232,6 +246,15 @@ export default function ShareYourIdea() {
   const [suggestedMinutes, setSuggestedMinutes] = useState(SLOT_INTERVAL_MINUTES);
   const [durationMinutes, setDurationMinutes] = useState(SLOT_INTERVAL_MINUTES);
   const [durationManuallySet, setDurationManuallySet] = useState(false);
+  const [forceIdentityUpdate, setForceIdentityUpdate] = useState(false);
+
+  const [paymentConfig, setPaymentConfig] = useState(null);
+  const [paymentConfigLoaded, setPaymentConfigLoaded] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('idle');
+  const [paymentError, setPaymentError] = useState(null);
+  const paymentsRef = useRef(null);
+  const cardInstanceRef = useRef(null);
+  const cardContainerRef = useRef(null);
 
   const minimumDuration = availabilityConfig?.minimumDurationMinutes ?? SLOT_INTERVAL_MINUTES;
 
@@ -261,6 +284,27 @@ export default function ShareYourIdea() {
   const formattedSelectedDate = selectedDate ? DAY_FORMATTER.format(parseDateKey(selectedDate)) : '';
   const canGoPrev = calendarMonth.getTime() > minMonth.getTime();
   const canGoNext = calendarMonth.getTime() < maxMonth.getTime();
+  const hasStoredIdentity = Boolean(isAuthenticated && account?.has_identity_documents);
+  const shouldSkipIdentityUpload = hasStoredIdentity && !forceIdentityUpdate;
+  const signedInAccountId = isAuthenticated && account?.id ? account.id : null;
+
+  const depositAmountCents = paymentConfig?.deposit_amount_cents ?? 0;
+  const depositCurrency = paymentConfig?.currency ?? 'USD';
+  const depositAmountLabel = useMemo(() => {
+    if (!depositAmountCents) {
+      return null;
+    }
+    const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: depositCurrency });
+    return formatter.format(depositAmountCents / 100);
+  }, [depositAmountCents, depositCurrency]);
+  const paymentsUnavailable = paymentConfigLoaded && !paymentConfig?.enabled && !paymentConfig?.demo_mode;
+  const submitDisabled =
+    submitting || (paymentConfig?.enabled ? paymentStatus !== 'ready' : false) || paymentsUnavailable;
+  const submitLabel = submitting
+    ? 'Processing...'
+    : paymentConfig?.enabled
+    ? `Pay ${depositAmountLabel || 'deposit'} & book`
+    : 'Submit booking';
 
   const loadAvailabilityConfig = useCallback(async () => {
     if (availabilityConfig || availabilityLoading) {
@@ -353,11 +397,122 @@ export default function ShareYourIdea() {
     setDurationMinutes(baseDuration);
     setSuggestedMinutes(baseDuration);
     setCalendarMonth(minMonth);
+    setForceIdentityUpdate(false);
   }, [availabilityConfig, minMonth]);
 
   useEffect(() => {
     loadAvailabilityConfig();
   }, [loadAvailabilityConfig]);
+
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const config = await apiGet('/api/payments/config');
+        if (!isMounted) {
+          return;
+        }
+        setPaymentConfig(config?.square || null);
+        setPaymentError(null);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+        setPaymentConfig(null);
+        setPaymentError('Unable to load payment settings right now.');
+      } finally {
+        if (isMounted) {
+          setPaymentConfigLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!paymentConfig?.enabled) {
+      setPaymentStatus(paymentConfig?.demo_mode ? 'ready' : 'idle');
+      if (cardInstanceRef.current?.destroy) {
+        cardInstanceRef.current.destroy();
+      }
+      cardInstanceRef.current = null;
+      paymentsRef.current = null;
+      return;
+    }
+    setPaymentStatus('loading');
+    let cancelled = false;
+    const sdkUrl =
+      paymentConfig.environment === 'production'
+        ? 'https://web.squarecdn.com/v1/square.js'
+        : 'https://sandbox.web.squarecdn.com/v1/square.js';
+
+    const loadSdk = () =>
+      new Promise((resolve, reject) => {
+        if (window.Square) {
+          resolve();
+          return;
+        }
+        let script = document.querySelector('script[data-square-sdk]');
+        if (!script) {
+          script = document.createElement('script');
+          script.src = sdkUrl;
+          script.async = true;
+          script.dataset.squareSdk = 'true';
+          document.head.appendChild(script);
+        } else if (script.dataset.loaded === 'true') {
+          resolve();
+          return;
+        }
+
+        const handleLoad = () => {
+          script.dataset.loaded = 'true';
+          resolve();
+        };
+        const handleError = () => reject(new Error('Unable to load payment SDK.'));
+
+        script.addEventListener('load', handleLoad, { once: true });
+        script.addEventListener('error', handleError, { once: true });
+      });
+
+    (async () => {
+      try {
+        await loadSdk();
+        if (!window.Square) {
+          throw new Error('Square SDK unavailable.');
+        }
+        if (!cardContainerRef.current) {
+          throw new Error('Payment form is unavailable. Refresh to try again.');
+        }
+        const payments = window.Square.payments(paymentConfig.application_id, paymentConfig.location_id);
+        const card = await payments.card();
+        await card.attach(cardContainerRef.current);
+        if (cancelled) {
+          card.destroy();
+          return;
+        }
+        paymentsRef.current = payments;
+        cardInstanceRef.current = card;
+        setPaymentStatus('ready');
+        setPaymentError(null);
+      } catch (error) {
+        if (!cancelled) {
+          setPaymentStatus('error');
+          setPaymentError(error.message || 'Unable to load payment form.');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (cardInstanceRef.current?.destroy) {
+        cardInstanceRef.current.destroy();
+      }
+      cardInstanceRef.current = null;
+      paymentsRef.current = null;
+    };
+  }, [paymentConfig]);
 
   useEffect(() => {
     return () => {
@@ -413,6 +568,47 @@ export default function ShareYourIdea() {
   useEffect(() => {
     setSelectedSlot(null);
   }, [durationMinutes]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !account) {
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      first_name: prev.first_name || account.first_name || '',
+      last_name: prev.last_name || account.last_name || '',
+      email: account.email || prev.email,
+      phone: account.phone || prev.phone,
+      create_account: false,
+      password: ''
+    }));
+  }, [isAuthenticated, account]);
+
+  useEffect(() => {
+    if (!hasStoredIdentity) {
+      setForceIdentityUpdate(false);
+    }
+  }, [hasStoredIdentity]);
+
+  useEffect(() => {
+    if (!shouldSkipIdentityUpload) {
+      return;
+    }
+    setFiles((prev) => ({
+      ...prev,
+      idFront: null,
+      idBack: null
+    }));
+    setErrors((prev) => {
+      if (!prev.id_front && !prev.id_back) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next.id_front;
+      delete next.id_back;
+      return next;
+    });
+  }, [shouldSkipIdentityUpload]);
 
   const isDateBookable = useCallback(
     (date) => {
@@ -656,11 +852,13 @@ export default function ShareYourIdea() {
     if (!form.email.trim()) {
       validationErrors.email = 'Required';
     }
-    if (!files.idFront?.file) {
-      validationErrors.id_front = 'Required';
-    }
-    if (!files.idBack?.file) {
-      validationErrors.id_back = 'Required';
+    if (!shouldSkipIdentityUpload) {
+      if (!files.idFront?.file) {
+        validationErrors.id_front = 'Required';
+      }
+      if (!files.idBack?.file) {
+        validationErrors.id_back = 'Required';
+      }
     }
     if (!form.description.trim() && !files.inspiration.length) {
       validationErrors.description = 'Add inspiration details';
@@ -679,7 +877,7 @@ export default function ShareYourIdea() {
     }
     setErrors(validationErrors);
     return Object.keys(validationErrors).length === 0;
-  }, [form, files, selectedSlot]);
+  }, [form, files, selectedSlot, shouldSkipIdentityUpload]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -689,11 +887,48 @@ export default function ShareYourIdea() {
 
     setSubmitting(true);
     const contactName = `${form.first_name.trim()} ${form.last_name.trim()}`.replace(/\s+/g, ' ').trim();
-    const [idFrontDataUrl, idBackDataUrl, inspirationDataUrls] = await Promise.all([
-      files.idFront?.file ? readFileAsDataUrl(files.idFront.file) : Promise.resolve(null),
-      files.idBack?.file ? readFileAsDataUrl(files.idBack.file) : Promise.resolve(null),
-      Promise.all(files.inspiration.map((entry) => readFileAsDataUrl(entry.file)))
-    ]);
+    let idFrontDataUrl = null;
+    let idBackDataUrl = null;
+    let inspirationDataUrls = [];
+    try {
+      [idFrontDataUrl, idBackDataUrl, inspirationDataUrls] = await Promise.all([
+        shouldSkipIdentityUpload ? Promise.resolve(null) : files.idFront?.file ? readFileAsDataUrl(files.idFront.file) : Promise.resolve(null),
+        shouldSkipIdentityUpload ? Promise.resolve(null) : files.idBack?.file ? readFileAsDataUrl(files.idBack.file) : Promise.resolve(null),
+        Promise.all(files.inspiration.map((entry) => readFileAsDataUrl(entry.file)))
+      ]);
+    } catch (error) {
+      setNotice('Unable to read the selected files. Please try again.');
+      setNoticeTone('offline');
+      setSubmitting(false);
+      return;
+    }
+
+    const squareFields = {};
+    if (paymentConfig?.enabled) {
+      setPaymentError(null);
+      try {
+        if (!cardInstanceRef.current) {
+          throw new Error('Payment form is still loading. Please wait a moment.');
+        }
+        const tokenResult = await cardInstanceRef.current.tokenize();
+        if (tokenResult.status !== 'OK') {
+          throw new Error(tokenResult.errors?.[0]?.message || 'Unable to verify your card.');
+        }
+        squareFields.square_source_id = tokenResult.token;
+        squareFields.square_idempotency_key =
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`;
+        const verificationToken = tokenResult.details?.verificationToken ?? tokenResult.verificationToken;
+        if (verificationToken) {
+          squareFields.square_verification_token = verificationToken;
+        }
+      } catch (error) {
+        setPaymentError(error.message || 'Unable to verify your card. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+    }
 
     const payload = {
       first_name: form.first_name.trim(),
@@ -708,22 +943,28 @@ export default function ShareYourIdea() {
       placement_notes: form.placement_notes.trim() || null,
       scheduled_start: selectedSlot?.start,
       duration_minutes: durationMinutes,
-      id_front_url: idFrontDataUrl,
-      id_back_url: idBackDataUrl,
+      id_front_url: shouldSkipIdentityUpload ? null : idFrontDataUrl,
+      id_back_url: shouldSkipIdentityUpload ? null : idBackDataUrl,
       inspiration_urls: inspirationDataUrls.filter(Boolean)
     };
 
     if (form.create_account) {
       payload.password = form.password;
     }
+    if (signedInAccountId) {
+      payload.client_account_id = signedInAccountId;
+    }
+    if (shouldSkipIdentityUpload) {
+      payload.reuse_identity_on_file = true;
+    }
+    Object.assign(payload, squareFields);
 
     try {
       const response = await apiPost('/api/appointments', payload);
-      const reference = response?.reference_code || 'Pending assignment';
-      setNotice(`Appointment received - reference ${reference}. We will confirm within two business days.`);
-      setNoticeTone('success');
+      storeBookingReceipt(response);
+      setNotice(null);
       resetBookingState();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate('/booking/confirmation');
     } catch (error) {
       setNotice('Request saved locally. We will follow up once connected.');
       setNoticeTone('offline');
@@ -776,6 +1017,29 @@ export default function ShareYourIdea() {
               Back to home
             </Button>
           </div>
+        </FadeIn>
+
+        <FadeIn immediate>
+          {isAuthenticated ? (
+            <Card className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-300">
+              <p>
+                Signed in as <span className="font-semibold">{account?.email}</span>. We pre-fill your profile details for
+                faster booking.
+              </p>
+              {hasStoredIdentity ? (
+                <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                  Government ID is already on file. You can update it below if needed.
+                </p>
+              ) : null}
+            </Card>
+          ) : (
+            <Card className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600 dark:text-gray-300">
+              <p>Already have an account? Sign in for a faster booking experience and skip re-entering your details.</p>
+              <Button as={Link} to="/auth" variant="secondary">
+                Sign in
+              </Button>
+            </Card>
+          )}
         </FadeIn>
 
         {notice ? (
@@ -1130,84 +1394,113 @@ export default function ShareYourIdea() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="booking-id-front"
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-              >
-                Government ID (front) *
-              </label>
-              <input
-                id="booking-id-front"
-                name="id_front"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,image/webp"
-                onChange={handleFileChange('idFront')}
-                className="sr-only"
-                aria-describedby="booking-id-front-help"
-                required
-              />
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <Button as="label" htmlFor="booking-id-front">
-                  Upload front ID
+          {shouldSkipIdentityUpload ? (
+            <Card className="space-y-3">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Your government ID is already verified and stored securely. Upload a fresh copy only if your ID has
+                changed.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="secondary" onClick={() => setForceIdentityUpdate(true)}>
+                  Upload updated ID
                 </Button>
-                <p id="booking-id-front-help" className="text-xs text-gray-500 dark:text-gray-400">
-                  {files.idFront
-                    ? `${files.idFront.name} · ${formatFileSize(files.idFront.size)}`
-                    : 'Accepted: PNG, JPG, HEIC, WebP.'}
-                </p>
               </div>
-              {files.idFront ? (
-                <img
-              src={files.idFront.previewUrl}
-                  alt="Government ID front preview"
-                  className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {hasStoredIdentity ? (
+                <button
+                  type="button"
+                  onClick={() => setForceIdentityUpdate(false)}
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 underline-offset-4 hover:underline dark:text-gray-400"
+                >
+                  Use ID already on file
+                </button>
+              ) : null}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="booking-id-front"
+                    className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                  Government ID (front) *
+                </label>
+                <input
+                  id="booking-id-front"
+                  name="id_front"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,image/webp"
+                  onChange={handleFileChange('idFront')}
+                  className="sr-only"
+                  aria-describedby="booking-id-front-help"
+                  required
                 />
-              ) : null}
-              {errors.id_front ? (
-                <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.id_front}</p>
-              ) : null}
-            </div>
-            <div>
-              <label
-                htmlFor="booking-id-back"
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-              >
-                Government ID (back) *
-              </label>
-              <input
-                id="booking-id-back"
-                name="id_back"
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,image/webp"
-                onChange={handleFileChange('idBack')}
-                className="sr-only"
-                aria-describedby="booking-id-back-help"
-                required
-              />
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <Button as="label" htmlFor="booking-id-back">
-                  Upload back ID
-                </Button>
-                <p id="booking-id-back-help" className="text-xs text-gray-500 dark:text-gray-400">
-                  {files.idBack
-                    ? `${files.idBack.name} · ${formatFileSize(files.idBack.size)}`
-                    : 'Ensure details are readable.'}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <Button as="label" htmlFor="booking-id-front">
+                    Upload front ID
+                  </Button>
+                  <p id="booking-id-front-help" className="text-xs text-gray-500 dark:text-gray-400">
+                    {files.idFront
+                      ? `${files.idFront.name} · ${formatFileSize(files.idFront.size)}`
+                      : 'Accepted: PNG, JPG, HEIC, WebP.'}
+                  </p>
+                </div>
+                {files.idFront ? (
+                  <img
+                    src={files.idFront.previewUrl}
+                    alt="Government ID front preview"
+                    className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
+                  />
+                ) : null}
+                {errors.id_front ? (
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                    {errors.id_front}
+                  </p>
+                ) : null}
               </div>
-              {files.idBack ? (
-                <img
-              src={files.idBack.previewUrl}
-                  alt="Government ID back preview"
-                  className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
+              <div>
+                <label
+                  htmlFor="booking-id-back"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                >
+                  Government ID (back) *
+                </label>
+                <input
+                  id="booking-id-back"
+                  name="id_back"
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/heic,image/heif,image/webp"
+                  onChange={handleFileChange('idBack')}
+                  className="sr-only"
+                  aria-describedby="booking-id-back-help"
+                  required
                 />
-              ) : null}
-              {errors.id_back ? (
-                <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.id_back}</p>
-              ) : null}
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <Button as="label" htmlFor="booking-id-back">
+                    Upload back ID
+                  </Button>
+                  <p id="booking-id-back-help" className="text-xs text-gray-500 dark:text-gray-400">
+                    {files.idBack
+                      ? `${files.idBack.name} · ${formatFileSize(files.idBack.size)}`
+                      : 'Ensure details are readable.'}
+                  </p>
+                </div>
+                {files.idBack ? (
+                  <img
+                    src={files.idBack.previewUrl}
+                    alt="Government ID back preview"
+                    className="mt-3 h-28 w-44 rounded-xl border border-gray-200 object-cover object-center dark:border-gray-700"
+                  />
+                ) : null}
+                {errors.id_back ? (
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                    {errors.id_back}
+                  </p>
+                ) : null}
+              </div>
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <label
               htmlFor="booking-inspiration"
@@ -1284,54 +1577,93 @@ export default function ShareYourIdea() {
             ) : null}
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
-            <label className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              <input
-                id="booking-create-account"
-                name="create_account"
-                type="checkbox"
-                checked={form.create_account}
-                onChange={handleChange('create_account')}
-                className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
-              />
-              Create a client account for future bookings
-            </label>
-            {form.create_account ? (
-              <div>
-                <label
-                  htmlFor="booking-password"
-                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-                >
-                  Set password *
-                </label>
-                <input
-                  id="booking-password"
-                  name="password"
-                  type="password"
-                  value={form.password}
-                  onChange={handleChange('password')}
-                  autoComplete="new-password"
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
-                  required
-                />
-                {errors.password ? (
-                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.password}</p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Continue as a guest if you prefer one-time document sharing. Assets remain encrypted and accessible to you
-                during follow-ups.
+          {isAuthenticated ? (
+            <div className="space-y-2 rounded-2xl border border-dashed border-gray-300 p-4 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
+              <p>
+                Booking as <span className="font-semibold">{account?.display_name || account?.email}</span>. Your account
+                keeps files and notes linked for future sessions.
               </p>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="space-y-3 rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
+              <label className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <input
+                  id="booking-create-account"
+                  name="create_account"
+                  type="checkbox"
+                  checked={form.create_account}
+                  onChange={handleChange('create_account')}
+                  className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                />
+                Create a client account for future bookings
+              </label>
+              {form.create_account ? (
+                <div>
+                  <label
+                    htmlFor="booking-password"
+                    className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  >
+                    Set password *
+                  </label>
+                  <input
+                    id="booking-password"
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange('password')}
+                    autoComplete="new-password"
+                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                    required
+                  />
+                  {errors.password ? (
+                    <p className="mt-1 text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.password}</p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Continue as a guest if you prefer one-time document sharing. Assets remain encrypted and accessible to you
+                  during follow-ups.
+                </p>
+              )}
+            </div>
+          )}
           {errors.files ? (
             <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">{errors.files}</p>
           ) : null}
 
+          <div className="space-y-2 rounded-2xl border border-dashed border-gray-300 p-4 dark:border-gray-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Booking deposit {depositAmountLabel ? `(${depositAmountLabel})` : ''}
+            </p>
+            {paymentConfig?.enabled ? (
+              <>
+                <div
+                  ref={cardContainerRef}
+                  className="min-h-[72px] rounded-xl border border-gray-300 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Securely processed by Square. We only charge the deposit after you confirm this booking.
+                </p>
+              </>
+            ) : paymentConfig?.demo_mode ? (
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Demo payments are enabled, so no card entry is required in this environment.
+              </p>
+            ) : paymentsUnavailable ? (
+              <p className="text-sm text-rose-500 dark:text-rose-400">
+                Payments are temporarily unavailable. Please email blackworknyc@gmail.com to complete your booking.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600 dark:text-gray-300">Loading the secure payment form…</p>
+            )}
+            {paymentError ? (
+              <p className="text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{paymentError}</p>
+            ) : null}
+          </div>
+
           <div className="flex flex-wrap justify-end gap-3">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? 'Sending...' : 'Submit booking'}
+            <Button type="submit" disabled={submitDisabled}>
+              {submitLabel}
             </Button>
             <Button as={Link} to="/" variant="secondary" disabled={submitting}>
               Cancel
@@ -1342,7 +1674,7 @@ export default function ShareYourIdea() {
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Booking requests include secure document intake so we can prep custom design time and confirm age
                 requirements before meeting. Files stay encrypted and only our studio can view them unless you toggle
-                otherwise.
+                otherwise. A fully refundable Square deposit locks in your time slot.
               </p>
               <ul className="space-y-1">{requirementList}</ul>
             </div>

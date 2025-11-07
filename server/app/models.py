@@ -104,6 +104,22 @@ class ClientAccount(TimestampMixin, db.Model):
             return " ".join(filter(None, [self.first_name, self.last_name]))
         return self.email or "Guest"
 
+    def has_identity_documents(self) -> bool:
+        assets_query = getattr(self, "appointment_assets", None)
+        if not assets_query:
+            return False
+        if hasattr(assets_query, "filter"):
+            return (
+                assets_query.filter(
+                    AppointmentAsset.kind.in_(["id_front", "id_back"]),
+                    AppointmentAsset.file_url.isnot(None),
+                )
+                .limit(1)
+                .first()
+                is not None
+            )
+        return any(asset.kind in {"id_front", "id_back"} and asset.file_url for asset in assets_query)
+
 
 class TattooCategory(TimestampMixin, db.Model):
     __tablename__ = "tattoo_categories"
@@ -217,6 +233,12 @@ class TattooAppointment(TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         order_by="AppointmentAsset.created_at",
     )
+    payments = db.relationship(
+        "AppointmentPayment",
+        back_populates="appointment",
+        cascade="all, delete-orphan",
+        order_by="AppointmentPayment.created_at",
+    )
 
     @property
     def scheduled_end(self):
@@ -292,6 +314,26 @@ class AppointmentAsset(TimestampMixin, db.Model):
 
     def is_note(self) -> bool:
         return self.kind == "note"
+
+
+class AppointmentPayment(TimestampMixin, db.Model):
+    __tablename__ = "appointment_payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tattoo_appointments.id"),
+        nullable=False,
+    )
+    provider = db.Column(db.String(40), nullable=False, default="square")
+    provider_payment_id = db.Column(db.String(120), nullable=False)
+    status = db.Column(db.String(40), nullable=False)
+    amount_cents = db.Column(db.Integer, nullable=False)
+    currency = db.Column(db.String(3), nullable=False, default="USD")
+    receipt_url = db.Column(db.String(1024))
+    note = db.Column(db.String(255))
+
+    appointment = db.relationship("TattooAppointment", back_populates="payments")
 
 
 class UserNotification(TimestampMixin, db.Model):

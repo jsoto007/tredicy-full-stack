@@ -58,6 +58,22 @@ Available scripts:
 | `FLASK_ENV` | `server/.env` | Flask environment (`development`, `production`, etc.) |
 | `DATABASE_URI` | `server/.env` | Database connection string; fallback is a local SQLite file (`server/blackink_dev.db`) |
 | `SECRET_KEY` | `server/.env` | Secret key for Flask session security |
+| `UPLOADS_S3_BUCKET` | `server/.env` | Optional. When set, gallery uploads are stored in this AWS S3 bucket. |
+| `UPLOADS_S3_REGION` | `server/.env` | AWS region for the uploads bucket. |
+| `UPLOADS_PUBLIC_BASE_URL` | `server/.env` | Optional CDN/base URL for uploaded media. |
+| `UPLOADS_S3_PREFIX` | `server/.env` | Optional key prefix (default `uploads`). |
+| `SQUARE_APPLICATION_ID` | `server/.env` | Square Web Payments application ID. |
+| `SQUARE_LOCATION_ID` | `server/.env` | Square location ID that receives deposits. |
+| `SQUARE_ACCESS_TOKEN` | `server/.env` | Square access token (use sandbox token for testing). |
+| `SQUARE_ENVIRONMENT` | `server/.env` | `sandbox` or `production` (defaults to `sandbox`). |
+| `SQUARE_DEPOSIT_AMOUNT_CENTS` | `server/.env` | Booking deposit amount in cents (default `10000`, i.e. $100). |
+| `SQUARE_DEPOSIT_CURRENCY` | `server/.env` | Currency code for deposits (default `USD`). |
+| `SQUARE_FAKE_PAYMENTS` | `server/.env` | Set to `true` to bypass real payments in development. |
+
+### Payments & uploads
+
+- **Uploads** – When the optional `UPLOADS_S3_*` variables are populated, media uploaded from the admin dashboard is streamed directly to S3 and served from the bucket (or a CDN you configure with `UPLOADS_PUBLIC_BASE_URL`). Without these values, uploads fall back to local disk which is not persistent across deployments.
+- **Square deposits** – Booking submissions now use the Square Web Payments SDK and the `/api/appointments` endpoint records a deposit before storing the appointment. Provide the Square sandbox credentials listed above for testing, or switch `SQUARE_ENVIRONMENT=production` with a live access token for launch. Use `SQUARE_FAKE_PAYMENTS=true` locally if you want to bypass card entry entirely.
 
 ## Architecture
 

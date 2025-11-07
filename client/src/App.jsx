@@ -8,6 +8,7 @@ import AuthPage from './pages/AuthPage.jsx';
 import UserDashboard from './pages/UserDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import ShareYourIdea from './pages/ShareYourIdea.jsx';
+import BookingConfirmation from './pages/BookingConfirmation.jsx';
 import BlogLayout from './pages/blog/BlogLayout.jsx';
 import BlogIndex from './pages/blog/BlogIndex.jsx';
 import TattooAftercare from './pages/blog/TattooAftercare.jsx';
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/share-your-idea" element={<ShareYourIdea />} />
+        <Route path="/booking/confirmation" element={<BookingConfirmation />} />
         <Route path="/blog" element={<BlogLayout />}>
           <Route index element={<BlogIndex />} />
           <Route path="aftercare" element={<TattooAftercare />} />

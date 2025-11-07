@@ -7,6 +7,9 @@ from functools import wraps
 from pathlib import Path
 from uuid import uuid4
 
+import boto3
+import requests
+from botocore.exceptions import BotoCoreError, ClientError
 from flask import Blueprint, current_app, g, jsonify, request, send_from_directory, session
 from sqlalchemy import case, func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +22,7 @@ from .models import (
     AdminAccount,
     AdminActivityLog,
     AppointmentAsset,
+    AppointmentPayment,
     ClientAccount,
     Consultation,
     GalleryItem,
@@ -91,6 +95,216 @@ SIZE_MULTIPLIERS = {
     "large": 2.0,  # half sleeve / medium panel
     "xl": 3.0,  # full back / large format
 }
+
+
+class MediaStorageError(Exception):
+    pass
+
+
+class SquarePaymentError(Exception):
+    pass
+
+
+def _use_s3_uploads() -> bool:
+    return bool(current_app.config.get("UPLOADS_S3_BUCKET"))
+
+
+def _build_s3_key(filename: str) -> str:
+    prefix = (current_app.config.get("UPLOADS_S3_PREFIX") or "").strip().strip("/")
+    if prefix:
+        return f"{prefix.rstrip('/')}/{filename}"
+    return filename
+
+
+def _store_media_locally(file_storage, safe_name: str):
+    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    destination = upload_dir / safe_name
+    file_storage.stream.seek(0)
+    file_storage.save(destination)
+    return safe_name, f"/api/uploads/{safe_name}"
+
+
+def _public_s3_url(bucket: str, key: str) -> str:
+    explicit_base = current_app.config.get("UPLOADS_PUBLIC_BASE_URL")
+    if explicit_base:
+        return f"{explicit_base.rstrip('/')}/{key}"
+    region = current_app.config.get("UPLOADS_S3_REGION") or ""
+    if region and region.lower() != "us-east-1":
+        return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+    return f"https://{bucket}.s3.amazonaws.com/{key}"
+
+
+def _store_media_s3(file_storage, safe_name: str):
+    bucket = current_app.config.get("UPLOADS_S3_BUCKET")
+    if not bucket:
+        raise MediaStorageError("S3 bucket not configured.")
+    key = _build_s3_key(safe_name)
+    extra_args = {"ContentType": file_storage.mimetype or "application/octet-stream"}
+    acl = current_app.config.get("UPLOADS_S3_ACL")
+    if acl:
+        extra_args["ACL"] = acl
+    s3_client = boto3.client("s3", region_name=current_app.config.get("UPLOADS_S3_REGION") or None)
+    file_storage.stream.seek(0)
+    try:
+        s3_client.upload_fileobj(file_storage.stream, bucket, key, ExtraArgs=extra_args)
+    except (BotoCoreError, ClientError) as exc:
+        raise MediaStorageError(str(exc)) from exc
+    return key, _public_s3_url(bucket, key)
+
+
+def store_uploaded_media(file_storage, safe_name: str):
+    if _use_s3_uploads():
+        return _store_media_s3(file_storage, safe_name)
+    return _store_media_locally(file_storage, safe_name)
+
+
+def _cleanup_upload_target(target):
+    if not target:
+        return
+    mode = target.get("mode")
+    if mode == "local":
+        path = target.get("path")
+        if path:
+            Path(path).unlink(missing_ok=True)
+    elif mode == "s3":
+        bucket = current_app.config.get("UPLOADS_S3_BUCKET")
+        key = target.get("key")
+        if not bucket or not key:
+            return
+        try:
+            boto3.client("s3", region_name=current_app.config.get("UPLOADS_S3_REGION") or None).delete_object(
+                Bucket=bucket,
+                Key=key,
+            )
+        except (BotoCoreError, ClientError):
+            current_app.logger.warning("Unable to delete orphaned upload %s from bucket %s", key, bucket)
+
+
+def _square_payments_active() -> bool:
+    app = current_app
+    if app.config.get("SQUARE_FAKE_PAYMENTS"):
+        return True
+    return bool(
+        app.config.get("SQUARE_APPLICATION_ID")
+        and app.config.get("SQUARE_LOCATION_ID")
+        and app.config.get("SQUARE_ACCESS_TOKEN")
+    )
+
+
+def _square_public_enabled() -> bool:
+    app = current_app
+    if app.config.get("SQUARE_FAKE_PAYMENTS"):
+        return False
+    return bool(app.config.get("SQUARE_APPLICATION_ID") and app.config.get("SQUARE_LOCATION_ID"))
+
+
+def _square_api_base() -> str:
+    environment = (current_app.config.get("SQUARE_ENVIRONMENT") or "sandbox").lower()
+    if environment == "production":
+        return "https://connect.squareup.com"
+    return "https://connect.squareupsandbox.com"
+
+
+def _square_deposit_amount() -> int:
+    return max(1, int(current_app.config.get("SQUARE_DEPOSIT_AMOUNT_CENTS") or 10000))
+
+
+def _square_currency() -> str:
+    return (current_app.config.get("SQUARE_DEPOSIT_CURRENCY") or "USD").upper()
+
+
+def charge_square_payment(
+    *,
+    source_id: str,
+    idempotency_key: str | None,
+    verification_token: str | None,
+    buyer_email: str | None,
+    note: str | None,
+) -> dict:
+    if current_app.config.get("SQUARE_FAKE_PAYMENTS"):
+        return {
+            "payment": {
+                "id": f"demo-{secrets.token_hex(6)}",
+                "status": "COMPLETED",
+                "amount_money": {"amount": _square_deposit_amount(), "currency": _square_currency()},
+                "receipt_url": None,
+                "note": note,
+            }
+        }
+
+    access_token = current_app.config.get("SQUARE_ACCESS_TOKEN")
+    location_id = current_app.config.get("SQUARE_LOCATION_ID")
+    application_id = current_app.config.get("SQUARE_APPLICATION_ID")
+    if not all([access_token, location_id, application_id]):
+        raise SquarePaymentError("Square payments are not configured.")
+
+    payload = {
+        "idempotency_key": idempotency_key or secrets.token_hex(12),
+        "source_id": source_id,
+        "location_id": location_id,
+        "amount_money": {"amount": _square_deposit_amount(), "currency": _square_currency()},
+        "autocomplete": True,
+        "note": note or "Tattoo appointment deposit",
+    }
+    if buyer_email:
+        payload["buyer_email_address"] = buyer_email
+    if verification_token:
+        payload["verification_token"] = verification_token
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+        "Square-Version": "2024-08-21",
+    }
+    try:
+        response = requests.post(
+            f"{_square_api_base()}/v2/payments",
+            headers=headers,
+            json=payload,
+            timeout=15,
+        )
+    except requests.RequestException as exc:
+        raise SquarePaymentError("Unable to contact Square.") from exc
+
+    if response.status_code >= 400:
+        try:
+            error_body = response.json()
+        except ValueError:
+            error_body = {}
+        message = error_body.get("errors", [{}])[0].get("detail") or "Square payment was declined."
+        raise SquarePaymentError(message)
+
+    return response.json()
+
+
+def _latest_identity_assets_for_client(client: ClientAccount):
+    if not client or not hasattr(client, "appointment_assets"):
+        return {}
+    query = client.appointment_assets
+    if hasattr(query, "filter"):
+        candidates = (
+            query.filter(
+                AppointmentAsset.kind.in_(["id_front", "id_back"]),
+                AppointmentAsset.file_url.isnot(None),
+            )
+            .order_by(AppointmentAsset.created_at.desc())
+            .all()
+        )
+    else:
+        candidates = [
+            asset
+            for asset in query
+            if asset.kind in {"id_front", "id_back"} and getattr(asset, "file_url", None)
+        ]
+        candidates.sort(key=lambda asset: asset.created_at or datetime.min, reverse=True)
+    found = {}
+    for asset in candidates:
+        if asset.kind not in found:
+            found[asset.kind] = asset.file_url
+        if len(found) == 2:
+            break
+    return found
 
 
 def parse_bool(value, default=False):
@@ -319,6 +533,19 @@ def serialize_appointment(appointment):
             for asset in appointment.assets
         ],
         "has_identity_documents": appointment.has_identity_documents(),
+        "payments": [
+            {
+                "id": payment.id,
+                "provider": payment.provider,
+                "status": payment.status,
+                "amount_cents": payment.amount_cents,
+                "currency": payment.currency,
+                "receipt_url": payment.receipt_url,
+                "note": payment.note,
+                "created_at": payment.created_at.isoformat() if payment.created_at else None,
+            }
+            for payment in appointment.payments
+        ],
     }
 
 
@@ -326,9 +553,12 @@ def serialize_user_profile(user: ClientAccount):
     return {
         "id": user.id,
         "display_name": user.display_name,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
         "email": user.email,
         "phone": user.phone,
         "role": user.role,
+        "has_identity_documents": user.has_identity_documents() if hasattr(user, "has_identity_documents") else False,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
@@ -974,27 +1204,51 @@ def admin_upload_media():
     unique_name = f"{uuid4().hex}.{extension}"
     safe_name = secure_filename(unique_name)
 
-    upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    destination = upload_dir / safe_name
-
-    file.save(destination)
+    cleanup_target = None
+    try:
+        stored_name, file_url = store_uploaded_media(file, safe_name)
+        if _use_s3_uploads():
+            cleanup_target = {"mode": "s3", "key": stored_name}
+        else:
+            cleanup_target = {"mode": "local", "path": Path(current_app.config["UPLOAD_FOLDER"]) / stored_name}
+    except MediaStorageError as exc:
+        current_app.logger.error("Upload failed: %s", exc)
+        return jsonify({"error": "Unable to store upload."}), 500
 
     admin: AdminAccount = g.current_admin
     try:
         log_admin_activity(
             admin,
             "upload_create",
-            details=f"Uploaded media {safe_name}",
+            details=f"Uploaded media {stored_name}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
-        destination.unlink(missing_ok=True)
+        _cleanup_upload_target(cleanup_target)
         return jsonify({"error": "Unable to store upload."}), 500
 
-    return jsonify({"filename": safe_name, "url": f"/api/uploads/{safe_name}"}), 201
+    return jsonify({"filename": stored_name, "url": file_url}), 201
+
+
+@api_bp.route("/api/payments/config", methods=["GET"])
+def payment_configuration():
+    enabled = _square_public_enabled()
+    return jsonify(
+        {
+            "square": {
+                "enabled": enabled,
+                "demo_mode": bool(current_app.config.get("SQUARE_FAKE_PAYMENTS")),
+                "requires_payment": _square_payments_active(),
+                "application_id": current_app.config.get("SQUARE_APPLICATION_ID") if enabled else None,
+                "location_id": current_app.config.get("SQUARE_LOCATION_ID") if enabled else None,
+                "environment": current_app.config.get("SQUARE_ENVIRONMENT") or "sandbox",
+                "deposit_amount_cents": _square_deposit_amount(),
+                "currency": _square_currency(),
+            }
+        }
+    )
 
 
 @api_bp.route("/api/admin/session", methods=["GET"])
@@ -1019,6 +1273,7 @@ def user_dashboard():
         user.appointments.options(
             joinedload(TattooAppointment.assigned_admin),
             joinedload(TattooAppointment.assets),
+            joinedload(TattooAppointment.payments),
         )
         .order_by(TattooAppointment.created_at.desc())
         .limit(10)
@@ -1825,6 +2080,7 @@ def admin_create_appointment():
             joinedload(TattooAppointment.assigned_admin),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+            joinedload(TattooAppointment.payments),
         )
         .get(appointment.id)
     )
@@ -1872,6 +2128,15 @@ def create_appointment():
     payload = request.get_json(silent=True) or {}
     errors = []
 
+    payments_active = _square_payments_active()
+    if not payments_active:
+        return jsonify({"error": "Payments are currently unavailable. Please try again soon."}), 503
+
+    payments_demo_mode = bool(current_app.config.get("SQUARE_FAKE_PAYMENTS"))
+    square_source_id = (payload.get("square_source_id") or "").strip()
+    square_idempotency_key = (payload.get("square_idempotency_key") or "").strip() or None
+    square_verification_token = (payload.get("square_verification_token") or "").strip() or None
+
     client_account_id = payload.get("client_account_id")
     create_account = parse_bool(payload.get("create_account"), default=False)
     password = payload.get("password")
@@ -1892,12 +2157,10 @@ def create_appointment():
     id_front_url = (payload.get("id_front_url") or "").strip()
     id_back_url = (payload.get("id_back_url") or "").strip()
     inspiration_urls = payload.get("inspiration_urls") or []
+    reuse_identity_requested = parse_bool(payload.get("reuse_identity_on_file"), default=False)
+    if id_front_url or id_back_url:
+        reuse_identity_requested = False
     description = (payload.get("description") or "").strip()
-
-    if not id_front_url:
-        errors.append({"field": "id_front_url", "message": "Front ID image is required."})
-    if not id_back_url:
-        errors.append({"field": "id_back_url", "message": "Back ID image is required."})
 
     if inspiration_urls and not isinstance(inspiration_urls, list):
         errors.append({"field": "inspiration_urls", "message": "Inspiration URLs must be a list of strings."})
@@ -1934,6 +2197,9 @@ def create_appointment():
         errors.append({"field": "tattoo_placement", "message": "Placement is required."})
     if not tattoo_size:
         errors.append({"field": "tattoo_size", "message": "Approximate size is required."})
+
+    if payments_active and not payments_demo_mode and not square_source_id:
+        errors.append({"field": "payment_method", "message": "Add a payment method to secure your booking."})
 
     if not client_account:
         if not email:
@@ -1975,6 +2241,35 @@ def create_appointment():
         email = client_account.email or email
         phone = client_account.phone or phone
 
+    stored_identity_assets = {}
+    reuse_identity = False
+    if client_account and client_account_id:
+        stored_identity_assets = _latest_identity_assets_for_client(client_account)
+        reuse_identity = reuse_identity_requested and bool(
+            stored_identity_assets.get("id_front") and stored_identity_assets.get("id_back")
+        )
+
+    if not reuse_identity:
+        if not id_front_url:
+            errors.append({"field": "id_front_url", "message": "Front ID image is required."})
+        if not id_back_url:
+            errors.append({"field": "id_back_url", "message": "Back ID image is required."})
+
+    resolved_contact_name = contact_name or None
+    resolved_contact_email = contact_email_override or None
+    resolved_contact_phone = contact_phone_override or None
+
+    if client_account:
+        if not resolved_contact_name:
+            resolved_contact_name = client_account.display_name
+        if not resolved_contact_email:
+            resolved_contact_email = client_account.email or email
+        if not resolved_contact_phone:
+            resolved_contact_phone = client_account.phone or phone
+    else:
+        resolved_contact_email = resolved_contact_email or email
+        resolved_contact_phone = resolved_contact_phone or phone
+
     suggested_duration = calculate_suggested_duration_minutes(tattoo_placement, tattoo_size)
     if duration_minutes is None:
         duration_minutes = suggested_duration
@@ -2005,6 +2300,23 @@ def create_appointment():
     if errors:
         return jsonify({"errors": errors}), 400
 
+    contact_name_value = resolved_contact_name or " ".join(filter(None, [first_name, last_name]))
+    display_contact_name = contact_name_value or (client_account.display_name if client_account else None)
+    contact_email_value = resolved_contact_email or email or (client_account.email if client_account else None)
+    contact_phone_value = resolved_contact_phone or phone or (client_account.phone if client_account else None)
+
+    payment_result = None
+    try:
+        payment_result = charge_square_payment(
+            source_id=square_source_id or ("demo-source" if payments_demo_mode else ""),
+            idempotency_key=square_idempotency_key,
+            verification_token=square_verification_token,
+            buyer_email=contact_email_value,
+            note=f"Booking deposit for {display_contact_name or contact_email_value or email or 'client'}",
+        )
+    except SquarePaymentError as exc:
+        return jsonify({"error": str(exc)}), 402
+
     appointment = TattooAppointment(
         reference_code=generate_reference_code(),
         client=client_account,
@@ -2018,10 +2330,9 @@ def create_appointment():
         suggested_duration_minutes=suggested_duration,
     )
 
-    contact_name_value = contact_name or " ".join(filter(None, [first_name, last_name]))
-    appointment.contact_name = contact_name_value or (client_account.display_name if client_account else None)
-    appointment.contact_email = contact_email_override or email or (client_account.email if client_account else None)
-    appointment.contact_phone = contact_phone_override or phone or (client_account.phone if client_account else None)
+    appointment.contact_name = display_contact_name
+    appointment.contact_email = contact_email_value
+    appointment.contact_phone = contact_phone_value
 
     if client_account and client_account.is_guest:
         appointment.guest_name = appointment.contact_name
@@ -2031,22 +2342,38 @@ def create_appointment():
     db.session.add(appointment)
     db.session.flush()
 
-    assets = [
-        AppointmentAsset(
-            appointment=appointment,
-            client_uploader=client_account,
-            kind="id_front",
-            file_url=id_front_url,
-            is_visible_to_client=False,
-        ),
-        AppointmentAsset(
-            appointment=appointment,
-            client_uploader=client_account,
-            kind="id_back",
-            file_url=id_back_url,
-            is_visible_to_client=False,
-        ),
-    ]
+    assets = []
+
+    if reuse_identity:
+        for kind in ("id_front", "id_back"):
+            assets.append(
+                AppointmentAsset(
+                    appointment=appointment,
+                    client_uploader=client_account,
+                    kind=kind,
+                    file_url=stored_identity_assets.get(kind),
+                    is_visible_to_client=False,
+                )
+            )
+    else:
+        assets.extend(
+            [
+                AppointmentAsset(
+                    appointment=appointment,
+                    client_uploader=client_account,
+                    kind="id_front",
+                    file_url=id_front_url,
+                    is_visible_to_client=False,
+                ),
+                AppointmentAsset(
+                    appointment=appointment,
+                    client_uploader=client_account,
+                    kind="id_back",
+                    file_url=id_back_url,
+                    is_visible_to_client=False,
+                ),
+            ]
+        )
 
     for url in inspiration_urls:
         assets.append(
@@ -2071,6 +2398,20 @@ def create_appointment():
         )
 
     db.session.add_all(assets)
+    payment_payload = (payment_result or {}).get("payment") or {}
+    amount_details = payment_payload.get("amount_money") or {}
+    db.session.add(
+        AppointmentPayment(
+            appointment=appointment,
+            provider="square",
+            provider_payment_id=payment_payload.get("id") or f"demo-{secrets.token_hex(5)}",
+            status=payment_payload.get("status") or "COMPLETED",
+            amount_cents=int(amount_details.get("amount") or _square_deposit_amount()),
+            currency=amount_details.get("currency") or _square_currency(),
+            receipt_url=payment_payload.get("receipt_url"),
+            note=payment_payload.get("note") or "Booking deposit",
+        )
+    )
 
     try:
         db.session.commit()
@@ -2083,6 +2424,7 @@ def create_appointment():
         joinedload(TattooAppointment.assigned_admin),
         joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
         joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+        joinedload(TattooAppointment.payments),
     ).get(appointment.id)
 
     return jsonify(serialize_appointment(appointment)), 201
@@ -2106,6 +2448,7 @@ def admin_list_appointments():
             joinedload(TattooAppointment.assigned_admin),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+            joinedload(TattooAppointment.payments),
         )
         .order_by(TattooAppointment.created_at.desc())
         .offset((page - 1) * per_page)
@@ -2137,6 +2480,7 @@ def admin_get_appointment(appointment_id):
             joinedload(TattooAppointment.assigned_admin),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
             joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+            joinedload(TattooAppointment.payments),
         )
         .get_or_404(appointment_id)
     )
@@ -2270,6 +2614,7 @@ def admin_update_appointment(appointment_id):
         joinedload(TattooAppointment.assigned_admin),
         joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
         joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+        joinedload(TattooAppointment.payments),
     ).get(appointment.id)
 
     return jsonify(serialize_appointment(appointment))
