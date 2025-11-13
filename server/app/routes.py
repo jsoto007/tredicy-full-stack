@@ -59,6 +59,9 @@ DEFAULT_OPERATING_HOURS = [
     {"day": "sunday", "is_open": False, "open_time": "10:00", "close_time": "14:00"},
 ]
 
+HOURLY_RATE_SETTING_KEY = "studio_hourly_rate_cents"
+DEFAULT_HOURLY_RATE_CENTS = 20000
+
 ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "heic", "heif"}
 ALLOWED_UPLOAD_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | {"pdf", "txt", "doc", "docx"}
 
@@ -504,6 +507,25 @@ def serialize_setting(setting):
     }
 
 
+def load_hourly_rate_cents() -> int:
+    raw_rate = load_json_setting(HOURLY_RATE_SETTING_KEY, DEFAULT_HOURLY_RATE_CENTS)
+    try:
+        value = int(raw_rate)
+    except (TypeError, ValueError):
+        return DEFAULT_HOURLY_RATE_CENTS
+    if value <= 0:
+        return DEFAULT_HOURLY_RATE_CENTS
+    return value
+
+
+def calculate_session_price_cents(duration_minutes: int | None) -> int:
+    if not duration_minutes or duration_minutes <= 0:
+        return 0
+    rate = load_hourly_rate_cents()
+    total = math.ceil(rate * duration_minutes / 60.0)
+    return max(0, total)
+
+
 def serialize_appointment(appointment):
     client = appointment.client
     assigned_admin = appointment.assigned_admin
@@ -569,6 +591,11 @@ def serialize_appointment(appointment):
             }
             for asset in appointment.assets
         ],
+        "pricing": {
+            "hourly_rate_cents": load_hourly_rate_cents(),
+            "total_cents": calculate_session_price_cents(appointment.duration_minutes),
+            "currency": _square_currency(),
+        },
         "has_identity_documents": appointment.has_identity_documents(),
         "payments": [
             {
@@ -1338,6 +1365,37 @@ def payment_configuration():
     )
 
 
+@api_bp.route("/api/pricing/hourly-rate", methods=["GET"])
+def pricing_hourly_rate():
+    return jsonify(
+        {
+            "hourly_rate_cents": load_hourly_rate_cents(),
+            "currency": _square_currency(),
+        }
+    )
+
+
+@api_bp.route("/api/pricing/estimate", methods=["GET"])
+def pricing_estimate():
+    duration_param = request.args.get("duration_minutes")
+    if duration_param is None:
+        return jsonify({"error": "duration_minutes is required."}), 400
+    try:
+        duration_minutes = int(duration_param)
+    except (TypeError, ValueError):
+        return jsonify({"error": "duration_minutes must be a number."}), 400
+    if duration_minutes <= 0:
+        return jsonify({"error": "duration_minutes must be greater than zero."}), 400
+    return jsonify(
+        {
+            "duration_minutes": duration_minutes,
+            "total_cents": calculate_session_price_cents(duration_minutes),
+            "hourly_rate_cents": load_hourly_rate_cents(),
+            "currency": _square_currency(),
+        }
+    )
+
+
 @api_bp.route("/api/admin/session", methods=["GET"])
 @admin_required
 def admin_session():
@@ -1788,6 +1846,47 @@ def admin_update_schedule():
         return jsonify({"error": "Unable to update schedule."}), 500
 
     return jsonify({"operating_hours": normalised_hours, "days_off": normalised_days_off})
+
+
+@api_bp.route("/api/admin/settings/hourly-rate", methods=["PUT"])
+@admin_required
+def admin_update_hourly_rate():
+    payload = request.get_json(silent=True) or {}
+    hourly_rate_value = payload.get("hourly_rate_cents")
+    if hourly_rate_value is None:
+        return jsonify({"error": "hourly_rate_cents is required."}), 400
+    try:
+        hourly_rate_cents = int(hourly_rate_value)
+    except (TypeError, ValueError):
+        return jsonify({"error": "hourly_rate_cents must be a whole number."}), 400
+    if hourly_rate_cents <= 0:
+        return jsonify({"error": "hourly_rate_cents must be greater than zero."}), 400
+
+    setting = upsert_json_setting(
+        HOURLY_RATE_SETTING_KEY,
+        hourly_rate_cents,
+        description="Studio billing hourly rate in cents."
+    )
+    admin: AdminAccount = g.current_admin
+    log_admin_activity(
+        admin,
+        "hourly_rate_update",
+        details=f"Updated hourly rate to {hourly_rate_cents} cents.",
+        ip_address=request.remote_addr,
+    )
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to save hourly rate."}), 500
+
+    return jsonify(
+        {
+            "hourly_rate_cents": hourly_rate_cents,
+            "currency": _square_currency(),
+        }
+    )
 
 
 @api_bp.route("/api/admin/users", methods=["GET"])

@@ -290,6 +290,11 @@ def ensure_settings():
                 description="Toggle system maintenance mode for the public site.",
                 is_editable=False,
             ),
+            SystemSetting(
+                key="studio_hourly_rate_cents",
+                value="20000",
+                description="Hourly rate charged for tattoo sessions (in cents).",
+            ),
         ]
     )
     return True

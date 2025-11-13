@@ -16,17 +16,66 @@ const METRIC_KEYS = [
 
 export default function AdminSettings() {
   const {
-    state: { overview, recentUsers, analytics, activityTracking, settings, users },
-    actions: { refreshDashboardMetrics, refreshUsers }
+    state: { overview, recentUsers, analytics, activityTracking, settings, users, pricing },
+    actions: { refreshDashboardMetrics, refreshUsers, refreshHourlyRate, updateHourlyRate }
   } = useAdminDashboard();
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const [rateInput, setRateInput] = useState('');
+  const [rateError, setRateError] = useState('');
+  const [savingRate, setSavingRate] = useState(false);
 
   useEffect(() => {
     if (!users.length) {
       refreshUsers().catch(() => {});
     }
   }, [users.length, refreshUsers]);
+
+  useEffect(() => {
+    refreshHourlyRate().catch(() => {});
+  }, [refreshHourlyRate]);
+
+  useEffect(() => {
+    if (pricing?.hourly_rate_cents != null) {
+      setRateInput((pricing.hourly_rate_cents / 100).toFixed(2));
+    }
+  }, [pricing?.hourly_rate_cents]);
+
+  const hourlyRateCurrency = pricing?.currency ?? 'USD';
+  const hourlyRateFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: hourlyRateCurrency
+      }),
+    [hourlyRateCurrency]
+  );
+  const hourlyRateLabel =
+    pricing?.hourly_rate_cents != null ? hourlyRateFormatter.format(pricing.hourly_rate_cents / 100) : 'Loading rate...';
+
+  const handleRateSave = async () => {
+    const normalized = rateInput.trim().replace(',', '.');
+    if (!normalized) {
+      setRateError('Hourly rate is required.');
+      return;
+    }
+    const parsed = Number(normalized);
+    if (!Number.isFinite(parsed)) {
+      setRateError('Enter a valid number.');
+      return;
+    }
+    if (parsed <= 0) {
+      setRateError('Hourly rate must be greater than zero.');
+      return;
+    }
+    setRateError('');
+    setSavingRate(true);
+    try {
+      await updateHourlyRate(Math.round(parsed * 100));
+    } finally {
+      setSavingRate(false);
+    }
+  };
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -212,6 +261,52 @@ export default function AdminSettings() {
             </div>
           ) : null}
         </div>
+      </Card>
+
+      <Card className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Pricing
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Adjust the hourly rate that the API uses to calculate session totals.
+            </p>
+          </div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {hourlyRateLabel} / hr
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
+          <label
+            htmlFor="hourly-rate-input"
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          >
+            Hourly rate
+          </label>
+          <div className="sm:col-span-2 space-y-1">
+            <input
+              id="hourly-rate-input"
+              type="text"
+              value={rateInput}
+              onChange={(event) => {
+                setRateInput(event.target.value);
+                setRateError('');
+              }}
+              placeholder="e.g. 220.00"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+            />
+            {rateError ? (
+              <p className="text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{rateError}</p>
+            ) : null}
+          </div>
+          <Button type="button" onClick={handleRateSave} disabled={savingRate} className="w-full sm:w-auto">
+            {savingRate ? 'Saving...' : 'Save rate'}
+          </Button>
+        </div>
+        <p className="text-xs text-gray-600 dark:text-gray-300">
+          Session totals and quotes always come from the API so clients see the rate you set here.
+        </p>
       </Card>
 
       <Card className="space-y-4">

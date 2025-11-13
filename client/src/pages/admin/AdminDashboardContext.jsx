@@ -40,6 +40,7 @@ export function getAdminResourcesForPath(path) {
     resources.add('admins');
     resources.add('categories');
     resources.add('users');
+    resources.add('pricing');
   }
   if (path.includes('/dashboard/admin/user/')) {
     resources.add('appointments');
@@ -126,6 +127,7 @@ export function AdminDashboardProvider({ children }) {
   const [analytics, setAnalytics] = useState({ appointments_by_status: {}, gallery_items_by_category: {} });
   const [settings, setSettings] = useState([]);
   const [schedule, setSchedule] = useState({ operating_hours: [], days_off: [] });
+  const [pricing, setPricing] = useState({ hourly_rate_cents: null, currency: 'USD' });
 
   const [notices, setNotices] = useState([]);
   const noticeIdRef = useRef(0);
@@ -283,6 +285,34 @@ export function AdminDashboardProvider({ children }) {
     [galleryPagination.per_page, markFetched]
   );
 
+  const refreshHourlyRate = useCallback(async () => {
+    const response = await apiGet('/api/pricing/hourly-rate');
+    setPricing({
+      hourly_rate_cents: response?.hourly_rate_cents ?? null,
+      currency: response?.currency ?? 'USD'
+    });
+    markFetched('pricing');
+    return response;
+  }, [markFetched]);
+
+  const updateHourlyRate = useCallback(
+    async (hourly_rate_cents) => {
+      try {
+        const response = await apiPut('/api/admin/settings/hourly-rate', {
+          hourly_rate_cents
+        });
+        await refreshHourlyRate();
+        showNotice({ tone: 'success', message: 'Hourly rate updated.' });
+        refreshDashboardMetrics().catch(() => {});
+        return response;
+      } catch (err) {
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update hourly rate.') });
+        throw err;
+      }
+    },
+    [refreshHourlyRate, refreshDashboardMetrics, showNotice]
+  );
+
   const loadMoreGalleryItems = useCallback(async () => {
     const nextPage = galleryPagination.page + 1;
     if (nextPage > galleryPagination.pages) {
@@ -299,9 +329,19 @@ export function AdminDashboardProvider({ children }) {
       categories: refreshCategories,
       appointments: refreshAppointments,
       schedule: refreshSchedule,
+      pricing: refreshHourlyRate,
       gallery: refreshGalleryItems
     }),
-    [refreshDashboardMetrics, refreshAdmins, refreshUsers, refreshCategories, refreshAppointments, refreshSchedule, refreshGalleryItems]
+    [
+      refreshDashboardMetrics,
+      refreshAdmins,
+      refreshUsers,
+      refreshCategories,
+      refreshAppointments,
+      refreshSchedule,
+      refreshHourlyRate,
+      refreshGalleryItems
+    ]
   );
 
   const prefetchResources = useCallback(
@@ -811,7 +851,8 @@ export function AdminDashboardProvider({ children }) {
         galleryPagination,
         appointments,
         appointmentsPagination,
-        schedule
+        schedule,
+        pricing
       },
       actions: {
         showNotice,
@@ -826,6 +867,8 @@ export function AdminDashboardProvider({ children }) {
         refreshAppointments,
         refreshGalleryItems,
         refreshSchedule,
+        refreshHourlyRate,
+        updateHourlyRate,
         loadMoreAppointments,
         loadMoreGalleryItems,
         logout,
@@ -865,6 +908,7 @@ export function AdminDashboardProvider({ children }) {
       appointments,
       appointmentsPagination,
       schedule,
+      pricing,
       showNotice,
       dismissNotice,
       clearFeedback,
@@ -876,6 +920,8 @@ export function AdminDashboardProvider({ children }) {
       refreshAppointments,
       refreshGalleryItems,
       refreshSchedule,
+      refreshHourlyRate,
+      updateHourlyRate,
       loadMoreAppointments,
       loadMoreGalleryItems,
       logout,

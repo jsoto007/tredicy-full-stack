@@ -289,6 +289,9 @@ export default function ShareYourIdea() {
   const [durationMinutes, setDurationMinutes] = useState(SLOT_INTERVAL_MINUTES);
   const [durationManuallySet, setDurationManuallySet] = useState(false);
   const [forceIdentityUpdate, setForceIdentityUpdate] = useState(false);
+  const [pricingEstimate, setPricingEstimate] = useState(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+  const [pricingError, setPricingError] = useState(null);
 
   const [paymentConfig, setPaymentConfig] = useState(null);
   const [paymentConfigLoaded, setPaymentConfigLoaded] = useState(false);
@@ -298,6 +301,7 @@ export default function ShareYourIdea() {
   const cardInstanceRef = useRef(null);
   const cardContainerRef = useRef(null);
   const walletInstancesRef = useRef({});
+  const pricingCacheRef = useRef({});
   const [availableWallets, setAvailableWallets] = useState([]);
   const [walletProcessing, setWalletProcessing] = useState(null);
   const firstNameRef = useRef(null);
@@ -352,6 +356,20 @@ export default function ShareYourIdea() {
     const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: depositCurrency });
     return formatter.format(depositAmountCents / 100);
   }, [depositAmountCents, depositCurrency]);
+
+  const pricingCurrency = pricingEstimate?.currency ?? 'USD';
+  const pricingFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: pricingCurrency
+      }),
+    [pricingCurrency]
+  );
+  const estimatedTotalLabel =
+    pricingEstimate?.total_cents != null ? pricingFormatter.format(pricingEstimate.total_cents / 100) : null;
+  const serverHourlyRateLabel =
+    pricingEstimate?.hourly_rate_cents != null ? pricingFormatter.format(pricingEstimate.hourly_rate_cents / 100) : null;
   const paymentsUnavailable = paymentConfigLoaded && !paymentConfig?.enabled && !paymentConfig?.demo_mode;
   const submitDisabled =
     submitting || (paymentConfig?.enabled ? paymentStatus !== 'ready' : false) || paymentsUnavailable;
@@ -660,6 +678,42 @@ export default function ShareYourIdea() {
 
   useEffect(() => {
     setSelectedSlot(null);
+  }, [durationMinutes]);
+
+  useEffect(() => {
+    if (!durationMinutes) {
+      setPricingEstimate(null);
+      setPricingError(null);
+      setPricingLoading(false);
+      return;
+    }
+    const cached = pricingCacheRef.current[durationMinutes];
+    if (cached) {
+      setPricingEstimate(cached);
+      setPricingError(null);
+      return;
+    }
+    const controller = new AbortController();
+    setPricingLoading(true);
+    setPricingError(null);
+    apiGet(`/api/pricing/estimate?duration_minutes=${durationMinutes}`, { signal: controller.signal })
+      .then((result) => {
+        pricingCacheRef.current[durationMinutes] = result;
+        setPricingEstimate(result);
+      })
+      .catch((error) => {
+        if (error.name === 'AbortError') {
+          return;
+        }
+        setPricingEstimate(null);
+        setPricingError('Unable to load pricing.');
+      })
+      .finally(() => {
+        setPricingLoading(false);
+      });
+    return () => {
+      controller.abort();
+    };
   }, [durationMinutes]);
 
   useEffect(() => {
@@ -1563,6 +1617,32 @@ export default function ShareYourIdea() {
                   </button>
                 );
               })}
+            </div>
+            <div className="mt-4 rounded-2xl border border-gray-200 bg-white/80 p-3 text-sm text-gray-900 shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                Estimated session cost
+              </p>
+              {pricingLoading ? (
+                <p className="mt-2 text-xs text-gray-500">Calculating price...</p>
+              ) : pricingError ? (
+                <p className="mt-2 text-xs text-rose-500 dark:text-rose-400">{pricingError}</p>
+              ) : estimatedTotalLabel ? (
+                <div className="mt-2 flex items-baseline justify-between gap-3">
+                  <span className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{estimatedTotalLabel}</span>
+                  {serverHourlyRateLabel ? (
+                    <span className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                      Hourly rate: {serverHourlyRateLabel}
+                    </span>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  Select a session length to view pricing computed on the server.
+                </p>
+              )}
+              <p className="mt-2 text-xs uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+                Totals always come from the API so pricing stays consistent.
+              </p>
             </div>
           </div>
 
