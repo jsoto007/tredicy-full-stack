@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
@@ -68,6 +68,11 @@ export default function AuthPage() {
     }
   }, [isRegisterMode]);
 
+  const heroTitle = isRegisterMode ? 'Create a BLACKWORKNYC portal account' : 'Sign in to your BLACKWORKNYC portal';
+  const heroDescription = isRegisterMode
+    ? 'Create a secure portal account to manage bookings, documents, and inspiration.'
+    : 'View appointments, share inspiration, and manage your profile.';
+
   const handleRegisterChange = (field) => (event) => {
     setRegisterForm((prev) => ({
       ...prev,
@@ -98,7 +103,7 @@ export default function AuthPage() {
       };
 
       const response = await apiPost('/api/auth/register', payload);
-      const redirect = response?.redirect_to || '/dashboard/user';
+      const redirect = response?.redirect_to || '/portal/dashboard';
       setRegisterForm(INITIAL_REGISTER);
       setLoginForm(INITIAL_LOGIN);
       setNotice('Account created successfully – redirecting to your dashboard.');
@@ -153,11 +158,7 @@ export default function AuthPage() {
   return (
     <main className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6">
-        <SectionTitle
-          eyebrow="Account"
-          title="Sign in or create an account"
-          description="Access personal bookings, documents, and admin tools using your secure credentials."
-        />
+        <SectionTitle eyebrow="Account" title={heroTitle} description={heroDescription} />
         {notice ? (
           <div className="rounded-2xl border border-gray-200 bg-gray-50 px-6 py-4 text-xs uppercase tracking-[0.3em] text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
             {notice}
@@ -339,20 +340,28 @@ export default function AuthPage() {
                 </Button>
               </form>
             )}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-                {isRegisterMode ? 'Already have an account?' : 'Need a studio account?'}
-              </p>
-              <button
-                type="button"
-                onClick={() => handleModeChange(isRegisterMode ? AUTH_MODES.login : AUTH_MODES.register)}
-                disabled={submitting}
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-900 underline-offset-4 transition hover:underline disabled:opacity-60 dark:text-gray-100"
-              >
-                {isRegisterMode ? 'Switch to sign in' : 'Switch to create account'}
-              </button>
-            </div>
-          </Card>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            {isRegisterMode ? 'Already have an account?' : 'Need a studio account?'}
+          </p>
+          <button
+            type="button"
+            onClick={() => handleModeChange(isRegisterMode ? AUTH_MODES.login : AUTH_MODES.register)}
+            disabled={submitting}
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-900 underline-offset-4 transition hover:underline disabled:opacity-60 dark:text-gray-100"
+          >
+            {isRegisterMode ? 'Switch to sign in' : 'Switch to create account'}
+          </button>
+        </div>
+        {!isRegisterMode ? (
+          <p className="text-[0.6rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+            Studio staff?{' '}
+            <Link to="/dashboard/admin" className="font-semibold text-gray-900 underline dark:text-gray-100">
+              Go to the Admin Console
+            </Link>
+          </p>
+        ) : null}
+      </Card>
         </div>
       </div>
     </main>

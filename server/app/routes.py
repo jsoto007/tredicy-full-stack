@@ -24,6 +24,7 @@ from .models import (
     AppointmentAsset,
     AppointmentPayment,
     ClientAccount,
+    ClientDocument,
     Consultation,
     GalleryItem,
     SystemSetting,
@@ -58,7 +59,8 @@ DEFAULT_OPERATING_HOURS = [
     {"day": "sunday", "is_open": False, "open_time": "10:00", "close_time": "14:00"},
 ]
 
-ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "heic", "heif"}
+ALLOWED_UPLOAD_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | {"pdf", "txt", "doc", "docx"}
 
 DAY_TO_INDEX = {day: index for index, day in enumerate(WEEK_DAYS)}
 INDEX_TO_DAY = {index: day for day, index in DAY_TO_INDEX.items()}
@@ -445,6 +447,41 @@ def serialize_notification(notification):
     }
 
 
+DEFAULT_PREFERENCES = {
+    "email_reminders": True,
+    "sms_reminders": False,
+    "aftercare_emails": True,
+}
+
+
+def _client_preferences_key(user_id: int) -> str:
+    return f"client_preferences:{user_id}"
+
+
+def _load_client_preferences(user: ClientAccount) -> dict:
+    if not user:
+        return DEFAULT_PREFERENCES.copy()
+    stored = load_json_setting(_client_preferences_key(user.id), {})
+    return {
+        key: bool(stored.get(key, DEFAULT_PREFERENCES.get(key, False)))
+        for key in DEFAULT_PREFERENCES.keys()
+    }
+
+
+def _save_client_preferences(user: ClientAccount, updates: dict) -> dict:
+    if not user:
+        return DEFAULT_PREFERENCES.copy()
+    key = _client_preferences_key(user.id)
+    current = _load_client_preferences(user)
+    merged = {**current, **{k: bool(v) for k, v in updates.items() if k in DEFAULT_PREFERENCES}}
+    setting = upsert_json_setting(
+        key,
+        merged,
+        description=f"Client preferences for user {user.id}",
+    )
+    return merged
+
+
 def serialize_activity(log):
     return {
         "id": log.id,
@@ -561,7 +598,57 @@ def serialize_user_profile(user: ClientAccount):
         "has_identity_documents": user.has_identity_documents() if hasattr(user, "has_identity_documents") else False,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
         "created_at": user.created_at.isoformat() if user.created_at else None,
+        "preferences": _load_client_preferences(user),
     }
+
+
+def serialize_client_document(document: ClientDocument):
+    return {
+        "id": f"document-{document.id}",
+        "kind": document.kind,
+        "title": document.title or document.kind.replace("_", " ").title(),
+        "notes": document.notes,
+        "file_url": document.file_url,
+        "created_at": document.created_at.isoformat() if document.created_at else None,
+        "source": "you",
+    }
+
+
+def serialize_visible_asset(asset: AppointmentAsset):
+    appointment_ref = asset.appointment.reference_code or f"#{asset.appointment.id}" if asset.appointment else None
+    return {
+        "id": f"asset-{asset.id}",
+        "kind": asset.kind,
+        "title": asset.note_text or asset.kind.replace("_", " ").title(),
+        "file_url": asset.file_url,
+        "notes": asset.note_text,
+        "created_at": asset.created_at.isoformat() if asset.created_at else None,
+        "source": "studio",
+        "appointment_reference": appointment_ref,
+        "uploaded_by_admin": serialize_admin(asset.admin_uploader) if asset.admin_uploader else None,
+    }
+
+
+def _documents_for_user(user: ClientAccount):
+    client_documents = user.documents.order_by(ClientDocument.created_at.desc()).all()
+    shared_assets = (
+        AppointmentAsset.query.options(
+            joinedload(AppointmentAsset.admin_uploader),
+            joinedload(AppointmentAsset.appointment),
+        )
+        .join(TattooAppointment)
+        .filter(
+            TattooAppointment.client_id == user.id,
+            AppointmentAsset.is_visible_to_client.is_(True),
+            AppointmentAsset.file_url.isnot(None),
+        )
+        .order_by(AppointmentAsset.created_at.desc())
+        .all()
+    )
+    return (
+        [serialize_client_document(doc) for doc in client_documents],
+        [serialize_visible_asset(asset) for asset in shared_assets],
+    )
 
 
 def log_admin_activity(admin: AdminAccount, action: str, details: str | None = None, ip_address: str | None = None):
@@ -587,7 +674,7 @@ def enforce_csrf_protection():
 def allowed_file(filename: str) -> bool:
     if not filename or "." not in filename:
         return False
-    return filename.rsplit(".", 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+    return filename.rsplit(".", 1)[1].lower() in ALLOWED_UPLOAD_EXTENSIONS
 
 
 def load_json_setting(key: str, default):
@@ -1080,7 +1167,7 @@ def register_account():
     return jsonify(
         {
             "role": "user",
-            "redirect_to": "/dashboard/user",
+            "redirect_to": "/portal/dashboard",
             "profile": serialize_user_profile(client),
             "csrf_token": csrf_token,
         }
@@ -1130,7 +1217,7 @@ def auth_login():
         return jsonify(
             {
                 "role": "user",
-                "redirect_to": "/dashboard/user",
+                "redirect_to": "/portal/dashboard",
                 "profile": serialize_user_profile(client),
                 "csrf_token": csrf_token,
             }
@@ -1281,6 +1368,7 @@ def user_dashboard():
     )
 
     unread_count = sum(1 for note in notifications if not note.is_read)
+    documents, shared_documents = _documents_for_user(user)
 
     return jsonify(
         {
@@ -1290,6 +1378,8 @@ def user_dashboard():
                 "unread_count": unread_count,
             },
             "appointments": [serialize_appointment(appointment) for appointment in appointments],
+            "documents": documents,
+            "shared_documents": shared_documents,
             "recent_actions": [
                 {
                     "label": "Update profile",
@@ -1306,6 +1396,157 @@ def user_dashboard():
             ],
         }
     )
+
+
+@api_bp.route("/api/account/profile", methods=["PATCH"])
+@user_required
+def update_account_profile():
+    user = g.current_user
+    payload = request.get_json(silent=True) or {}
+
+    if "first_name" in payload:
+        first_name = (payload.get("first_name") or "").strip()
+        user.first_name = first_name or None
+    if "last_name" in payload:
+        last_name = (payload.get("last_name") or "").strip()
+        user.last_name = last_name or None
+    if "phone" in payload:
+        phone = (payload.get("phone") or "").strip()
+        user.phone = phone or None
+    if "email" in payload:
+        email_value = (payload.get("email") or "").strip()
+        if email_value:
+            conflict = (
+                ClientAccount.query.filter(func.lower(ClientAccount.email) == email_value.lower())
+                .filter(ClientAccount.id != user.id)
+                .first()
+            )
+            if conflict:
+                return jsonify({"error": "Email already in use."}), 400
+        user.email = email_value or None
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to update profile."}), 500
+
+    return jsonify(serialize_user_profile(user))
+
+
+@api_bp.route("/api/account", methods=["DELETE"])
+@user_required
+def delete_account():
+    user = g.current_user
+
+    try:
+        AppointmentAsset.query.filter_by(uploaded_by_client_id=user.id).update(
+            {"uploaded_by_client_id": None}, synchronize_session=False
+        )
+        TattooAppointment.query.filter_by(client_id=user.id).update(
+            {"client_id": None}, synchronize_session=False
+        )
+        UserNotification.query.filter_by(user_id=user.id).delete(synchronize_session=False)
+
+        db.session.delete(user)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to delete account."}), 500
+
+    clear_session()
+    return jsonify({"status": "deleted"})
+
+
+@api_bp.route("/api/account/preferences", methods=["GET", "PATCH"])
+@user_required
+def account_preferences():
+    user = g.current_user
+    if request.method == "GET":
+        return jsonify(_load_client_preferences(user))
+
+    payload = request.get_json(silent=True) or {}
+    updates = {
+        key: payload[key]
+        for key in DEFAULT_PREFERENCES.keys()
+        if key in payload
+    }
+    if not updates:
+        return jsonify(_load_client_preferences(user))
+
+    try:
+        preferences = _save_client_preferences(user, updates)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to save preferences."}), 500
+
+    return jsonify(preferences)
+
+
+@api_bp.route("/api/account/documents", methods=["GET"])
+@user_required
+def account_documents():
+    user = g.current_user
+    documents, shared_documents = _documents_for_user(user)
+    return jsonify({"documents": documents, "shared_documents": shared_documents})
+
+
+@api_bp.route("/api/account/documents", methods=["POST"])
+@user_required
+def upload_account_document():
+    user = g.current_user
+
+    if "file" not in request.files:
+        return jsonify({"error": "Choose a file to upload."}), 400
+
+    file = request.files["file"]
+    if not file or not file.filename:
+        return jsonify({"error": "Choose a file to upload."}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Unsupported file type."}), 400
+
+    kind = (request.form.get("kind") or "inspiration").strip().lower()
+    if kind not in {"inspiration", "document"}:
+        kind = "document"
+
+    title = (request.form.get("title") or "").strip() or None
+    notes = (request.form.get("notes") or "").strip() or None
+
+    extension = file.filename.rsplit(".", 1)[1].lower()
+    unique_name = f"{uuid4().hex}.{extension}"
+    safe_name = secure_filename(unique_name)
+
+    cleanup_target = None
+    try:
+        stored_name, file_url = store_uploaded_media(file, safe_name)
+        if _use_s3_uploads():
+            cleanup_target = {"mode": "s3", "key": stored_name}
+        else:
+            cleanup_target = {
+                "mode": "local",
+                "path": Path(current_app.config["UPLOAD_FOLDER"]) / stored_name,
+            }
+    except MediaStorageError:
+        return jsonify({"error": "Unable to store upload."}), 500
+
+    document = ClientDocument(
+        client=user,
+        file_url=file_url,
+        kind=kind,
+        title=title,
+        notes=notes,
+    )
+    db.session.add(document)
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        _cleanup_upload_target(cleanup_target)
+        return jsonify({"error": "Unable to save inspiration."}), 500
+
+    return jsonify(serialize_client_document(document)), 201
 
 
 @api_bp.route("/api/dashboard/admin", methods=["GET"])

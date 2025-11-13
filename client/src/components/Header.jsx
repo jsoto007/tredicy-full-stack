@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from './Button.jsx';
+import { ADMIN_NAV_ITEMS, DEFAULT_NAV_ITEMS, USER_NAV_ITEMS } from '../data/navigation.js';
 
 function IconCalendar(props) {
   return (
@@ -25,25 +26,6 @@ function IconCalendar(props) {
     </svg>
   );
 }
-
-const DEFAULT_NAV_ITEMS = [
-  { label: 'Work', to: '/#work', type: 'link' },
-  { label: 'Services', to: '/#services', type: 'link' },
-  { label: 'About', to: '/#about', type: 'link' },
-  { label: 'Contact', to: '/#contact', type: 'link' }
-];
-
-const USER_NAV_ITEMS = [
-  { label: 'Dashboard', to: '/dashboard/user', type: 'link' },
-  { label: 'Profile', to: '/dashboard/user#profile', type: 'link' },
-  { label: 'Appointments', to: '/dashboard/user#appointments', type: 'link' }
-];
-
-const ADMIN_NAV_ITEMS = [
-  { label: 'Settings', to: '/dashboard/admin/settings', type: 'link' },
-  { label: 'Calendar', to: '/dashboard/admin/calendar', type: 'link' },
-  { label: 'Gallery', to: '/dashboard/admin/gallery', type: 'link' }
-];
 
 function NavItem({ item, onNavigate }) {
   const shared =

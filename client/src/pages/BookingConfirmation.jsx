@@ -204,7 +204,7 @@ export default function BookingConfirmation() {
                 Return home
               </Button>
               {isAuthenticated ? (
-                <Button as={Link} to="/dashboard/user">
+                <Button as={Link} to="/portal/dashboard">
                   View dashboard
                 </Button>
               ) : (

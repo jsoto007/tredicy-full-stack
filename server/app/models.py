@@ -89,6 +89,12 @@ class ClientAccount(TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         lazy="dynamic",
     )
+    documents = db.relationship(
+        "ClientDocument",
+        back_populates="client",
+        cascade="all, delete-orphan",
+        lazy="dynamic",
+    )
 
     def set_password(self, raw_password: str) -> None:
         self.password_hash = generate_password_hash(raw_password)
@@ -119,6 +125,23 @@ class ClientAccount(TimestampMixin, db.Model):
                 is not None
             )
         return any(asset.kind in {"id_front", "id_back"} and asset.file_url for asset in assets_query)
+
+
+class ClientDocument(TimestampMixin, db.Model):
+    __tablename__ = "client_documents"
+
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_accounts.id"),
+        nullable=False,
+    )
+    file_url = db.Column(db.String(1024), nullable=False)
+    kind = db.Column(db.String(40), nullable=False, default="document")
+    title = db.Column(db.String(255))
+    notes = db.Column(db.Text)
+
+    client = db.relationship("ClientAccount", back_populates="documents")
 
 
 class TattooCategory(TimestampMixin, db.Model):
