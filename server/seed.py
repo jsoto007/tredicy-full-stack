@@ -4,42 +4,70 @@ from datetime import datetime, timedelta
 
 from app import create_app, db
 from app.models import (
+    AccountActivationToken,
     AdminAccount,
     AdminActivityLog,
     AppointmentAsset,
+    AppointmentPayment,
     ClientAccount,
+    ClientDocument,
+    Consultation,
     GalleryItem,
     SessionOption,
     SystemSetting,
+    StudioAvailabilityBlock,
+    StudioClosure,
+    StudioWorkingHour,
     TattooAppointment,
     TattooCategory,
     Testimonial,
     UserNotification,
 )
 
-
 PRIMARY_ADMIN = {
-    "name": "Studio Owner",
-    "email": "owner@blackinkdemo.com",
-    "password": "OwnerPass123!",
-}
-
-MANAGER_ADMIN = {
-    "name": "Studio Manager",
-    "email": "manager@blackinkdemo.com",
-    "password": "ManagerPass123!",
+    "name": "Artem Blackwork",
+    "email": "artem@blackworknyc.com",
+    "password": "Aguacate@@1",
 }
 
 DEMO_USER = {
-    "first_name": "Jordan",
-    "last_name": "Rivera",
-    "email": "jordan@example.com",
-    "phone": "+1-555-0199",
-    "password": "demo1234",
+    "first_name": "River",
+    "last_name": "Day",
+    "email": "river@blackworknyc.com",
+    "phone": "+1-917-555-0147",
+    "password": "RiverPass2024!",
 }
 
 BOOKING_FEE_SETTING_KEY = "booking_fee_percent"
 DEFAULT_BOOKING_FEE_PERCENT = 20
+
+
+def clear_existing_data():
+    """Completely wipe known tables so the seed always replaces the data."""
+    models_in_order = [
+        AppointmentAsset,
+        AppointmentPayment,
+        TattooAppointment,
+        GalleryItem,
+        AdminActivityLog,
+        UserNotification,
+        Consultation,
+        ClientDocument,
+        AccountActivationToken,
+        StudioAvailabilityBlock,
+        SessionOption,
+        SystemSetting,
+        TattooCategory,
+        ClientAccount,
+        AdminAccount,
+        StudioClosure,
+        StudioWorkingHour,
+    ]
+
+    for model in models_in_order:
+        db.session.query(model).delete(synchronize_session=False)
+
+    db.session.flush()
 
 
 def ensure_admin_account(config):
@@ -84,68 +112,22 @@ def ensure_categories():
 
     db.session.add_all(
         [
-            TattooCategory(name="Blackwork", description="Bold monochrome work."),
-            TattooCategory(name="Fine Line", description="Delicate and minimal line work."),
-            TattooCategory(name="Color", description="Rich color-focused pieces."),
+            TattooCategory(
+                name="Blackwork",
+                description="High-contrast monochrome pieces with crisp edges and dense shading.",
+            ),
+            TattooCategory(
+                name="Fine Line",
+                description="Delicate lines crafted with steady hands and intentional spacing.",
+            ),
+            TattooCategory(
+                name="Illustrative",
+                description="Painterly compositions that feel like framed art.",
+            ),
         ]
     )
     db.session.flush()
     return True
-
-
-def ensure_gallery(admin):
-    if GalleryItem.query.count() > 0 or not admin:
-        return False
-
-    categories = {c.name: c for c in TattooCategory.query.all()}
-    items = [
-        (
-            "Blackwork",
-            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
-            "Geometric blackwork sleeve covering a forearm (demo)",
-        ),
-        (
-            "Blackwork",
-            "https://t4.ftcdn.net/jpg/04/36/10/09/240_F_436100949_TjLhwlstteQuOdiKGNBmmDkGcOhkyqxI.jpg",
-            "Black ink fern linework across a shoulder (demo)",
-        ),
-        (
-            "Fine Line",
-            "https://images.unsplash.com/photo-1542219550-3828d3afa116?auto=format&fit=crop&w=900&q=80",
-            "Fine line wrist tattoo with delicate lettering (demo)",
-        ),
-        (
-            "Fine Line",
-            "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80",
-            "Minimal constellation linework across a shoulder (demo)",
-        ),
-        (
-            "Color",
-            "https://images.unsplash.com/photo-1527694224015-bb4f9eace5f3?auto=format&fit=crop&w=900&q=80",
-            "Gradient color tattoo along an upper arm (demo)",
-        ),
-        (
-            "Color",
-            "https://images.unsplash.com/photo-1520854221050-0f4caff449fb?auto=format&fit=crop&w=900&q=80",
-            "Bold color portrait tattoo on a shoulder (demo)",
-        ),
-    ]
-
-    gallery_entries = []
-    for category_name, image_url, alt in items:
-        category = categories.get(category_name)
-        if category:
-            gallery_entries.append(
-                GalleryItem(
-                    category=category,
-                    uploaded_by=admin,
-                    image_url=image_url,
-                    alt=alt,
-                )
-            )
-
-    db.session.add_all(gallery_entries)
-    return bool(gallery_entries)
 
 
 def ensure_testimonials():
@@ -155,18 +137,18 @@ def ensure_testimonials():
     db.session.add_all(
         [
             Testimonial(
-                name="Maya R.",
-                quote="Every line healed as sharp as day one. Nova kept the session calm and focused. (demo)",
+                name="Mara L.",
+                quote="Artem kept the room calm and somehow made a four-hour session feel like a conversation.",
                 rating=5,
             ),
             Testimonial(
                 name="Devon C.",
-                quote="From consult to finish, the process was transparent and intentional. (demo)",
+                quote="The linework is exacting—no rushed decisions and the result is timeless.",
                 rating=5,
             ),
             Testimonial(
                 name="Elena V.",
-                quote="My color piece feels both minimal and rich. I felt heard at every stage. (demo)",
+                quote="I came in with a vague idea and left with a piece that feels like me.",
                 rating=5,
             ),
         ]
@@ -175,72 +157,52 @@ def ensure_testimonials():
 
 
 def ensure_appointment(admin, user):
-    if not admin or not user or TattooAppointment.query.count() > 0:
+    if not admin or not user:
         return False
 
     appointment = TattooAppointment(
-        reference_code="DEMO-APPT-001",
+        reference_code="ARTEM-SEED-01",
         client=user,
         assigned_admin=admin,
-        status="pending",
-        client_description="Full forearm blackwork sleeve inspired by geometric patterns.",
-        scheduled_start=datetime.utcnow() + timedelta(days=14),
-        duration_minutes=180,
+        status="confirmed",
+        client_description="Large geometric blackwork piece spanning the outer forearm.",
+        scheduled_start=datetime.utcnow() + timedelta(days=18),
+        duration_minutes=210,
     )
     db.session.add(appointment)
     db.session.flush()
 
-    db.session.add_all(
-        [
-            AppointmentAsset(
-                appointment=appointment,
-                client_uploader=user,
-                kind="id_front",
-                file_url="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80",
-                is_visible_to_client=False,
-            ),
-            AppointmentAsset(
-                appointment=appointment,
-                client_uploader=user,
-                kind="id_back",
-                file_url="https://images.unsplash.com/photo-1549921296-3d268e24c81c?auto=format&fit=crop&w=800&q=80",
-                is_visible_to_client=False,
-            ),
-            AppointmentAsset(
-                appointment=appointment,
-                client_uploader=user,
-                kind="inspiration_image",
-                file_url="https://images.unsplash.com/photo-1531256456869-ce942a665e80?auto=format&fit=crop&w=800&q=80",
-                is_visible_to_client=True,
-            ),
-            AppointmentAsset(
-                appointment=appointment,
-                admin_uploader=admin,
-                kind="note",
-                note_text="Bring stencil drafts and review geometric pattern placement.",
-                is_visible_to_client=False,
-            ),
-        ]
+    db.session.add(
+        AppointmentAsset(
+            appointment=appointment,
+            admin_uploader=admin,
+            kind="note",
+            note_text="Prepare stencil drafts and confirm the contrast plan with the client on arrival.",
+            is_visible_to_client=False,
+        )
     )
     return True
 
 
 def ensure_notifications(user):
-    if not user or UserNotification.query.filter_by(user_id=user.id).count() > 0:
+    if not user:
+        return False
+
+    if UserNotification.query.filter_by(user_id=user.id).count() > 0:
         return False
 
     db.session.add_all(
         [
             UserNotification(
                 user=user,
-                title="Consultation received",
-                body="We logged your recent consultation request. Expect a reply within 2 business days.",
+                title="Consultation scheduled",
+                body="Your consultation is locked in. Review the prep guide ahead of time.",
                 category="booking",
             ),
             UserNotification(
                 user=user,
-                title="Document review",
-                body="Admin team verified your ID submission. You're cleared for the upcoming session.",
+                title="Documents reviewed",
+                body="ID verification is complete. We are ready for the session.",
                 category="documents",
             ),
         ]
@@ -248,28 +210,27 @@ def ensure_notifications(user):
     return True
 
 
-def ensure_admin_activity(admins):
-    seeded = False
-    for admin in admins:
-        if admin and AdminActivityLog.query.filter_by(admin_id=admin.id).count() == 0:
-            db.session.add_all(
-                [
-                    AdminActivityLog(
-                        admin=admin,
-                        action="login",
-                        details="Admin signed in to review dashboard.",
-                        ip_address="127.0.0.1",
-                    ),
-                    AdminActivityLog(
-                        admin=admin,
-                        action="appointment_update",
-                        details="Updated demo appointment status to pending.",
-                        ip_address="127.0.0.1",
-                    ),
-                ]
-            )
-            seeded = True
-    return seeded
+def ensure_admin_activity(admin):
+    if not admin:
+        return False
+
+    db.session.add_all(
+        [
+            AdminActivityLog(
+                admin=admin,
+                action="login",
+                details="Admin signed in to confirm today's schedule.",
+                ip_address="127.0.0.1",
+            ),
+            AdminActivityLog(
+                admin=admin,
+                action="appointment_update",
+                details="Double-checked the pending appointment references.",
+                ip_address="127.0.0.1",
+            ),
+        ]
+    )
+    return True
 
 
 def ensure_settings():
@@ -285,8 +246,8 @@ def ensure_settings():
             ),
             SystemSetting(
                 key="notification_email",
-                value="studio@blackinkdemo.com",
-                description="Primary email address used for outbound notifications.",
+                value=PRIMARY_ADMIN["email"],
+                description="Address used for outgoing notifications.",
             ),
             SystemSetting(
                 key="maintenance_mode",
@@ -296,7 +257,7 @@ def ensure_settings():
             ),
             SystemSetting(
                 key="studio_hourly_rate_cents",
-                value="20000",
+                value="22000",
                 description="Hourly rate charged for tattoo sessions (in cents).",
             ),
             SystemSetting(
@@ -314,9 +275,9 @@ def ensure_session_options():
         return False
 
     options = [
-        {"name": "One-hour session", "duration_minutes": 60, "price_cents": 10000},
-        {"name": "Two-hour session", "duration_minutes": 120, "price_cents": 17500},
-        {"name": "Three-hour session", "duration_minutes": 180, "price_cents": 24000},
+        {"name": "One-hour intro", "duration_minutes": 60, "price_cents": 11000},
+        {"name": "Two-hour focus", "duration_minutes": 120, "price_cents": 19000},
+        {"name": "Three-hour deep", "duration_minutes": 180, "price_cents": 26000},
     ]
     for entry in options:
         db.session.add(SessionOption(**entry))
@@ -324,28 +285,21 @@ def ensure_session_options():
 
 
 def seed_demo_data():
-    created_any = False
+    clear_existing_data()
 
-    owner_admin, owner_created = ensure_admin_account(PRIMARY_ADMIN)
-    manager_admin, manager_created = ensure_admin_account(MANAGER_ADMIN)
-    created_any |= owner_created or manager_created
+    owner_admin, _ = ensure_admin_account(PRIMARY_ADMIN)
+    user, _ = ensure_user_account()
 
-    user, user_created = ensure_user_account()
-    created_any |= user_created
+    ensure_categories()
+    ensure_testimonials()
+    ensure_appointment(owner_admin, user)
+    ensure_notifications(user)
+    ensure_admin_activity(owner_admin)
+    ensure_settings()
+    ensure_session_options()
 
-    created_any |= ensure_categories()
-    created_any |= ensure_gallery(owner_admin)
-    created_any |= ensure_testimonials()
-    created_any |= ensure_appointment(owner_admin, user)
-    created_any |= ensure_notifications(user)
-    created_any |= ensure_admin_activity([owner_admin, manager_admin])
-    created_any |= ensure_settings()
-    created_any |= ensure_session_options()
-
-    if created_any:
-        db.session.commit()
-
-    return created_any
+    db.session.commit()
+    return True
 
 
 def main():
@@ -353,9 +307,9 @@ def main():
     with app.app_context():
         db.create_all()
         if seed_demo_data():
-            print("Demo data seeded successfully.")
+            print("Seed data reset and populated successfully.")
         else:
-            print("Database already contains demo data. No changes made.")
+            print("No changes were necessary while seeding data.")
 
 
 if __name__ == "__main__":
