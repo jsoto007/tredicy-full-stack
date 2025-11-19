@@ -6,8 +6,6 @@ import Lightbox from '../components/Lightbox.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { resolveApiUrl } from '../lib/api.js';
 
-
-
 export default function Gallery() {
   const {
     categories,
