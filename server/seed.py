@@ -1,8 +1,6 @@
 """Standalone script for populating demo data."""
 
-import csv
 import os
-from pathlib import Path
 from datetime import datetime, timedelta
 
 from app import create_app, db
@@ -41,7 +39,281 @@ DEMO_USER = {
     "password": "RiverPass2024!",
 }
 
-APPOINTMENT_CSV_FILENAME = "schedule2025-11-25.csv"
+REAL_APPOINTMENTS = [
+    {
+        "appointment_id": 1574976527,
+        "first_name": "Dave",
+        "last_name": "Walsh",
+        "phone": "2032477033",
+        "email": "davewalsh589@gmail.com",
+        "appointment_type": "Consultation",
+        "appointment_price": 0.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "",
+        "start": "November 26, 2025 5:00 pm",
+        "end": "November 26, 2025 5:30 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-17",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "2025-11-24",
+    },
+    {
+        "appointment_id": 1575682263,
+        "first_name": "Yana",
+        "last_name": "Kanatyeva",
+        "phone": "+16468811292",
+        "email": "yanakanatyeva@gmail.com",
+        "appointment_type": "Quick tattoo session 🚀",
+        "appointment_price": 750.0,
+        "paid": True,
+        "amount_paid_online": 150.0,
+        "notes": "",
+        "start": "November 28, 2025 2:00 pm",
+        "end": "November 28, 2025 5:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-18",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1579269953,
+        "first_name": "Renita",
+        "last_name": "Madhoo",
+        "phone": "+19177940315",
+        "email": "renitamadhoo1995@gmail.com",
+        "appointment_type": "Consultation",
+        "appointment_price": 0.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "",
+        "start": "November 29, 2025 1:00 pm",
+        "end": "November 29, 2025 1:30 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-24",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "2025-11-24",
+    },
+    {
+        "appointment_id": 1579768629,
+        "first_name": "Donna",
+        "last_name": "Bandiola",
+        "phone": "+18138168904",
+        "email": "donnafebandiola@gmail.com",
+        "appointment_type": "Quick tattoo session 🚀",
+        "appointment_price": 750.0,
+        "paid": True,
+        "amount_paid_online": 150.0,
+        "notes": "",
+        "start": "November 30, 2025 2:00 pm",
+        "end": "November 30, 2025 5:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-24",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1579232348,
+        "first_name": "Agnes",
+        "last_name": "Romero",
+        "phone": "+12124442711",
+        "email": "agnes.romero90@gmail.com",
+        "appointment_type": "Consultation",
+        "appointment_price": 0.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "",
+        "start": "December 2, 2025 12:00 pm",
+        "end": "December 2, 2025 12:30 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-24",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1560195933,
+        "first_name": "Cris",
+        "last_name": "Cooper",
+        "phone": "",
+        "email": "Ccooper72111@gmail.com",
+        "appointment_type": "Tattoo session",
+        "appointment_price": 350.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "$150 deposit, $500 total. Pet portrait.",
+        "start": "December 2, 2025 3:00 pm",
+        "end": "December 2, 2025 4:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-10-22",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1572512245,
+        "first_name": "Mike",
+        "last_name": "Spinner",
+        "phone": "+15164594518",
+        "email": "michaelrspinner@gmail.com",
+        "appointment_type": "Consultation",
+        "appointment_price": 0.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "",
+        "start": "December 3, 2025 11:00 am",
+        "end": "December 3, 2025 11:30 am",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-13",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "2025-11-24",
+    },
+    {
+        "appointment_id": 1578066269,
+        "first_name": "Samuel",
+        "last_name": "Stan",
+        "phone": "+14417040488",
+        "email": "sam.r.stan@gmail.com",
+        "appointment_type": "Full day session",
+        "appointment_price": 2500.0,
+        "paid": True,
+        "amount_paid_online": 500.0,
+        "notes": "",
+        "start": "December 3, 2025 12:00 pm",
+        "end": "December 3, 2025 8:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-21",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1563222526,
+        "first_name": "Nathan",
+        "last_name": "Lesch",
+        "phone": "+13157303757",
+        "email": "nlesch18@gmail.com",
+        "appointment_type": "Consultation",
+        "appointment_price": 0.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "Touch up leaves",
+        "start": "December 5, 2025 6:30 pm",
+        "end": "December 5, 2025 7:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-10-28",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1561817051,
+        "first_name": "Michael",
+        "last_name": "Kelly",
+        "phone": "+15166726604",
+        "email": "michaelkelly2113@gmail.com",
+        "appointment_type": "Full day session",
+        "appointment_price": 2500.0,
+        "paid": True,
+        "amount_paid_online": 500.0,
+        "notes": "",
+        "start": "December 10, 2025 12:00 pm",
+        "end": "December 10, 2025 8:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-10-25",
+        "label": "",
+        "scheduled_by": "a client",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1570780498,
+        "first_name": "Rafal",
+        "last_name": "Walendzik",
+        "phone": "+17187536430",
+        "email": "walendzikr1@gmail.com",
+        "appointment_type": "Quick tattoo session 🚀",
+        "appointment_price": 750.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "150 deposit. Right upper arm.",
+        "start": "January 18, 2026 12:00 pm",
+        "end": "January 18, 2026 3:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-10",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "",
+    },
+    {
+        "appointment_id": 1543224899,
+        "first_name": "Le Anh",
+        "last_name": "Vu",
+        "phone": "+19177929902",
+        "email": "leanh.vu14@gmail.com",
+        "appointment_type": "Quick tattoo session 🚀",
+        "appointment_price": 750.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "150 deposit. Left leg. Bonsai fudo",
+        "start": "January 20, 2026 1:00 pm",
+        "end": "January 20, 2026 4:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-09-22",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "2025-10-13",
+    },
+    {
+        "appointment_id": 1575524112,
+        "first_name": "Nathan",
+        "last_name": "Pierre",
+        "phone": "+19083910604",
+        "email": "npierre70@gmail.com",
+        "appointment_type": "Half day session",
+        "appointment_price": 1250.0,
+        "paid": False,
+        "amount_paid_online": 0.0,
+        "notes": "250 deposit. Right chest cross and dove w text.",
+        "start": "February 7, 2026 2:00 pm",
+        "end": "February 7, 2026 6:00 pm",
+        "timezone": "America/New_York",
+        "calendar": "Artem @blackworknyc",
+        "certificate_code": "",
+        "date_scheduled": "2025-11-18",
+        "label": "",
+        "scheduled_by": "blackworknyc@gmail.com via Mobile App",
+        "date_rescheduled": "",
+    },
+]
 
 BOOKING_FEE_SETTING_KEY = "booking_fee_percent"
 DEFAULT_BOOKING_FEE_PERCENT = 20
@@ -193,146 +465,122 @@ def ensure_appointment(admin, user):
     return True
 
 
-def _parse_appointment_row(row):
-    """Parse a single CSV row from the schedule export into a normalized dict.
-
-    Expected headers include:
-    Start Time, End Time, First Name, Last Name, Phone, Email, Type,
-    Appointment Price, Paid?, Amount Paid Online, Appointment ID, etc.
-    """
-    start_str = row.get("Start Time", "").strip()
-    end_str = row.get("End Time", "").strip()
-    if not start_str or not end_str:
-        return None
-
-    try:
-        # Example format: "November 26, 2025 5:00 pm"
-        start = datetime.strptime(start_str, "%B %d, %Y %I:%M %p")
-        end = datetime.strptime(end_str, "%B %d, %Y %I:%M %p")
-    except Exception as exc:
-        print(f"Skipping row with invalid datetime values: {exc} -> {row!r}")
-        return None
-
-    duration_minutes = int((end - start).total_seconds() // 60)
-
-    def _parse_money(value):
-        if value is None:
-            return 0.0
-        text = str(value).strip()
-        if not text:
-            return 0.0
-        # Strip thousands separators and convert to float
-        text = text.replace(",", "")
-        try:
-            return float(text)
-        except ValueError:
-            print(f"Could not parse monetary value {value!r}; defaulting to 0.0")
-            return 0.0
-
-    first_name = row.get("First Name", "").strip()
-    last_name = row.get("Last Name", "").strip()
-    phone = row.get("Phone", "").strip().strip("'")
-    email = row.get("Email", "").strip()
-    appointment_type = row.get("Type", "").strip()
-    appointment_price = _parse_money(row.get("Appointment Price"))
-    paid_flag = row.get("Paid?", "").strip().lower() == "yes"
-    amount_paid_online = _parse_money(row.get("Amount Paid Online"))
-    notes_raw = row.get("Notes")
-    notes = None
-    if isinstance(notes_raw, str):
-        notes = notes_raw.strip() or None
-
-    appointment_id_raw = row.get("Appointment ID")
-    try:
-        appointment_id = int(str(appointment_id_raw).strip())
-    except (TypeError, ValueError):
-        print(f"Skipping row with invalid Appointment ID {appointment_id_raw!r}")
-        return None
-
-    return {
-        "appointment_id": appointment_id,
-        "first_name": first_name,
-        "last_name": last_name,
-        "phone": phone,
-        "email": email,
-        "appointment_type": appointment_type,
-        "appointment_price": appointment_price,
-        "paid": paid_flag,
-        "amount_paid_online": amount_paid_online,
-        "notes": notes,
-        "scheduled_start": start,
-        "duration_minutes": duration_minutes,
-    }
 
 
-def import_real_appointments_from_csv(admin):
-    """Import real appointments from a CSV export without wiping existing data.
+# Seed real appointments from the embedded schedule data.
+def seed_real_appointments(admin):
+    """Seed real appointments from the embedded schedule data.
 
-    The CSV file is expected to live next to this seed script and be named
-    according to APPOINTMENT_CSV_FILENAME.
+    This does NOT wipe existing data and is safe to run multiple times. It
+    uses reference codes of the form REAL-<Appointment ID> to stay idempotent.
     """
     if not admin:
         return False
 
-    base_dir = Path(__file__).resolve().parent
-    csv_path = base_dir / APPOINTMENT_CSV_FILENAME
-
-    if not csv_path.exists():
-        print(f"No appointment CSV found at {csv_path}. Skipping real appointment import.")
-        return False
-
     created_any = False
 
-    with csv_path.open(newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            parsed = _parse_appointment_row(row)
-            if not parsed:
-                continue
+    for data in REAL_APPOINTMENTS:
+        raw_email = (data.get("email") or "").strip()
+        email = raw_email or f"guest-{data['appointment_id']}@placeholder.invalid"
 
-            email = parsed["email"]
-            if not email:
-                print(f"Skipping appointment {parsed['appointment_id']} with no email.")
-                continue
-
-            client = ClientAccount.query.filter_by(email=email).first()
-            if not client:
-                client = ClientAccount(
-                    first_name=parsed["first_name"],
-                    last_name=parsed["last_name"],
-                    email=email,
-                    phone=parsed["phone"],
-                    is_guest=True,
-                    role="client",
-                )
-                db.session.add(client)
-                db.session.flush()
-                created_any = True
-
-            reference_code = f"REAL-{parsed['appointment_id']}"
-            existing_appointment = TattooAppointment.query.filter_by(
-                reference_code=reference_code
-            ).first()
-            if existing_appointment:
-                # Already imported
-                continue
-
-            appointment = TattooAppointment(
-                reference_code=reference_code,
-                client=client,
-                assigned_admin=admin,
-                status="confirmed" if parsed["paid"] else "pending",
-                client_description=parsed["appointment_type"],
-                scheduled_start=parsed["scheduled_start"],
-                duration_minutes=parsed["duration_minutes"],
+        client = ClientAccount.query.filter_by(email=email).first()
+        if not client:
+            client = ClientAccount(
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                email=email,
+                phone=data["phone"],
+                is_guest=True,
+                role="client",
             )
-            db.session.add(appointment)
+            db.session.add(client)
+            db.session.flush()
             created_any = True
 
+        reference_code = f"REAL-{data['appointment_id']}"
+        existing_appointment = TattooAppointment.query.filter_by(
+            reference_code=reference_code
+        ).first()
+        if existing_appointment:
+            # Already imported
+            continue
+
+        start = datetime.strptime(data["start"], "%B %d, %Y %I:%M %p")
+        end = datetime.strptime(data["end"], "%B %d, %Y %I:%M %p")
+        duration_minutes = int((end - start).total_seconds() // 60)
+
+        appointment = TattooAppointment(
+            reference_code=reference_code,
+            client=client,
+            assigned_admin=admin,
+            status="confirmed" if data["paid"] else "pending",
+            client_description=data["appointment_type"],
+            scheduled_start=start,
+            duration_minutes=duration_minutes,
+            contact_name=f"{data['first_name']} {data['last_name']}".strip(),
+            contact_email=raw_email or None,
+            contact_phone=(data.get("phone") or "").strip() or None,
+        )
+        db.session.add(appointment)
+
+        note_lines = []
+
+        base_note = (data.get("notes") or "").strip()
+        if base_note:
+            note_lines.append(base_note)
+
+        if data.get("appointment_price") is not None:
+            note_lines.append(
+                f"Appointment price: ${data['appointment_price']:,.2f}"
+            )
+        if data.get("amount_paid_online") is not None:
+            note_lines.append(
+                f"Amount paid online: ${data['amount_paid_online']:,.2f}"
+            )
+        note_lines.append(f"Paid (source): {'yes' if data.get('paid') else 'no'}")
+
+        extra_fields = [
+            ("Timezone", data.get("timezone")),
+            ("Calendar", data.get("calendar")),
+            ("Certificate code", data.get("certificate_code")),
+            ("Date scheduled", data.get("date_scheduled")),
+            ("Label", data.get("label")),
+            ("Scheduled by", data.get("scheduled_by")),
+            ("Date rescheduled", data.get("date_rescheduled")),
+        ]
+        for label, value in extra_fields:
+            if value:
+                note_lines.append(f"{label}: {value}")
+
+        if note_lines:
+            db.session.add(
+                AppointmentAsset(
+                    appointment=appointment,
+                    admin_uploader=admin,
+                    kind="note",
+                    note_text="\n".join(note_lines),
+                    is_visible_to_client=False,
+                )
+            )
+
+        if data.get("amount_paid_online"):
+            db.session.add(
+                AppointmentPayment(
+                    appointment=appointment,
+                    provider="seed",
+                    provider_payment_id=f"SEED-{reference_code}",
+                    status="paid" if data.get("paid") else "pending",
+                    amount_cents=int(round(float(data["amount_paid_online"]) * 100)),
+                    currency="USD",
+                    note="Imported payment record from seed data.",
+                )
+            )
+        created_any = True
+
     if created_any:
-        print("Imported real appointments from CSV.")
+        print("Seeded real appointments from embedded schedule.")
     else:
-        print("No new real appointments were imported from CSV.")
+        print("No new real appointments were added from embedded schedule.")
     return created_any
 
 
@@ -452,7 +700,7 @@ def seed_demo_data():
     ensure_admin_activity(owner_admin)
     ensure_settings()
     ensure_session_options()
-    import_real_appointments_from_csv(owner_admin)
+    seed_real_appointments(owner_admin)
 
     db.session.commit()
     return True
