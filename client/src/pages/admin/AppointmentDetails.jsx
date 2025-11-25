@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import FadeIn from '../../components/FadeIn.jsx';
+import SectionTitle from '../../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../../lib/api.js';
 import { ASSET_KIND_OPTIONS, useAdminDashboard } from './AdminDashboardContext.jsx';
 
@@ -28,11 +29,8 @@ const STATUS_OPTIONS = [
 ];
 
 const APPOINTMENT_STATUS_FIELD_ID = 'appointment-status-select';
-<<<<<<< ours
 const ICON_BADGE_CLASS =
   'flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-black/10 dark:from-gray-100 dark:via-gray-200 dark:to-gray-400 dark:text-gray-900 dark:ring-white/15';
-=======
->>>>>>> theirs
 
 function formatStatusLabel(value) {
   if (!value) {
@@ -106,9 +104,6 @@ function getErrorMessage(error, fallback = 'Something went wrong.') {
   return fallback;
 }
 
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
 function IconMail(props) {
   return (
     <svg
@@ -163,24 +158,6 @@ function IconLink(props) {
   );
 }
 
-function IconUser(props) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <circle cx="12" cy="8" r="3" />
-      <path d="M6 20c0-3 3-5 6-5s6 2 6 5" />
-    </svg>
-  );
-}
-
 function IconShield(props) {
   return (
     <svg
@@ -197,31 +174,7 @@ function IconShield(props) {
       <path d="m9.5 12.5 2 2 3-4" />
     </svg>
   );
-=======
-function getFileNameFromUrl(url) {
-  if (!url || typeof url !== 'string') {
-    return '';
-  }
-  const sanitized = url.split('?')[0]?.split('#')[0] ?? '';
-  const segments = sanitized.split('/').filter(Boolean);
-  return segments.length ? segments[segments.length - 1] : '';
 }
-
-function getAssetKindMeta(kind) {
-  return KIND_META[kind] || {
-    label: 'Asset',
-    badgeClasses: 'bg-gray-100 text-gray-800',
-    cardClasses: 'bg-white border-gray-200',
-    iconClasses: 'bg-gray-900 text-white',
-    Icon: PhotoIcon
-  };
->>>>>>> theirs
-}
-
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
 export default function AppointmentDetails() {
   const { appointmentId } = useParams();
   const appointmentNumericId = Number(appointmentId);
@@ -736,27 +689,6 @@ export default function AppointmentDetails() {
             onChange={handleImageUpload}
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assets</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Upload admin notes or share reference material with the client.</p>
-            </div>
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <Button type="button" variant="secondary" onClick={handleTriggerImageUpload} disabled={uploadingImage}>
-                {uploadingImage ? 'Uploading…' : '📤 Upload photo'}
-              </Button>
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-600 dark:bg-gray-900/60 dark:text-gray-300">
-                {appointment.assets?.length || 0} attached
-=======
-            <div className="space-y-1">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">Assets</p>
-              <p className="text-base font-medium text-gray-900 dark:text-gray-100">Attach admin notes and inspiration for the client.</p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Upload admin notes or share reference material with the client.</p>
-=======
-=======
->>>>>>> theirs
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                 Assets
@@ -764,115 +696,21 @@ export default function AppointmentDetails() {
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Upload admin notes or share reference material with the client.
               </p>
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
             </div>
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
               <Button type="button" variant="secondary" onClick={handleTriggerImageUpload} disabled={uploadingImage}>
                 {uploadingImage ? 'Uploading…' : 'Upload photo'}
               </Button>
-<<<<<<< ours
-<<<<<<< ours
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:bg-gray-900 dark:text-gray-300">
-                {appointment.assets?.length || 0} Attached
->>>>>>> theirs
-=======
               <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
                 {appointment.assets?.length || 0} attached
->>>>>>> theirs
-=======
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                {appointment.assets?.length || 0} attached
->>>>>>> theirs
               </span>
             </div>
           </div>
           <div className="space-y-3">
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-            <h4 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Client photos</h4>
-            {imageAssets.length ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {imageAssets.map((asset) => (
-                  <figure
-                    key={`preview-${asset.id}`}
-                    className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-                  >
-                    <img
-                      src={resolveApiUrl(asset.file_url)}
-                      alt={`${asset.kind || 'Client asset'} preview`}
-                      className="h-44 w-full object-cover"
-                    />
-                    <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-                      <span>{asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset'}</span>
-                      <span>{asset.uploaded_by_client ? 'Client' : 'Admin'}</span>
-                    </figcaption>
-                  </figure>
-                ))}
-=======
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Client photos</h4>
-              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
-                {imageAssets.length} Photos
-              </span>
-            </div>
-            {imageAssets.length ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {imageAssets.map((asset, index) => {
-                  const gradientIndex = index % 3;
-                  const gradientClasses = [
-                    'from-amber-300 via-amber-400 to-amber-500',
-                    'from-emerald-400 via-emerald-500 to-emerald-600',
-                    'from-blue-400 via-blue-500 to-blue-600'
-                  ][gradientIndex];
-                  const label = asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset';
-                  const previewUrl = resolveApiUrl(asset.file_url);
-                  return (
-                    <button
-                      key={`preview-${asset.id}`}
-                      type="button"
-                      onClick={() => handleOpenPreview(asset.id)}
-                      className="group relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-gray-800 dark:bg-gray-900"
-                      style={{ backgroundImage: undefined }}
-                      aria-label={`Open ${label} preview`}
-                    >
-                      <div className={`absolute inset-0 bg-gradient-to-br ${gradientClasses} opacity-90`} aria-hidden />
-                      {previewUrl ? (
-                        <img
-                          src={previewUrl}
-                          alt={`${label} preview`}
-                          className="absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
-                        />
-                      ) : null}
-                      <div className="relative flex h-48 flex-col justify-between p-4 text-white">
-                        <div className="flex gap-2">
-                          <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
-                            {label}
-                          </span>
-                          <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
-                            {asset.uploaded_by_client ? 'Client' : 'Admin'}
-                          </span>
-                        </div>
-                        <p className="text-lg font-semibold drop-shadow">{`Photo ${index + 1}`}</p>
-                      </div>
-                    </button>
-                  );
-                })}
->>>>>>> theirs
-=======
             <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
               Client photos
             </h4>
             {imageAssets.length ? (
-=======
-            <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Client photos
-            </h4>
-            {imageAssets.length ? (
->>>>>>> theirs
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {imageAssets.map((asset) => (
                   <figure
@@ -890,10 +728,6 @@ export default function AppointmentDetails() {
                     </figcaption>
                   </figure>
                 ))}
-<<<<<<< ours
->>>>>>> theirs
-=======
->>>>>>> theirs
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-gray-300 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
@@ -901,23 +735,7 @@ export default function AppointmentDetails() {
               </div>
             )}
           </div>
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-          <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-2xl border border-gray-200 p-4 shadow-inner dark:border-gray-800 dark:bg-gray-950">
-=======
-
-          <form
-            onSubmit={handleAssetSubmit}
-            className="grid gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950"
-          >
->>>>>>> theirs
-=======
           <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950">
->>>>>>> theirs
-=======
-          <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950">
->>>>>>> theirs
             <input
               ref={attachmentInputRef}
               id={ASSET_FIELD_IDS.fileUpload}
