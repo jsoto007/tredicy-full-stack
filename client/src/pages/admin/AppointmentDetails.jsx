@@ -88,6 +88,7 @@ function isPdfUrl(url) {
   return getFileExtension(url) === 'pdf';
 }
 
+
 function getErrorMessage(error, fallback = 'Something went wrong.') {
   if (!error) {
     return fallback;
@@ -175,6 +176,7 @@ function IconShield(props) {
     </svg>
   );
 }
+
 export default function AppointmentDetails() {
   const { appointmentId } = useParams();
   const appointmentNumericId = Number(appointmentId);
