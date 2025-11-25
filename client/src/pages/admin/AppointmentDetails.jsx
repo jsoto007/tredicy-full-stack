@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import FadeIn from '../../components/FadeIn.jsx';
@@ -181,6 +181,7 @@ export default function AppointmentDetails() {
   const { appointmentId } = useParams();
   const appointmentNumericId = Number(appointmentId);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const {
     state: { appointments, currentAdmin },
@@ -207,6 +208,10 @@ export default function AppointmentDetails() {
   const imageInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const [activePreviewAssetId, setActivePreviewAssetId] = useState(null);
+  const appointmentDetailPath = useMemo(
+    () => `/dashboard/admin/calendar/${appointment?.id || appointmentNumericId || ''}`,
+    [appointment?.id, appointmentNumericId]
+  );
 
   const reloadAppointment = useCallback(async ({ showLoader = false } = {}) => {
     if (!appointmentNumericId) {
@@ -360,6 +365,19 @@ export default function AppointmentDetails() {
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const assetIdParam = params.get('assetId');
+    if (!assetIdParam) {
+      setActivePreviewAssetId(null);
+      return;
+    }
+    const match = previewableAssets.find((asset) => String(asset.id) === String(assetIdParam));
+    if (match) {
+      setActivePreviewAssetId(match.id);
+    }
+  }, [location.search, previewableAssets]);
+
   const selectedPreviewAsset = useMemo(() => {
     if (!activePreviewAssetId || !previewableAssets.length) {
       return null;
@@ -367,15 +385,31 @@ export default function AppointmentDetails() {
     return previewableAssets.find((asset) => String(asset.id) === String(activePreviewAssetId)) || previewableAssets[0];
   }, [activePreviewAssetId, previewableAssets]);
 
+  const updatePreviewUrl = useCallback(
+    (assetId) => {
+      if (!appointmentDetailPath) {
+        return;
+      }
+      const search = assetId ? `?assetId=${assetId}` : '';
+      navigate(`${appointmentDetailPath}${search}`, { replace: true });
+    },
+    [appointmentDetailPath, navigate]
+  );
+
   const handleOpenPreview = (assetId) => {
     if (!previewableAssets.length) {
       return;
     }
     const match = previewableAssets.find((asset) => String(asset.id) === String(assetId));
-    setActivePreviewAssetId((match || previewableAssets[0]).id);
+    const targetId = (match || previewableAssets[0]).id;
+    setActivePreviewAssetId(targetId);
+    updatePreviewUrl(targetId);
   };
 
-  const handleClosePreview = () => setActivePreviewAssetId(null);
+  const handleClosePreview = () => {
+    setActivePreviewAssetId(null);
+    updatePreviewUrl(null);
+  };
 
   const handlePreviewNav = (direction) => {
     if (!selectedPreviewAsset || !previewableAssets.length) {
@@ -389,7 +423,9 @@ export default function AppointmentDetails() {
       direction === 'next'
         ? (currentIndex + 1) % previewableAssets.length
         : (currentIndex - 1 + previewableAssets.length) % previewableAssets.length;
-    setActivePreviewAssetId(previewableAssets[nextIndex].id);
+    const nextId = previewableAssets[nextIndex].id;
+    setActivePreviewAssetId(nextId);
+    updatePreviewUrl(nextId);
   };
 
   const handleTriggerImageUpload = () => {
@@ -682,7 +718,7 @@ export default function AppointmentDetails() {
           </div>
         </Card>
 
-        <Card className="space-y-4">
+        <Card className="space-y-5">
           <input
             ref={imageInputRef}
             type="file"
@@ -690,54 +726,75 @@ export default function AppointmentDetails() {
             className="sr-only"
             onChange={handleImageUpload}
           />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-                Assets
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white/70 p-4 shadow-sm ring-1 ring-gray-50 dark:border-gray-800 dark:bg-gray-900/60 dark:ring-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Assets</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
                 Upload admin notes or share reference material with the client.
               </p>
             </div>
-            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <Button type="button" variant="secondary" onClick={handleTriggerImageUpload} disabled={uploadingImage}>
-                {uploadingImage ? 'Uploading…' : 'Upload photo'}
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleTriggerImageUpload}
+                disabled={uploadingImage}
+                className="shadow-[0_12px_30px_rgba(79,70,229,0.25)]"
+              >
+                {uploadingImage ? 'Uploading…' : 'Upload Photo'}
               </Button>
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
-                {appointment.assets?.length || 0} attached
+              <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white dark:bg-white dark:text-gray-900">
+                {(appointment.assets?.length || 0).toString().padStart(2, '0')} Attached
               </span>
             </div>
           </div>
+
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Client photos
-            </h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-600 dark:text-gray-400">Client Photos</h4>
             {imageAssets.length ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {imageAssets.map((asset) => (
-                  <figure
-                    key={`preview-${asset.id}`}
-                    className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-900"
-                  >
-                    <img
-                      src={resolveApiUrl(asset.file_url)}
-                      alt={`${asset.kind || 'Client asset'} preview`}
-                      className="h-40 w-full object-cover"
-                    />
-                    <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
-                      <span>{asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset'}</span>
-                      <span>{asset.uploaded_by_client ? 'Client' : 'Admin'}</span>
-                    </figcaption>
-                  </figure>
-                ))}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {imageAssets.map((asset, index) => {
+                  const backgroundImage = resolveApiUrl(asset.file_url);
+                  return (
+                    <button
+                      type="button"
+                      key={`preview-${asset.id}`}
+                      onClick={() => handleOpenPreview(asset.id)}
+                      className="group relative overflow-hidden rounded-2xl bg-gradient-to-br shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                      <div
+                        className="flex h-40 w-full items-end justify-between bg-black/10 px-4 py-2.5 text-left text-white"
+                      >
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold uppercase tracking-[0.25em] opacity-80">Photo</p>
+                          <p className="text-lg font-bold">{`Photo ${index + 1}`}</p>
+                        </div>
+                        <span className="rounded-full bg-white/25 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-white">
+                          {asset.uploaded_by_client ? 'Client' : 'Admin'}
+                        </span>
+                      </div>
+                      <div className="relative h-32 w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
+                        <img
+                          src={backgroundImage}
+                          alt={`${asset.kind || 'Client asset'} preview`}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-gray-300 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white/60 px-4 py-5 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
                 No client photos uploaded yet.
               </div>
             )}
           </div>
-          <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950">
+
+          <form
+            onSubmit={handleAssetSubmit}
+            className="grid gap-4 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50 dark:border-gray-800/80 dark:bg-gray-900/70"
+          >
             <input
               ref={attachmentInputRef}
               id={ASSET_FIELD_IDS.fileUpload}
@@ -746,11 +803,11 @@ export default function AppointmentDetails() {
               onChange={handleAssetFileChange}
               accept=".pdf,.doc,.docx,.txt,.zip,.rar,.png,.jpg,.jpeg,.webp,.heic,.svg,.gif"
             />
-            <div className="grid gap-3 md:grid-cols-2">
-              <div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
                 <label
                   htmlFor={ASSET_FIELD_IDS.kind}
-                  className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
                 >
                   Type
                 </label>
@@ -758,7 +815,7 @@ export default function AppointmentDetails() {
                   id={ASSET_FIELD_IDS.kind}
                   value={assetDraft.kind}
                   onChange={(event) => handleAssetDraftChange('kind', event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
                 >
                   {assetOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -767,67 +824,79 @@ export default function AppointmentDetails() {
                   ))}
                 </select>
               </div>
-              <div>
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-                  Share with client
+              <div className="space-y-2">
+                <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                  Share with client (visible)
                 </span>
-                <div className="mt-2 inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                   <input
                     id={ASSET_FIELD_IDS.share}
                     type="checkbox"
                     checked={assetDraft.is_visible_to_client}
                     onChange={(event) => handleAssetDraftChange('is_visible_to_client', event.target.checked)}
-                    className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                    className="h-4 w-4 rounded border border-gray-400 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-900"
                   />
-                  <label htmlFor={ASSET_FIELD_IDS.share}>Visible</label>
+                  <label htmlFor={ASSET_FIELD_IDS.share}>Share with client</label>
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-900">
-              <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Attach file</p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  {assetUploadFile ? assetUploadFile.name : 'No file selected'}
-                </p>
+            <div className="grid gap-4 md:grid-cols-2 md:items-end">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Attach File</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 shadow-inner dark:bg-gray-900">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">File</p>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                      {assetUploadFile ? assetUploadFile.name : 'No file selected'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => attachmentInputRef.current?.click()}
+                    disabled={busyAssetId === 'new'}
+                  >
+                    {assetUploadFile ? 'Change file' : 'Choose file'}
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => attachmentInputRef.current?.click()}
-                disabled={busyAssetId === 'new'}
-              >
-                {assetUploadFile ? 'Change file' : 'Choose file'}
-              </Button>
+              <div className="space-y-2">
+                <label
+                  htmlFor={ASSET_FIELD_IDS.fileUrl}
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                >
+                  File URL (optional)
+                </label>
+                <input
+                  id={ASSET_FIELD_IDS.fileUrl}
+                  type="url"
+                  placeholder="https://example.com/file.png"
+                  value={assetDraft.file_url}
+                  onChange={(event) => handleAssetDraftChange('file_url', event.target.value)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                />
+              </div>
             </div>
-            <label
-              htmlFor={ASSET_FIELD_IDS.fileUrl}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              File URL
-            </label>
-            <input
-              id={ASSET_FIELD_IDS.fileUrl}
-              type="url"
-              placeholder="File URL (optional)"
-              value={assetDraft.file_url}
-              onChange={(event) => handleAssetDraftChange('file_url', event.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-            <label
-              htmlFor={ASSET_FIELD_IDS.note}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Note text
-            </label>
-            <textarea
-              id={ASSET_FIELD_IDS.note}
-              rows={2}
-              placeholder="Note text (optional)"
-              value={assetDraft.note_text}
-              onChange={(event) => handleAssetDraftChange('note_text', event.target.value)}
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
-            />
-            <div>
+            <div className="space-y-2">
+              <label
+                htmlFor={ASSET_FIELD_IDS.note}
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+              >
+                Note (optional)
+              </label>
+              <textarea
+                id={ASSET_FIELD_IDS.note}
+                rows={3}
+                placeholder="Add note text"
+                value={assetDraft.note_text}
+                onChange={(event) => handleAssetDraftChange('note_text', event.target.value)}
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                Share with client (visible)
+              </span>
               <Button type="submit" disabled={busyAssetId === 'new'}>
                 Attach asset
               </Button>
@@ -841,10 +910,18 @@ export default function AppointmentDetails() {
               const isPdfPreview = fileUrl && isPdfUrl(fileUrl);
               const hasFile = Boolean(fileUrl);
               const kindLabel = asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset';
+              const isNote = asset.kind === 'note';
+              const badgeClass = isNote
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-sky-100 text-sky-700';
+              const tagClass = asset.is_visible_to_client
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-amber-100 text-amber-700';
+              const description = asset.note_text || (hasFile ? 'File attached' : 'No note added');
               return (
                 <div
                   key={asset.id}
-                  className="rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950"
+                  className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50 transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800/80 dark:bg-gray-900/70"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-1 flex-wrap items-start gap-4">
@@ -852,7 +929,7 @@ export default function AppointmentDetails() {
                         <button
                           type="button"
                           onClick={() => handleOpenPreview(asset.id)}
-                          className="group relative flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:focus-visible:outline-gray-100"
+                          className="group relative flex-shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:border-gray-700/80 dark:bg-gray-900"
                           aria-label={`Open ${kindLabel} viewer`}
                         >
                           {isImagePreview ? (
@@ -860,43 +937,46 @@ export default function AppointmentDetails() {
                               src={fileUrl}
                               alt={`${kindLabel} preview`}
                               className="h-32 w-32 object-cover transition duration-300 group-hover:scale-[1.02]"
-                          />
+                            />
                           ) : (
                             <div className="flex h-32 w-32 flex-col items-center justify-center gap-1 bg-gray-50 text-gray-700 transition group-hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-200 dark:group-hover:bg-gray-900">
                               <span className="text-xs font-semibold uppercase">{extension || 'Doc'}</span>
-                            <span className="text-[11px] uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
-                              Preview
-                            </span>
-                          </div>
+                              <span className="text-[11px] uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                                Preview
+                              </span>
+                            </div>
                           )}
                           <span
                             aria-hidden="true"
-                            className="absolute inset-0 ring-1 ring-inset ring-gray-900/5 transition group-hover:ring-gray-900/15 dark:ring-gray-50/5 dark:group-hover:ring-gray-50/15"
+                            className="absolute inset-0 ring-1 ring-inset ring-gray-900/5 transition group-hover:ring-indigo-200 dark:ring-gray-50/5"
                           />
                         </button>
                       ) : null}
-                      <div className="min-w-[200px] space-y-2">
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-                          {kindLabel}
-                        </p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          {asset.note_text || asset.file_url || 'No content'}
-                        </p>
-                        {fileUrl && !(isImagePreview || isPdfPreview) ? (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 break-all">{fileUrl}</p>
+                      <div className="min-w-[240px] space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] ${badgeClass}`}>
+                            {kindLabel}
+                          </span>
+                          <span className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] ${tagClass}`}>
+                            {asset.is_visible_to_client ? 'Visible to Client' : 'Admin Only'}
+                          </span>
+                          {asset.uploaded_by_client ? (
+                            <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white dark:bg-gray-100 dark:text-gray-900">
+                              Client Upload
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{description}</p>
+                        {hasFile ? (
+                          <p className="text-sm text-gray-600 dark:text-gray-300">{isImagePreview ? 'Image attached' : isPdfPreview ? 'PDF attached' : `${extension?.toUpperCase() || 'FILE'} attached`}</p>
                         ) : null}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center">
                       {fileUrl ? (
-                        <a
-                          href={fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                        >
+                        <Button as="a" href={fileUrl} target="_blank" rel="noreferrer" variant="secondary">
                           Open
-                        </a>
+                        </Button>
                       ) : null}
                       <Button
                         type="button"
@@ -904,14 +984,14 @@ export default function AppointmentDetails() {
                         onClick={() => handleAssetVisibilityToggle(asset)}
                         disabled={busyAssetId === asset.id}
                       >
-                        {asset.is_visible_to_client ? 'Hide from client' : 'Share with client'}
+                        {asset.is_visible_to_client ? 'Hide from Client' : 'Share with Client'}
                       </Button>
                     </div>
                   </div>
-                  <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
-                    Uploaded by {asset.uploaded_by_admin?.name || asset.uploaded_by_client?.display_name || 'unknown'} ·{' '}
-                    {asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                    Uploaded by {asset.uploaded_by_admin?.name || asset.uploaded_by_client?.display_name || 'unknown'}
                   </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}</p>
                 </div>
               );
             })}
@@ -988,7 +1068,9 @@ export default function AppointmentDetails() {
                       <>
                         <div className="space-y-2">
                           <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{label}</p>
-                          <p className="break-all text-sm text-gray-700 dark:text-gray-300">{current.note_text || current.file_url}</p>
+                          <p className="break-all text-sm text-gray-700 dark:text-gray-300">
+                            {current.note_text || 'File attached'}
+                          </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Button as="a" href={current.resolvedUrl} target="_blank" rel="noreferrer" variant="secondary">
@@ -1019,7 +1101,7 @@ export default function AppointmentDetails() {
                     <button
                       type="button"
                       key={asset.id}
-                      onClick={() => setActivePreviewAssetId(asset.id)}
+                      onClick={() => handleOpenPreview(asset.id)}
                       className={`flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border text-xs uppercase transition ${
                         isActive
                           ? 'border-gray-900 ring-2 ring-gray-900 dark:border-gray-100 dark:ring-gray-100'
