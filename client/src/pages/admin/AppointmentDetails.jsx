@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import FadeIn from '../../components/FadeIn.jsx';
-import SectionTitle from '../../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../../lib/api.js';
 import { ASSET_KIND_OPTIONS, useAdminDashboard } from './AdminDashboardContext.jsx';
 
@@ -29,6 +28,11 @@ const STATUS_OPTIONS = [
 ];
 
 const APPOINTMENT_STATUS_FIELD_ID = 'appointment-status-select';
+<<<<<<< ours
+const ICON_BADGE_CLASS =
+  'flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-black/10 dark:from-gray-100 dark:via-gray-200 dark:to-gray-400 dark:text-gray-900 dark:ring-white/15';
+=======
+>>>>>>> theirs
 
 function formatStatusLabel(value) {
   if (!value) {
@@ -102,6 +106,122 @@ function getErrorMessage(error, fallback = 'Something went wrong.') {
   return fallback;
 }
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+function IconMail(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="4" y="6" width="16" height="12" rx="2" />
+      <path d="M4 8l8 5 8-5" />
+    </svg>
+  );
+}
+
+function IconPhone(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M7 4.5h3l2 4-2 1.5a11.5 11.5 0 0 0 4 4l1.5-2 4 2v3a2 2 0 0 1-2.2 2 15 15 0 0 1-12.3-12A2 2 0 0 1 7 4.5z" />
+    </svg>
+  );
+}
+
+function IconLink(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M9 7H7a4 4 0 0 0 0 8h2" />
+      <path d="M15 7h2a4 4 0 0 1 0 8h-2" />
+      <path d="M9 12h6" />
+    </svg>
+  );
+}
+
+function IconUser(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <circle cx="12" cy="8" r="3" />
+      <path d="M6 20c0-3 3-5 6-5s6 2 6 5" />
+    </svg>
+  );
+}
+
+function IconShield(props) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z" />
+      <path d="m9.5 12.5 2 2 3-4" />
+    </svg>
+  );
+=======
+function getFileNameFromUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
+  const sanitized = url.split('?')[0]?.split('#')[0] ?? '';
+  const segments = sanitized.split('/').filter(Boolean);
+  return segments.length ? segments[segments.length - 1] : '';
+}
+
+function getAssetKindMeta(kind) {
+  return KIND_META[kind] || {
+    label: 'Asset',
+    badgeClasses: 'bg-gray-100 text-gray-800',
+    cardClasses: 'bg-white border-gray-200',
+    iconClasses: 'bg-gray-900 text-white',
+    Icon: PhotoIcon
+  };
+>>>>>>> theirs
+}
+
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 export default function AppointmentDetails() {
   const { appointmentId } = useParams();
   const appointmentNumericId = Number(appointmentId);
@@ -426,147 +546,183 @@ export default function AppointmentDetails() {
     phone: appointment.contact_phone || client.phone
   };
 
+  const appointmentTitle = appointment.reference_code || `#${appointment.id}`;
+  const statusBadgeLabel = formatStatusLabel(appointment.status) || 'Pending';
+
   return (
-    <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <FadeIn as="div" className="mx-auto max-w-5xl space-y-8 px-4 sm:px-6" childClassName="w-full">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <SectionTitle
-            eyebrow="Admin"
-            title={`Appointment ${appointment.reference_code || `#${appointment.id}`}`}
-            description="Review client information, assets, and admin-only notes."
-          />
+    <main className="bg-gray-100 py-14 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <FadeIn as="div" className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6" childClassName="w-full">
+        <div className="flex flex-col justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-soft ring-1 ring-gray-200 backdrop-blur-md dark:bg-gray-900/80 dark:ring-gray-800 sm:flex-row sm:items-center">
+          <div className="space-y-3">
+            <span className="inline-flex items-center rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              Signed in as {currentAdmin?.name || 'Admin'}
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Appointment</p>
+              <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-gray-50">{appointmentTitle}</h1>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Review client information, assets, and admin-only notes.
+              </p>
+            </div>
+          </div>
           <Button type="button" variant="secondary" onClick={() => navigate('/dashboard/admin/calendar')}>
-            Back to calendar
+            ← Back to calendar
           </Button>
         </div>
 
-        <Card className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-            Appointment overview
-          </h3>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <div>
-            <label
-              htmlFor={APPOINTMENT_STATUS_FIELD_ID}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
-            >
-              Status
-            </label>
-            <select
-              id={APPOINTMENT_STATUS_FIELD_ID}
-              value={appointment.status || STATUS_OPTIONS[0].value}
-              onChange={handleStatusChange}
-              disabled={statusUpdating}
-              className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
-            >
-              {appointmentStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {statusUpdating ? (
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Saving status...</p>
-            ) : null}
-            {statusUpdateError ? (
-              <p className="mt-1 text-xs text-red-500 dark:text-red-400">{statusUpdateError}</p>
-            ) : null}
+        <Card className="space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Appointment overview</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                  {statusBadgeLabel}
+                </span>
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                  <span>Update status</span>
+                  <select
+                    id={APPOINTMENT_STATUS_FIELD_ID}
+                    value={appointment.status || STATUS_OPTIONS[0].value}
+                    onChange={handleStatusChange}
+                    disabled={statusUpdating}
+                    className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-800 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  >
+                    {appointmentStatusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {statusUpdating ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Saving status...</p>
+              ) : null}
+              {statusUpdateError ? (
+                <p className="text-xs text-red-500 dark:text-red-400">{statusUpdateError}</p>
+              ) : null}
+            </div>
+            <div className="grid w-full gap-4 sm:grid-cols-2 md:max-w-xl">
+              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Scheduled start</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDateTime(appointment.scheduled_start)}</p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Duration</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDuration(appointment.duration_minutes)}</p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Suggested duration</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  {formatDuration(appointment.suggested_duration_minutes)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assigned admin</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  {appointment.assigned_admin?.name || 'Unassigned'}
+                </p>
+              </div>
+            </div>
           </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Scheduled start</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{formatDateTime(appointment.scheduled_start)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Duration</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{formatDuration(appointment.duration_minutes)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Suggested duration</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
-                {formatDuration(appointment.suggested_duration_minutes)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assigned admin</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
-                {appointment.assigned_admin?.name || 'Unassigned'}
-              </p>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Tattoo placement</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Tattoo placement</p>
+              <p className="mt-1 text-sm text-gray-800 dark:text-gray-200">
                 {appointment.tattoo?.placement || appointment.tattoo_placement || 'Not provided'}
               </p>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Approximate size</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
+            <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Approximate size</p>
+              <p className="mt-1 text-sm text-gray-800 dark:text-gray-200">
                 {appointment.tattoo?.size || appointment.tattoo_size || 'Not provided'}
               </p>
             </div>
-            <div className="md:col-span-2">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Placement notes</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+            <div className="md:col-span-2 rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Placement notes</p>
+              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
                 {appointment.tattoo?.notes || appointment.placement_notes || 'No placement notes.'}
               </p>
             </div>
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Client notes</p>
-            <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-              {appointment.client_description || 'No notes from client.'}
-            </p>
+          <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-500 dark:bg-amber-900/20">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700 dark:text-amber-200">Client notes</p>
+            <p className="mt-1 text-sm text-amber-900 dark:text-amber-100">{appointment.client_description || 'No notes from client.'}</p>
           </div>
         </Card>
 
-        <Card className="space-y-4">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-            Contact & account
-          </h3>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Primary contact</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{contact.name || 'Not provided'}</p>
+        <Card className="space-y-6">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact & account</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={`${ICON_BADGE_CLASS} text-[11px] font-black uppercase tracking-[0.25em]`}>
+                {contact.name?.slice(0, 2).toUpperCase() || 'CT'}
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Primary contact</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{contact.name || 'Not provided'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact email</p>
-              <p className="text-sm text-gray-800 underline dark:text-gray-200">
-                {contact.email ? (
-                  <a href={`mailto:${contact.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
-                    {contact.email}
-                  </a>
-                ) : (
-                  'Not provided'
-                )}
-              </p>
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700`}>
+                <IconMail className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact email</p>
+                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400 dark:text-gray-100">
+                  {contact.email ? (
+                    <a href={`mailto:${contact.email}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+                      {contact.email}
+                    </a>
+                  ) : (
+                    'Not provided'
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact phone</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{contact.phone || 'Not provided'}</p>
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-900 via-gray-800 to-gray-800`}>
+                <IconPhone className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact phone</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{contact.phone || 'Not provided'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Linked account</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">{client.display_name}</p>
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800`}>
+                <IconLink className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Linked account</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{client.display_name}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account email</p>
-              <p className="text-sm text-gray-800 underline dark:text-gray-200">
-                {client.email ? (
-                  <a href={`mailto:${client.email}`} className="hover:text-gray-900 dark:hover:text-gray-100">
-                    {client.email}
-                  </a>
-                ) : (
-                  'Guest booking'
-                )}
-              </p>
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={ICON_BADGE_CLASS}>
+                <IconMail className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account email</p>
+                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400 dark:text-gray-100">
+                  {client.email ? (
+                    <a href={`mailto:${client.email}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+                      {client.email}
+                    </a>
+                  ) : (
+                    'Guest booking'
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account type</p>
-              <p className="text-sm text-gray-800 dark:text-gray-200">
-                {appointment.client ? appointment.client.role : 'Guest'}
-              </p>
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+              <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800`}>
+                <IconShield className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account type</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appointment.client ? appointment.client.role : 'Guest'}</p>
+              </div>
             </div>
           </div>
         </Card>
@@ -580,6 +736,27 @@ export default function AppointmentDetails() {
             onChange={handleImageUpload}
           />
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assets</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Upload admin notes or share reference material with the client.</p>
+            </div>
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <Button type="button" variant="secondary" onClick={handleTriggerImageUpload} disabled={uploadingImage}>
+                {uploadingImage ? 'Uploading…' : '📤 Upload photo'}
+              </Button>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-gray-600 dark:bg-gray-900/60 dark:text-gray-300">
+                {appointment.assets?.length || 0} attached
+=======
+            <div className="space-y-1">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-600 dark:text-gray-400">Assets</p>
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100">Attach admin notes and inspiration for the client.</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Upload admin notes or share reference material with the client.</p>
+=======
+=======
+>>>>>>> theirs
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                 Assets
@@ -587,21 +764,115 @@ export default function AppointmentDetails() {
               <p className="text-sm text-gray-600 dark:text-gray-300">
                 Upload admin notes or share reference material with the client.
               </p>
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
             </div>
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
               <Button type="button" variant="secondary" onClick={handleTriggerImageUpload} disabled={uploadingImage}>
                 {uploadingImage ? 'Uploading…' : 'Upload photo'}
               </Button>
+<<<<<<< ours
+<<<<<<< ours
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:bg-gray-900 dark:text-gray-300">
+                {appointment.assets?.length || 0} Attached
+>>>>>>> theirs
+=======
               <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
                 {appointment.assets?.length || 0} attached
+>>>>>>> theirs
+=======
+              <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+                {appointment.assets?.length || 0} attached
+>>>>>>> theirs
               </span>
             </div>
           </div>
           <div className="space-y-3">
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Client photos</h4>
+            {imageAssets.length ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {imageAssets.map((asset) => (
+                  <figure
+                    key={`preview-${asset.id}`}
+                    className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+                  >
+                    <img
+                      src={resolveApiUrl(asset.file_url)}
+                      alt={`${asset.kind || 'Client asset'} preview`}
+                      className="h-44 w-full object-cover"
+                    />
+                    <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-[11px] uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+                      <span>{asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset'}</span>
+                      <span>{asset.uploaded_by_client ? 'Client' : 'Admin'}</span>
+                    </figcaption>
+                  </figure>
+                ))}
+=======
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Client photos</h4>
+              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                {imageAssets.length} Photos
+              </span>
+            </div>
+            {imageAssets.length ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {imageAssets.map((asset, index) => {
+                  const gradientIndex = index % 3;
+                  const gradientClasses = [
+                    'from-amber-300 via-amber-400 to-amber-500',
+                    'from-emerald-400 via-emerald-500 to-emerald-600',
+                    'from-blue-400 via-blue-500 to-blue-600'
+                  ][gradientIndex];
+                  const label = asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset';
+                  const previewUrl = resolveApiUrl(asset.file_url);
+                  return (
+                    <button
+                      key={`preview-${asset.id}`}
+                      type="button"
+                      onClick={() => handleOpenPreview(asset.id)}
+                      className="group relative overflow-hidden rounded-3xl border border-gray-200 bg-gradient-to-br text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:border-gray-800 dark:bg-gray-900"
+                      style={{ backgroundImage: undefined }}
+                      aria-label={`Open ${label} preview`}
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${gradientClasses} opacity-90`} aria-hidden />
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt={`${label} preview`}
+                          className="absolute inset-0 h-full w-full object-cover opacity-80 mix-blend-multiply"
+                        />
+                      ) : null}
+                      <div className="relative flex h-48 flex-col justify-between p-4 text-white">
+                        <div className="flex gap-2">
+                          <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
+                            {label}
+                          </span>
+                          <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em]">
+                            {asset.uploaded_by_client ? 'Client' : 'Admin'}
+                          </span>
+                        </div>
+                        <p className="text-lg font-semibold drop-shadow">{`Photo ${index + 1}`}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+>>>>>>> theirs
+=======
             <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
               Client photos
             </h4>
             {imageAssets.length ? (
+=======
+            <h4 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Client photos
+            </h4>
+            {imageAssets.length ? (
+>>>>>>> theirs
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {imageAssets.map((asset) => (
                   <figure
@@ -619,6 +890,10 @@ export default function AppointmentDetails() {
                     </figcaption>
                   </figure>
                 ))}
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-gray-300 px-4 py-3 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
@@ -626,7 +901,23 @@ export default function AppointmentDetails() {
               </div>
             )}
           </div>
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+          <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-2xl border border-gray-200 p-4 shadow-inner dark:border-gray-800 dark:bg-gray-950">
+=======
+
+          <form
+            onSubmit={handleAssetSubmit}
+            className="grid gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+          >
+>>>>>>> theirs
+=======
           <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950">
+>>>>>>> theirs
+=======
+          <form onSubmit={handleAssetSubmit} className="grid gap-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800 dark:bg-gray-950">
+>>>>>>> theirs
             <input
               ref={attachmentInputRef}
               id={ASSET_FIELD_IDS.fileUpload}
