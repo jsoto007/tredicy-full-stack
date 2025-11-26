@@ -68,7 +68,11 @@ function isImageUrl(url) {
   if (!url || typeof url !== 'string') {
     return false;
   }
-  const sanitized = url.split('?')[0]?.split('#')[0] ?? '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('data:image')) {
+    return true;
+  }
+  const sanitized = trimmed.split('?')[0]?.split('#')[0] ?? '';
   return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(sanitized);
 }
 
@@ -88,6 +92,17 @@ function isPdfUrl(url) {
   return getFileExtension(url) === 'pdf';
 }
 
+const IMAGE_ASSET_KINDS = ['inspiration_image', 'id_front', 'id_back'];
+
+function isImageAsset(kind, url) {
+  if (!url) {
+    return false;
+  }
+  if (IMAGE_ASSET_KINDS.includes(kind)) {
+    return true;
+  }
+  return isImageUrl(url);
+}
 
 function getErrorMessage(error, fallback = 'Something went wrong.') {
   if (!error) {
@@ -763,7 +778,7 @@ export default function AppointmentDetails() {
                         <img
                           src={backgroundImage}
                           alt={`${asset.kind || 'Client asset'} preview`}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                          className="h-full w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.02]"
                         />
                       </div>
                     </button>
@@ -892,7 +907,7 @@ export default function AppointmentDetails() {
             {appointment.assets?.map((asset) => {
               const fileUrl = resolveApiUrl(asset.file_url);
               const extension = getFileExtension(fileUrl);
-              const isImagePreview = fileUrl && (asset.kind === 'inspiration_image' || isImageUrl(fileUrl));
+              const isImagePreview = fileUrl && isImageAsset(asset.kind, fileUrl);
               const isPdfPreview = fileUrl && isPdfUrl(fileUrl);
               const hasFile = Boolean(fileUrl);
               const kindLabel = asset.kind ? asset.kind.replace(/_/g, ' ') : 'Asset';
@@ -922,7 +937,7 @@ export default function AppointmentDetails() {
                             <img
                               src={fileUrl}
                               alt={`${kindLabel} preview`}
-                              className="h-32 w-32 object-cover transition duration-300 group-hover:scale-[1.02]"
+                              className="h-32 w-32 cursor-pointer object-cover transition duration-300 group-hover:scale-[1.02]"
                             />
                           ) : (
                             <div className="flex h-32 w-32 flex-col items-center justify-center gap-1 bg-gray-50 text-gray-700 transition group-hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-200 dark:group-hover:bg-gray-900">
@@ -989,8 +1004,22 @@ export default function AppointmentDetails() {
           </div>
         </Card>
         {selectedPreviewAsset ? (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6">
-            <div className="relative flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6">
+          <div
+            className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6"
+            onClick={handleClosePreview}
+          >
+            <div
+              className="relative flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={handleClosePreview}
+                className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:scale-105 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+                aria-label="Close asset viewer"
+              >
+                <span className="text-lg leading-none">×</span>
+              </button>
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                   Asset viewer
@@ -1002,9 +1031,6 @@ export default function AppointmentDetails() {
                   <Button type="button" variant="ghost" onClick={() => handlePreviewNav('next')}>
                     Next
                   </Button>
-                  <Button type="button" variant="secondary" onClick={handleClosePreview}>
-                    Close
-                  </Button>
                 </div>
               </div>
               <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
@@ -1012,7 +1038,7 @@ export default function AppointmentDetails() {
                   {(() => {
                     const current = selectedPreviewAsset;
                     const currentUrl = current?.resolvedUrl;
-                    const isImage = currentUrl && (current.kind === 'inspiration_image' || isImageUrl(currentUrl));
+                    const isImage = currentUrl && isImageAsset(current.kind, currentUrl);
                     const isPdf = currentUrl && isPdfUrl(currentUrl);
                     if (isImage) {
                       return (
@@ -1020,7 +1046,7 @@ export default function AppointmentDetails() {
                           <img
                             src={currentUrl}
                             alt={`${current.kind || 'Asset'} preview`}
-                            className="h-[360px] w-full object-contain sm:h-[420px]"
+                            className="h-[360px] w-full cursor-pointer object-contain sm:h-[420px]"
                           />
                         </div>
                       );
@@ -1079,9 +1105,9 @@ export default function AppointmentDetails() {
                 </div>
               </div>
               <div className="-mx-2 mt-2 flex gap-2 overflow-x-auto px-2 pb-1">
-                {previewableAssets.map((asset, index) => {
+                {previewableAssets.map((asset) => {
                   const thumbUrl = asset.resolvedUrl;
-                  const isImageThumb = thumbUrl && (asset.kind === 'inspiration_image' || isImageUrl(thumbUrl));
+                  const isImageThumb = thumbUrl && isImageAsset(asset.kind, thumbUrl);
                   const isActive = selectedPreviewAsset?.id === asset.id;
                   return (
                     <button
@@ -1096,7 +1122,7 @@ export default function AppointmentDetails() {
                       aria-label={`Open ${asset.kind || 'asset'} preview`}
                     >
                       {isImageThumb ? (
-                        <img src={thumbUrl} alt={`${asset.kind || 'Asset'} thumbnail`} className="h-full w-full rounded-lg object-cover" />
+                        <img src={thumbUrl} alt={`${asset.kind || 'Asset'} thumbnail`} className="h-full w-full rounded-lg object-cover cursor-pointer" />
                       ) : (
                         <span className="text-[11px] tracking-[0.2em] text-gray-600 dark:text-gray-300">
                           {getFileExtension(thumbUrl) || 'File'}
