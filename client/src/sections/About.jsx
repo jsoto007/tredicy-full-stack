@@ -2,6 +2,7 @@ import FadeIn from '../components/FadeIn.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import artistPhoto from '../assets/about-artist.jpeg';
 
 export default function About() {
   return (
@@ -17,14 +18,14 @@ export default function About() {
         />
         <div className="space-y-6">
           <Card className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-300">
-              Sessions are collaborative and paced. Expect quiet stretches for focus, grounded check-ins, and aftercare
-              designed for busy schedules. We keep tools minimal, sanitation obsessive, and communication crystal clear.
-              The studio runs at a low-volume tempo so every tattoo gets the precision it deserves.
-            </p>
+            <img
+              src={artistPhoto}
+              alt="Tattoo artist Artem Ermochenko smiling while working"
+              className="w-full rounded-lg object-cover shadow-md"
+            />
             <div className="flex flex-wrap gap-3">
-              <Badge>BBP Certified</Badge>
-              <Badge>8+ Years in Studio</Badge>
+              <Badge>Licensed and Certified</Badge>
+              <Badge>5+ Years Professional Tattooing</Badge>
             </div>
           </Card>
         </div>

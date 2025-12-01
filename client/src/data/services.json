@@ -1,23 +1,23 @@
 [
   {
     "id": "service-blackwork",
-    "title": "Custom Blackwork",
-    "tagline": "Bold contrast",
-    "description": "Architectural blackwork compositions with sharp lineweight, intentional negative space, and a design process tailored to your narrative.",
-    "duration": "2-5 hour sessions"
+    "title": "Custom Illustrative and Microrealism",
+    "tagline": "Your Own Story",
+    "description": "Precise, detailed tattoo work that tells your story through the art of tattooing.",
+    "duration": "4-8 hours sessions"
   },
   {
     "id": "service-fine-line",
     "title": "Fine Line Detailing",
     "tagline": "Quiet precision",
-    "description": "Feather-light fine line detailing that celebrates personal stories, portraits, and botanical studies with surgical care for lasting clarity.",
-    "duration": "1-3 hour sessions"
+    "description": "Feather-light fine line work that celebrates personal stories, portraits, and botanical studies with surgical precision for lasting clarity.",
+    "duration": "1-3 hours sessions"
   },
   {
     "id": "service-color",
     "title": "Color Stories",
     "tagline": "Tonal depth",
     "description": "Muted color stories and tonal layering that highlight form without overwhelming the monochrome foundation of each custom tattoo.",
-    "duration": "3-6 hour sessions"
+    "duration": "3-6 hours sessions"
   }
 ]
