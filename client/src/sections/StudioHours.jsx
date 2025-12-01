@@ -188,17 +188,7 @@ export default function StudioHours() {
               <p className="text-sm uppercase tracking-[0.3em] text-rose-500">{error}</p>
             ) : showFallback ? (
               <p className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Currently not accepting walk-ins. </p>
-            ) : (
-              summaryRows.map((row) => (
-                <p
-                  key={`${row.dayLabel}-${row.timeLabel}`}
-                  className="text-base uppercase tracking-[0.3em] text-gray-900 dark:text-white"
-                >
-                  {row.dayLabel} |{' '}
-                  <span className="font-semibold tracking-[0.4em] text-gray-900 dark:text-white">{row.timeLabel}</span>
-                </p>
-              ))
-            )}
+            ) : null}
           </div>
           <p className="text-sm md:text-base leading-relaxed text-gray-500 dark:text-gray-400 max-w-xl mx-auto border-t border-gray-200/40 dark:border-white/10 pt-6 mt-2 text-center">
             {DEFAULT_DESCRIPTION}
