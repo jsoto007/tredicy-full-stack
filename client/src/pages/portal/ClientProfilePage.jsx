@@ -101,6 +101,7 @@ export default function ClientProfilePage() {
   const inspirationRef = useRef(null);
   const documentsRef = useRef(null);
   const previewRefs = useRef([]);
+  const deleteInputRef = useRef(null);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -148,6 +149,17 @@ export default function ClientProfilePage() {
   const [deleteInput, setDeleteInput] = useState('');
   const [deleteError, setDeleteError] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (deleteModalOpen) {
+      setDeleteInput('');
+      setDeleteError(null);
+      // Ensure the confirmation field is focused so the user can type immediately.
+      requestAnimationFrame(() => {
+        deleteInputRef.current?.focus();
+      });
+    }
+  }, [deleteModalOpen]);
 
   useEffect(() => {
     if (!profile) {
@@ -953,6 +965,7 @@ export default function ClientProfilePage() {
           This action cannot be undone. Re-enter DELETE to confirm and remove everything associated with your account.
         </p>
         <input
+          ref={deleteInputRef}
           type="text"
           value={deleteInput}
           onChange={(event) => setDeleteInput(event.target.value)}
