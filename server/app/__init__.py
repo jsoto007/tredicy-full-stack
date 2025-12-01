@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import click
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -111,6 +112,48 @@ def create_app():
             return response
 
         return error
+
+    @app.cli.command("optimize-uploads")
+    @click.option("--max-edge", default=1600, show_default=True, type=int, help="Maximum image edge (px) when optimizing.")
+    def optimize_uploads(max_edge: int):
+        """
+        Compress and downscale stored uploads in-place (database + local upload folder).
+        Useful to shrink legacy assets after deploying image optimization.
+        """
+        from .models import StoredUpload
+        from .routes import _get_upload_root, _optimize_image_bytes
+
+        upload_dir = _get_upload_root()
+        optimized = 0
+        skipped = 0
+        failed = 0
+
+        for upload in StoredUpload.query.yield_per(50):
+            original_bytes = upload.data or b""
+            optimized_bytes, content_type = _optimize_image_bytes(
+                original_bytes,
+                upload.filename,
+                upload.content_type,
+                max_edge=max_edge,
+            )
+            if optimized_bytes is None:
+                failed += 1
+                continue
+            if optimized_bytes != original_bytes or (content_type and content_type != upload.content_type):
+                upload.data = optimized_bytes
+                if content_type:
+                    upload.content_type = content_type
+                optimized += 1
+                file_path = upload_dir / upload.filename
+                try:
+                    file_path.write_bytes(optimized_bytes)
+                except OSError:
+                    failed += 1
+            else:
+                skipped += 1
+
+        db.session.commit()
+        click.echo(f"Optimized: {optimized}, unchanged: {skipped}, failed: {failed}")
 
     return app
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { resolveApiUrl } from '../lib/api.js';
+import ProgressiveImage from './ProgressiveImage.jsx';
 
 const FOCUSABLE_SELECTORS =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -86,11 +87,12 @@ export default function Lightbox({ open, image, onClose }) {
         aria-label="Expanded gallery image"
         className="relative w-full max-w-4xl focus:outline-none"
       >
-        <img
+        <ProgressiveImage
           src={imageUrl}
           alt={image.alt}
-          loading="lazy"
-          className="max-h-[80vh] w-full rounded-2xl border border-gray-800 object-contain shadow-soft"
+          priority
+          className="max-h-[80vh] w-full rounded-2xl border border-gray-800 bg-black"
+          imageClassName="object-contain"
         />
         <figcaption className="mt-4 text-center text-sm text-gray-400">{image.alt}</figcaption>
         <button

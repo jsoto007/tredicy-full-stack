@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useGalleryCategories, useGalleryItems } from '../contexts/GalleryContext.jsx';
+import { useQueryClient } from '@tanstack/react-query';
+import { galleryItemsKey, useGalleryCategories, useGalleryItems } from '../contexts/GalleryContext.jsx';
 import FadeIn from '../components/FadeIn.jsx';
 import Tabs from '../components/Tabs.jsx';
 import Lightbox from '../components/Lightbox.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import { resolveApiUrl } from '../lib/api.js';
+import { prefetchImage } from '../lib/image.js';
 
 export default function Gallery() {
   const {
@@ -12,6 +15,7 @@ export default function Gallery() {
     isLoading: categoriesLoading,
     isError: categoriesError
   } = useGalleryCategories();
+  const queryClient = useQueryClient();
   const [activeSlug, setActiveSlug] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
 
@@ -48,9 +52,24 @@ export default function Gallery() {
   useEffect(() => {
     const upcoming = categories.filter((category) => category.slug !== activeCategory?.slug).slice(0, 2);
     upcoming.forEach((category) => {
-      void prefetch(category);
+      void prefetch(category).then(() => {
+        const cached = queryClient.getQueryData(galleryItemsKey(category.slug || category.id || 'all'));
+        const cachedItems = cached?.items || [];
+        cachedItems.slice(0, 6).forEach((item, index) => {
+          prefetchImage(resolveApiUrl(item.image_url), { priority: index < 2 });
+        });
+      });
     });
-  }, [categories, activeCategory?.slug, prefetch]);
+  }, [categories, activeCategory?.slug, prefetch, queryClient]);
+
+  useEffect(() => {
+    if (!items.length) {
+      return;
+    }
+    items.slice(0, 8).forEach((item, index) => {
+      prefetchImage(resolveApiUrl(item.image_url), { priority: index < 3 });
+    });
+  }, [items]);
 
   const tabs = useMemo(
     () =>
@@ -119,16 +138,25 @@ export default function Gallery() {
                       childClassName="mb-6 break-inside-avoid"
                       delayStep={0.08}
                     >
-                      {panelItems.map((item) => {
+                      {panelItems.map((item, index) => {
                         const imageUrl = resolveApiUrl(item.image_url);
+                        const priority = index < 3;
                         return (
                           <button
                             key={item.id || `${tabId}-${item.image_url}`}
                             type="button"
                             onClick={() => setSelectedImage({ ...item, image_url: imageUrl })}
                             className="block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-soft transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-800 dark:bg-gray-900 dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black"
+                            onMouseEnter={() => prefetchImage(imageUrl)}
+                            onFocus={() => prefetchImage(imageUrl)}
                           >
-                            <img src={imageUrl} alt={item.alt} loading="lazy" className="w-full object-cover" />
+                            <ProgressiveImage
+                              src={imageUrl}
+                              alt={item.alt}
+                              priority={priority}
+                              className="aspect-[4/5]"
+                              imageClassName="object-cover"
+                            />
                           </button>
                         );
                       })}

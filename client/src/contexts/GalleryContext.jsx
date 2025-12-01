@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet } from '../lib/api.js';
 
 const CATEGORIES_KEY = ['gallery', 'categories'];
-const ITEMS_KEY = (categoryKey) => ['gallery', 'items', categoryKey];
+export const galleryItemsKey = (categoryKey) => ['gallery', 'items', categoryKey];
 
 function normaliseCategory(category) {
   const slug = (category?.name || '').toLowerCase().replace(/\s+/g, '-');
@@ -54,7 +54,7 @@ export function useGalleryItems({ categoryId, slug, enabled = true, perPage = 24
   const key = slug || categoryId || 'all';
 
   const query = useQuery({
-    queryKey: ITEMS_KEY(key),
+    queryKey: galleryItemsKey(key),
     enabled: enabled && Boolean(key),
     keepPreviousData: true,
     queryFn: async () => {
@@ -81,7 +81,7 @@ export function useGalleryItems({ categoryId, slug, enabled = true, perPage = 24
       }
       const nextKey = nextCategory.slug || nextCategory.id || 'all';
       await queryClient.prefetchQuery({
-        queryKey: ITEMS_KEY(nextKey),
+        queryKey: galleryItemsKey(nextKey),
         queryFn: async () => {
           const params = new URLSearchParams();
           if (nextCategory.id) {

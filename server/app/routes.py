@@ -216,14 +216,92 @@ def _persist_upload_record(safe_name: str, content: bytes, content_type: str) ->
     return True
 
 
+def _with_cache_headers(response, *, seconds: int = 31536000, immutable: bool = True):
+    """
+    Attach aggressive cache headers for static-ish assets (e.g., uploads).
+    Uses long-lived public cache with optional immutable flag so browsers and CDNs
+    avoid re-fetching unchanged resources.
+    """
+    if not response:
+        return response
+    directives = [f"max-age={int(seconds)}", "public"]
+    if immutable:
+        directives.append("immutable")
+    response.headers["Cache-Control"] = ", ".join(directives)
+    return response
+
+
+def _optimize_image_bytes(raw_bytes: bytes, filename: str, content_type: str | None, *, max_edge: int = 1600):
+    """
+    Compress and downscale image bytes while keeping quality acceptable.
+    - Downscale to a max edge size.
+    - Re-encode with sane quality/optimization flags.
+    Falls back to original payload on failure.
+    """
+    if not raw_bytes:
+        return raw_bytes, content_type
+    try:
+        with Image.open(BytesIO(raw_bytes)) as image:
+            image_format = (image.format or "").upper()
+            target_format = "JPEG" if image_format in {"JPEG", "JPG", "JPE"} else image_format or "JPEG"
+            # Ensure RGB for formats that do not support alpha cleanly.
+            if target_format == "JPEG":
+                if image.mode in {"RGBA", "P", "LA"}:
+                    background = Image.new("RGB", image.size, (255, 255, 255))
+                    background.paste(image.convert("RGBA"), mask=image.convert("RGBA").split()[-1])
+                    image = background
+                elif image.mode != "RGB":
+                    image = image.convert("RGB")
+            else:
+                if image.mode not in {"RGB", "RGBA"}:
+                    image = image.convert("RGBA")
+
+            image.thumbnail((max_edge, max_edge), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            save_kwargs = {}
+            new_content_type = content_type or "application/octet-stream"
+
+            if target_format == "JPEG":
+                save_kwargs = {"format": "JPEG", "optimize": True, "progressive": True, "quality": 82}
+                new_content_type = "image/jpeg"
+            elif target_format == "WEBP":
+                save_kwargs = {"format": "WEBP", "quality": 80, "method": 6}
+                new_content_type = "image/webp"
+            elif target_format == "PNG":
+                save_kwargs = {"format": "PNG", "optimize": True}
+                new_content_type = "image/png"
+            else:
+                # Unsupported/unknown format; return as-is.
+                return raw_bytes, content_type
+
+            image.save(buffer, **save_kwargs)
+            optimized = buffer.getvalue()
+            # Keep the smaller of the two to avoid regressions.
+            if len(optimized) < len(raw_bytes):
+                return optimized, new_content_type
+            return raw_bytes, content_type
+    except (UnidentifiedImageError, OSError):
+        return raw_bytes, content_type
+
+
+def _prepare_upload_payload(file_storage, safe_name: str) -> tuple[bytes, str]:
+    file_storage.stream.seek(0)
+    raw_payload = file_storage.read()
+    file_storage.stream.seek(0)
+    content_type = file_storage.mimetype or "application/octet-stream"
+    extension = Path(safe_name).suffix.lower().lstrip(".")
+    if extension in ALLOWED_IMAGE_EXTENSIONS:
+        optimized, new_content_type = _optimize_image_bytes(raw_payload, safe_name, content_type)
+        return optimized, new_content_type or content_type
+    return raw_payload, content_type
+
+
 def _store_media_locally(file_storage, safe_name: str):
     upload_dir = _get_upload_root()
     destination = upload_dir / safe_name
-    file_storage.stream.seek(0)
-    payload = file_storage.read()
+    payload, content_type = _prepare_upload_payload(file_storage, safe_name)
     destination.write_bytes(payload)
-    _persist_upload_record(safe_name, payload, file_storage.mimetype or "application/octet-stream")
-    file_storage.stream.seek(0)
+    _persist_upload_record(safe_name, payload, content_type)
     return safe_name, f"/api/uploads/{safe_name}"
 
 
@@ -242,16 +320,17 @@ def _store_media_s3(file_storage, safe_name: str):
     if not bucket:
         raise MediaStorageError("S3 bucket not configured.")
     key = _build_s3_key(safe_name)
-    extra_args = {"ContentType": file_storage.mimetype or "application/octet-stream"}
+    payload, content_type = _prepare_upload_payload(file_storage, safe_name)
+    extra_args = {"ContentType": content_type or "application/octet-stream"}
     acl = current_app.config.get("UPLOADS_S3_ACL")
     if acl:
         extra_args["ACL"] = acl
     s3_client = boto3.client("s3", region_name=current_app.config.get("UPLOADS_S3_REGION") or None)
-    file_storage.stream.seek(0)
     try:
-        s3_client.upload_fileobj(file_storage.stream, bucket, key, ExtraArgs=extra_args)
+        s3_client.upload_fileobj(BytesIO(payload), bucket, key, ExtraArgs=extra_args)
     except (BotoCoreError, ClientError) as exc:
         raise MediaStorageError(str(exc)) from exc
+    _persist_upload_record(safe_name, payload, content_type or "application/octet-stream")
     return key, _public_s3_url(bucket, key)
 
 
@@ -2297,11 +2376,13 @@ def serve_uploaded_file(filename):
         return jsonify({"error": "File not found."}), 404
     stored = StoredUpload.query.filter_by(filename=safe_name).one_or_none()
     if stored:
-        return send_file(
-            BytesIO(stored.data),
-            mimetype=stored.content_type or "application/octet-stream",
-            download_name=safe_name,
-            as_attachment=False,
+        return _with_cache_headers(
+            send_file(
+                BytesIO(stored.data),
+                mimetype=stored.content_type or "application/octet-stream",
+                download_name=safe_name,
+                as_attachment=False,
+            )
         )
 
     target = upload_dir / safe_name
@@ -2326,7 +2407,7 @@ def serve_uploaded_file(filename):
     except OSError:
         current_app.logger.warning("Unable to read upload %s for persistence.", safe_name)
 
-    return send_from_directory(str(upload_dir), safe_name, as_attachment=False)
+    return _with_cache_headers(send_from_directory(str(upload_dir), safe_name, as_attachment=False))
 
 
 @api_bp.route("/api/admin/uploads", methods=["POST"])
