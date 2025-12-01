@@ -17,7 +17,7 @@ export default function Gallery() {
   } = useGalleryCategories();
   const queryClient = useQueryClient();
   const [activeSlug, setActiveSlug] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
 
   useEffect(() => {
     if (!categories.length) {
@@ -84,6 +84,8 @@ export default function Gallery() {
   const isRefreshing = itemsFetching && !itemsLoading;
   const showMessage = itemsError ? 'Unable to load this gallery right now.' : !items.length ? 'No artwork published yet.' : null;
   const globalMessage = categoriesError ? 'Unable to load gallery right now.' : null;
+  const lightboxItems = useMemo(() => items.map((item) => ({ ...item, image_url: resolveApiUrl(item.image_url) })), [items]);
+  const selectedImage = selectedIndex !== null && lightboxItems[selectedIndex] ? lightboxItems[selectedIndex] : null;
 
   const handleTabChange = (slug) => {
     if (!slug || slug === activeSlug) {
@@ -145,7 +147,9 @@ export default function Gallery() {
                           <button
                             key={item.id || `${tabId}-${item.image_url}`}
                             type="button"
-                            onClick={() => setSelectedImage({ ...item, image_url: imageUrl })}
+                            onClick={() => {
+                              setSelectedIndex(index);
+                            }}
                             className="block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-soft transition hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-800 dark:bg-gray-900 dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black"
                             onMouseEnter={() => prefetchImage(imageUrl)}
                             onFocus={() => prefetchImage(imageUrl)}
@@ -172,7 +176,13 @@ export default function Gallery() {
           </div>
         )}
       </div>
-      <Lightbox open={Boolean(selectedImage)} image={selectedImage} onClose={() => setSelectedImage(null)} />
+      <Lightbox
+        open={selectedIndex !== null}
+        image={selectedImage}
+        images={lightboxItems}
+        startIndex={selectedIndex || 0}
+        onClose={() => setSelectedIndex(null)}
+      />
     </section>
   );
 }

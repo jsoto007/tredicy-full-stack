@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { resolveApiUrl } from '../lib/api.js';
+import { prefetchImage } from '../lib/image.js';
 import ProgressiveImage from './ProgressiveImage.jsx';
 
 const FOCUSABLE_SELECTORS =
@@ -12,9 +13,49 @@ function getFocusableElements(container) {
   return Array.from(container.querySelectorAll(FOCUSABLE_SELECTORS));
 }
 
-export default function Lightbox({ open, image, onClose }) {
+function classNames(...classes) {
+  return classes.filter(Boolean).join(' ');
+}
+
+export default function Lightbox({ open, image, images = [], startIndex = 0, onClose }) {
   const overlayRef = useRef(null);
   const dialogRef = useRef(null);
+  const [activeIndex, setActiveIndex] = useState(startIndex || 0);
+  const swipeStart = useRef(null);
+
+  const hasCollection = images && images.length > 0;
+  const normalizedIndex = useMemo(() => {
+    if (!hasCollection) {
+      return 0;
+    }
+    if (activeIndex < 0) {
+      return (images.length + (activeIndex % images.length)) % images.length;
+    }
+    return activeIndex % images.length;
+  }, [activeIndex, hasCollection, images.length]);
+
+  const activeImage = useMemo(() => {
+    if (hasCollection) {
+      return images[normalizedIndex] || image;
+    }
+    return image;
+  }, [hasCollection, image, images, normalizedIndex]);
+
+  useEffect(() => {
+    if (open) {
+      setActiveIndex(startIndex || 0);
+    }
+  }, [open, startIndex]);
+
+  useEffect(() => {
+    if (!open || !hasCollection || !images.length) {
+      return;
+    }
+    const next = images[(normalizedIndex + 1) % images.length];
+    const prev = images[(normalizedIndex - 1 + images.length) % images.length];
+    prefetchImage(resolveApiUrl(next?.image_url));
+    prefetchImage(resolveApiUrl(prev?.image_url));
+  }, [hasCollection, images, normalizedIndex, open]);
 
   useEffect(() => {
     if (!open) {
@@ -52,6 +93,18 @@ export default function Lightbox({ open, image, onClose }) {
           first.focus();
         }
       }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        if (hasCollection) {
+          setActiveIndex((current) => (current + 1) % images.length);
+        }
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        if (hasCollection) {
+          setActiveIndex((current) => (current - 1 + images.length) % images.length);
+        }
+      }
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -62,11 +115,11 @@ export default function Lightbox({ open, image, onClose }) {
     };
   }, [open, onClose]);
 
-  if (!open || !image) {
+  if (!open || !activeImage) {
     return null;
   }
 
-  const imageUrl = resolveApiUrl(image.image_url);
+  const imageUrl = resolveApiUrl(activeImage.image_url);
 
   return (
     <div
@@ -78,6 +131,25 @@ export default function Lightbox({ open, image, onClose }) {
           onClose?.();
         }
       }}
+      onPointerDown={(event) => {
+        swipeStart.current = { x: event.clientX, y: event.clientY };
+      }}
+      onPointerUp={(event) => {
+        if (!swipeStart.current || !hasCollection) {
+          swipeStart.current = null;
+          return;
+        }
+        const dx = event.clientX - swipeStart.current.x;
+        const dy = event.clientY - swipeStart.current.y;
+        swipeStart.current = null;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          if (dx < 0) {
+            setActiveIndex((current) => (current + 1) % images.length);
+          } else {
+            setActiveIndex((current) => (current - 1 + images.length) % images.length);
+          }
+        }
+      }}
     >
       <figure
         ref={dialogRef}
@@ -87,14 +159,49 @@ export default function Lightbox({ open, image, onClose }) {
         aria-label="Expanded gallery image"
         className="relative w-full max-w-4xl focus:outline-none"
       >
+        {hasCollection ? (
+          <div className="absolute left-4 top-4 text-xs uppercase tracking-[0.3em] text-gray-400">
+            {normalizedIndex + 1} / {images.length}
+          </div>
+        ) : null}
         <ProgressiveImage
           src={imageUrl}
-          alt={image.alt}
+          alt={activeImage.alt}
           priority
           className="max-h-[80vh] w-full rounded-2xl border border-gray-800 bg-black"
           imageClassName="object-contain"
         />
-        <figcaption className="mt-4 text-center text-sm text-gray-400">{image.alt}</figcaption>
+        <figcaption className="mt-3 text-center text-sm text-gray-300">{activeImage.alt}</figcaption>
+        {hasCollection ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setActiveIndex((current) => (current - 1 + images.length) % images.length)}
+              className={classNames(
+                'absolute left-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-700 bg-black/50 text-gray-200 shadow-soft backdrop-blur transition',
+                'hover:border-gray-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black'
+              )}
+              aria-label="Previous image"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveIndex((current) => (current + 1) % images.length)}
+              className={classNames(
+                'absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-700 bg-black/50 text-gray-200 shadow-soft backdrop-blur transition',
+                'hover:border-gray-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black'
+              )}
+              aria-label="Next image"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </>
+        ) : null}
         <button
           type="button"
           onClick={onClose}
