@@ -146,13 +146,57 @@ def send_internal_booking_notification(
     )
     appointment_location = current_app.config.get("BOOKING_LOCATION_NAME") or brand
     text = "\n".join(detail_lines)
-    html_lines = [
-        "<p>A new booking has been confirmed:</p>",
-        "<ul>",
-        *(f"<li>{escape(line)}</li>" for line in detail_lines),
-        "</ul>",
-    ]
-    html = "".join(html_lines)
+    detail_rows_html = []
+    for line in detail_lines:
+        label, _, value = line.partition(": ")
+        detail_rows_html.append(
+            "<tr>"
+            f"<td style=\"padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:13px;"
+            "text-transform:uppercase;letter-spacing:0.02em;white-space:nowrap;\">"
+            f"{escape(label)}</td>"
+            "<td style=\"padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#0f172a;"
+            "font-weight:600;font-size:14px;\">"
+            f"{escape(value)}</td>"
+            "</tr>"
+        )
+    detail_table = "".join(detail_rows_html)
+    manage_button = (
+        f"<a href=\"{manage_url}\" style=\"display:inline-block;padding:10px 16px;background-color:#0b0b0b;"
+        "color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;"
+        "margin-top:12px;\">Open booking portal</a>"
+        if manage_url
+        else ""
+    )
+    html = (
+        "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" "
+        "style=\"width:100%;background-color:#f5f7fb;padding:32px 0;\">"
+        "<tr><td align=\"center\">"
+        "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" "
+        "style=\"width:640px;max-width:92%;background-color:#ffffff;border-radius:16px;overflow:hidden;"
+        "box-shadow:0 10px 45px rgba(0,0,0,0.08);\">"
+        "<tr>"
+        "<td style=\"padding:28px 32px 20px 32px;background-color:#0b0b0b;text-align:center;\">"
+        f"<div style=\"color:#ffffff;font-size:18px;font-weight:700;\">{escape(brand)} booking confirmed</div>"
+        f"<div style=\"color:#d1d5db;font-size:13px;margin-top:6px;\">Reference {escape(reference)}</div>"
+        "</td>"
+        "</tr>"
+        "<tr>"
+        "<td style=\"padding:28px 32px;color:#0f172a;font-size:15px;line-height:1.6;\">"
+        "<p style=\"margin:0 0 12px 0;\">A new booking just went through. Details below:</p>"
+        "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" "
+        "style=\"width:100%;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;\">"
+        f"{detail_table}"
+        "</table>"
+        "<p style=\"margin:14px 0 0 0;color:#6b7280;font-size:13px;\">"
+        "Reply to this email if any adjustments are needed."
+        "</p>"
+        f"{manage_button}"
+        "</td>"
+        "</tr>"
+        "</table>"
+        "</td></tr>"
+        "</table>"
+    )
     organizer_email = current_app.config.get("MAILGUN_FROM") or f"no-reply@{current_app.config.get('MAILGUN_DOMAIN') or 'blackworknyc.com'}"
     internal_email = current_app.config.get("INTERNAL_BOOKING_NOTIFICATION_EMAIL") or "jsoto@sotodev.com"
     attachment = None
