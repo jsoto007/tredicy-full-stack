@@ -30,6 +30,7 @@ from werkzeug.utils import secure_filename
 from .emails import (
     send_activation_email,
     send_booking_confirmation_email,
+    send_internal_booking_notification,
     send_appointment_status_update_email,
     send_email_verification_email,
     send_password_changed_email,
@@ -4154,6 +4155,14 @@ def create_appointment():
     ).get(appointment.id)
 
     send_booking_confirmation_email(
+        appointment,
+        charge_amount_cents=charge_amount,
+        session_price_cents=session_price_cents,
+        booking_fee_percent=booking_fee_percent,
+        pay_full_amount=pay_full_amount,
+        receipt_url=receipt_url,
+    )
+    send_internal_booking_notification(
         appointment,
         charge_amount_cents=charge_amount,
         session_price_cents=session_price_cents,

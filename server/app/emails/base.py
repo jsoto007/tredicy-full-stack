@@ -1,3 +1,5 @@
+from typing import Optional, Sequence, Tuple, Union
+
 import requests
 from urllib.parse import urlsplit
 
@@ -29,7 +31,15 @@ def client_base_url() -> str:
     return (request.url_root or "").rstrip("/")
 
 
-def mailgun_send(*, to: str, subject: str, text: str, html: str | None = None, tags: tuple[str, ...] = ()) -> bool:
+def mailgun_send(
+    *,
+    to: str,
+    subject: str,
+    text: str,
+    html: str | None = None,
+    tags: tuple[str, ...] = (),
+    attachments: Optional[Sequence[Tuple[str, Union[str, bytes], str]]] = None,
+) -> bool:
     domain = current_app.config.get("MAILGUN_DOMAIN")
     api_key = current_app.config.get("MAILGUN_API_KEY")
     if not domain or not api_key:
@@ -46,11 +56,16 @@ def mailgun_send(*, to: str, subject: str, text: str, html: str | None = None, t
         data["html"] = html
     if tags:
         data["o:tag"] = list(tags)
+    files = []
+    if attachments:
+        for filename, content, content_type in attachments:
+            files.append(("attachment", (filename, content, content_type)))
     try:
         response = requests.post(
             f"https://api.mailgun.net/v3/{domain}/messages",
             auth=("api", api_key),
             data=data,
+            files=files or None,
             timeout=10,
         )
     except requests.RequestException as exc:
