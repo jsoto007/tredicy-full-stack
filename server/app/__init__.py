@@ -85,6 +85,15 @@ def create_app():
 
         return send_from_directory(static_dir, "index.html")
 
+    @app.route("/.well-known/apple-developer-merchantid-domain-association")
+    def _apple_pay_domain_association():
+        association_dir = Path(__file__).resolve().parent / "static" / ".well-known"
+        association_file = association_dir / "apple-developer-merchantid-domain-association"
+        if not association_file.exists():
+            app.logger.warning("Apple Pay domain association file %s missing", association_file)
+            return {"error": "domain_association_missing"}, 404
+        return send_from_directory(str(association_dir), association_file.name)
+
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def _spa_fallback(path: str):
