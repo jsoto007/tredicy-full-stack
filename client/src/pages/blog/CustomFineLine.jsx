@@ -9,8 +9,8 @@ export default function CustomFineLine() {
           Behind the Needle: How a Custom Fine Line Tattoo Comes to Life at BlackworkNYC
         </h1>
         <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
-          A custom fine line tattoo at BlackworkNYC is much more than just an appointment—it's a full-fledged
-          artistic process rooted in careful collaboration, technical mastery, and a deep respect for each client's
+          A custom fine line tattoo at BlackworkNYC is much more than just an appointment—it&rsquo;s a full-fledged
+          artistic process rooted in careful collaboration, technical mastery, and a deep respect for each client&rsquo;s
           personal vision.
         </p>
       </header>
@@ -32,7 +32,7 @@ export default function CustomFineLine() {
           Once the idea is solidified, the artist brings it to life through a bespoke design phase. This often includes
           sketching several drafts and refining every detail for both aesthetics and practicality on the skin. Fine line
           tattoos require especially careful planning; achieving crisp, delicate lines demands meticulous draftsmanship
-          and anatomical consideration to match the client’s body and vision.
+          and anatomical consideration to match the client&rsquo;s body and vision.
         </p>
       </section>
 
@@ -61,8 +61,8 @@ export default function CustomFineLine() {
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">A Lasting Work of Art</h2>
         <p>
-          BlackworkNYC’s approach is rooted in artistic integrity, technical excellence, and a genuine desire to create
-          tattoos that evolve into cherished, lifelong marks. The artist’s background in microrealism and architectural
+          BlackworkNYC&rsquo;s approach is rooted in artistic integrity, technical excellence, and a genuine desire to create
+          tattoos that evolve into cherished, lifelong marks. The artist&rsquo;s background in microrealism and architectural
           design shines through in every custom piece, turning each commission into a personalized piece of wearable art
           that tells a unique story.
         </p>

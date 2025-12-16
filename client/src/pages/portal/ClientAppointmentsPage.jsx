@@ -137,7 +137,6 @@ export default function ClientAppointmentsPage() {
     return (
       <div className="space-y-4">
         {items.map((appointment) => {
-          const start = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
           return (
             <article
               key={appointment.id}

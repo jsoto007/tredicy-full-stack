@@ -413,10 +413,11 @@ export default function AuthPage() {
         </div>
         <form className="space-y-3" onSubmit={handleActivationRequest}>
           <div>
-            <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <label htmlFor="activation-email" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
               Email
             </label>
             <input
+              id="activation-email"
               type="email"
               value={activationEmail}
               onChange={(event) => {

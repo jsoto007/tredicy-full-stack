@@ -9,6 +9,7 @@ import SectionTitle from '../components/SectionTitle.jsx';
 import Dialog from '../components/Dialog.jsx';
 import { BOOKING_REQUIREMENTS } from '../data/bookingRequirements.js';
 import { apiGet, apiPost } from '../lib/api.js';
+import { sanitizeAppointmentForConfirmation } from '../lib/appointments.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
 const SLOT_INTERVAL_MINUTES = 60;
@@ -247,8 +248,12 @@ function classNames(...classes) {
 }
 
 function storeBookingReceipt(appointment) {
+  const sanitized = sanitizeAppointmentForConfirmation(appointment);
+  if (!sanitized) {
+    return;
+  }
   try {
-    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment, savedAt: Date.now() }));
+    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment: sanitized, savedAt: Date.now() }));
   } catch {
     // Ignore persistence failures (e.g. Safari private mode).
   }
@@ -1096,40 +1101,44 @@ export default function ShareYourIdea() {
     const errorsForSelection = [];
 
     if (field === 'inspiration') {
+      const uploads = [];
+      for (const file of selectedFiles.slice(0, 3)) {
+        const validationError = validateFile(file);
+        if (validationError) {
+          errorsForSelection.push(`${file.name}: ${validationError}`);
+          continue;
+        }
+        const previewUrl = URL.createObjectURL(file);
+        uploads.push({
+          file,
+          previewUrl,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          dataUrl: null
+        });
+      }
       setFiles((prev) => {
         prev.inspiration.forEach((entry) => entry.previewUrl && URL.revokeObjectURL(entry.previewUrl));
-        const uploads = [];
-        for (const file of selectedFiles.slice(0, 3)) {
-          const validationError = validateFile(file);
-          if (validationError) {
-            errorsForSelection.push(`${file.name}: ${validationError}`);
-            continue;
-          }
-          const previewUrl = URL.createObjectURL(file);
-          uploads.push({
-            file,
-            previewUrl,
-            name: file.name,
-            size: file.size,
-            type: file.type
-          });
-        }
-        setErrors((prevErrors) => {
-          const nextErrors = { ...prevErrors };
-          if (uploads.length) {
-            delete nextErrors.description;
-          }
-          if (errorsForSelection.length) {
-            nextErrors.files = errorsForSelection.join(' ');
-          } else {
-            delete nextErrors.files;
-          }
-          return nextErrors;
-        });
         return {
           ...prev,
           inspiration: uploads
         };
+      });
+      setErrors((prevErrors) => {
+        const nextErrors = { ...prevErrors };
+        if (uploads.length) {
+          delete nextErrors.description;
+        }
+        if (errorsForSelection.length) {
+          nextErrors.files = errorsForSelection.join(' ');
+        } else {
+          delete nextErrors.files;
+        }
+        return nextErrors;
+      });
+      uploads.forEach((entry, index) => {
+        cacheFileDataUrl(entry, 'inspiration', index).catch(() => {});
       });
     } else {
       const file = selectedFiles[0];
@@ -1143,21 +1152,24 @@ export default function ShareYourIdea() {
         return;
       }
       const previewUrl = URL.createObjectURL(file);
+      const entry = {
+        file,
+        previewUrl,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        dataUrl: null
+      };
       setFiles((prev) => {
         if (prev[field]?.previewUrl) {
           URL.revokeObjectURL(prev[field].previewUrl);
         }
         return {
           ...prev,
-          [field]: {
-            file,
-            previewUrl,
-            name: file.name,
-            size: file.size,
-            type: file.type
-          }
+          [field]: entry
         };
       });
+      cacheFileDataUrl(entry, field).catch(() => {});
       setErrors((prev) => {
         const next = { ...prev };
         if (field === 'idFront') {
@@ -1315,12 +1327,54 @@ export default function ShareYourIdea() {
     setNoticeTone('offline');
   }, [setNotice, setNoticeTone]);
 
+  const cacheFileDataUrl = useCallback(
+    async (entry, field, index = null) => {
+      if (!entry?.file) {
+        return null;
+      }
+      if (entry.dataUrl) {
+        return entry.dataUrl;
+      }
+      const dataUrl = await readFileAsDataUrl(entry.file);
+      setFiles((prev) => {
+        const next = { ...prev };
+        if (field === 'inspiration') {
+          const inspiration = [...next.inspiration];
+          const target = inspiration[index];
+          if (!target || target.file !== entry.file) {
+            return prev;
+          }
+          inspiration[index] = { ...target, dataUrl };
+          next.inspiration = inspiration;
+        } else {
+          const target = next[field];
+          if (!target || target.file !== entry.file) {
+            return prev;
+          }
+          next[field] = { ...target, dataUrl };
+        }
+        return next;
+      });
+      return dataUrl;
+    },
+    [setFiles]
+  );
+
   const prepareBookingPayload = useCallback(async () => {
     const contactName = `${form.first_name.trim()} ${form.last_name.trim()}`.replace(/\s+/g, ' ').trim();
-    const [idFrontDataUrl, inspirationDataUrls] = await Promise.all([
-      shouldSkipIdentityUpload ? Promise.resolve(null) : files.idFront?.file ? readFileAsDataUrl(files.idFront.file) : Promise.resolve(null),
-      Promise.all(files.inspiration.map((entry) => readFileAsDataUrl(entry.file)))
+    const idFrontPromise = shouldSkipIdentityUpload
+      ? Promise.resolve(null)
+      : files.idFront?.file
+      ? cacheFileDataUrl(files.idFront, 'idFront')
+      : Promise.resolve(null);
+    const inspirationPromises = files.inspiration.map((entry, index) =>
+      entry?.file ? cacheFileDataUrl(entry, 'inspiration', index) : Promise.resolve(null)
+    );
+    const [idFrontDataUrl, inspirationResults] = await Promise.all([
+      idFrontPromise,
+      Promise.all(inspirationPromises)
     ]);
+    const inspirationDataUrls = inspirationResults.filter(Boolean);
     const payload = {
       first_name: form.first_name.trim(),
       last_name: form.last_name.trim(),
@@ -1335,7 +1389,7 @@ export default function ShareYourIdea() {
       scheduled_start: selectedSlot?.start,
       duration_minutes: durationMinutes,
       id_front_url: shouldSkipIdentityUpload ? null : idFrontDataUrl,
-      inspiration_urls: inspirationDataUrls.filter(Boolean)
+      inspiration_urls: inspirationDataUrls
     };
     if (selectedSessionOption) {
       payload.session_option_id = selectedSessionOption.id;
@@ -1362,7 +1416,8 @@ export default function ShareYourIdea() {
     selectedSessionOption,
     payFullAmount,
     signedInAccountId,
-    termsAgreedAt
+    termsAgreedAt,
+    cacheFileDataUrl
   ]);
 
   const buildSquareFieldsFromToken = useCallback((tokenResult) => {
@@ -1387,9 +1442,10 @@ export default function ShareYourIdea() {
     async (payload) => {
       const response = await apiPost('/api/appointments', payload);
       storeBookingReceipt(response);
+      const cachedAppointment = sanitizeAppointmentForConfirmation(response);
       setNotice(null);
       resetBookingState();
-      navigate('/booking/confirmation');
+      navigate('/booking/confirmation', { state: { appointment: cachedAppointment || response } });
     },
     [navigate, resetBookingState]
   );

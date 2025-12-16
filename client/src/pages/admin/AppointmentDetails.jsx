@@ -401,9 +401,24 @@ export default function AppointmentDetails() {
     setActivePreviewAssetId(targetId);
   };
 
-  const handleClosePreview = () => {
+  const handleClosePreview = useCallback(() => {
     setActivePreviewAssetId(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedPreviewAsset) {
+      return undefined;
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        handleClosePreview();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedPreviewAsset, handleClosePreview]);
 
   const handlePreviewNav = (direction) => {
     if (!selectedPreviewAsset || !previewableAssets.length) {
@@ -1004,13 +1019,15 @@ export default function AppointmentDetails() {
           </div>
         </Card>
         {selectedPreviewAsset ? (
-          <div
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6"
-            onClick={handleClosePreview}
-          >
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6 relative">
+            <button
+              type="button"
+              className="absolute inset-0"
+              onClick={handleClosePreview}
+              aria-label="Close asset viewer overlay"
+            />
             <div
-              className="relative flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6"
-              onClick={(event) => event.stopPropagation()}
+              className="relative z-10 flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6"
             >
               <button
                 type="button"

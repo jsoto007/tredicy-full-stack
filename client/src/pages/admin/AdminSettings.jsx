@@ -243,8 +243,8 @@ export default function AdminSettings() {
   const [visibilityUpdatingId, setVisibilityUpdatingId] = useState(null);
   const [optimisticVisibility, setOptimisticVisibility] = useState(() => new Map());
   const [adminSessionOptions, setAdminSessionOptions] = useState([]);
-  const [adminSessionLoading, setAdminSessionLoading] = useState(false);
-  const [adminSessionError, setAdminSessionError] = useState('');
+  const [, setAdminSessionLoading] = useState(false);
+  const [, setAdminSessionError] = useState('');
 
   useEffect(() => {
     if (!users.length) {
@@ -842,8 +842,11 @@ export default function AdminSettings() {
       >
         <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Label (optional)</label>
+            <label htmlFor="session-modal-name" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Label (optional)
+            </label>
             <input
+              id="session-modal-name"
               type="text"
               value={modalForm.name}
               onChange={handleModalFormChange('name')}
@@ -852,8 +855,11 @@ export default function AdminSettings() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Duration (hours)</label>
+            <label htmlFor="session-modal-duration" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Duration (hours)
+            </label>
             <input
+              id="session-modal-duration"
               type="text"
               value={modalForm.durationHours}
               onChange={handleModalFormChange('durationHours')}
@@ -862,8 +868,11 @@ export default function AdminSettings() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Price (USD)</label>
+            <label htmlFor="session-modal-price" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              Price (USD)
+            </label>
             <input
+              id="session-modal-price"
               type="text"
               value={modalForm.price}
               onChange={handleModalFormChange('price')}

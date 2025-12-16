@@ -101,6 +101,7 @@ export default function ClientProfilePage() {
   const inspirationRef = useRef(null);
   const documentsRef = useRef(null);
   const previewRefs = useRef([]);
+  const inspirationUploadRef = useRef(null);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
@@ -462,6 +463,13 @@ export default function ClientProfilePage() {
   const focusInspirationUpload = () => {
     setIsInspirationOpen(true);
     inspirationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleDropZoneKeyDown = (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      inspirationUploadRef.current?.click();
+    }
   };
 
   if (loading) {
@@ -829,6 +837,7 @@ export default function ClientProfilePage() {
           <form className="space-y-4" onSubmit={handleUploadInspiration}>
             <div>
               <input
+                ref={inspirationUploadRef}
                 type="file"
                 id="inspiration-upload"
                 multiple
@@ -837,6 +846,10 @@ export default function ClientProfilePage() {
                 className="sr-only"
               />
               <div
+                role="button"
+                tabIndex={0}
+                onClick={() => inspirationUploadRef.current?.click()}
+                onKeyDown={handleDropZoneKeyDown}
                 className="mt-1 cursor-pointer rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-6 text-center shadow-inner transition hover:border-indigo-400 hover:bg-white dark:border-gray-700 dark:bg-gray-950/60 dark:hover:border-indigo-500"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={handleDrop}
@@ -981,10 +994,7 @@ export default function ClientProfilePage() {
           id="delete-account-form"
           className="space-y-4"
           onSubmit={handleDeleteAccount}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-          }}
-          >
+        >
           <p className="text-sm text-gray-600 dark:text-gray-400">
             This action cannot be undone. Click delete below to permanently remove your account and all associated data.
           </p>

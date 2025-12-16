@@ -76,10 +76,11 @@ export default function ActivateAccount() {
         <Card className="space-y-6">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-token" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                 Activation token
               </label>
               <input
+                id="activation-token"
                 type="text"
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
@@ -89,10 +90,11 @@ export default function ActivateAccount() {
               />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-password" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                 New password
               </label>
               <input
+                id="activation-password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
@@ -102,10 +104,11 @@ export default function ActivateAccount() {
               />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-password-confirm" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
                 Confirm password
               </label>
               <input
+                id="activation-password-confirm"
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}

@@ -92,27 +92,6 @@ export default function ClientDashboardPage() {
       });
   }, [appointments]);
 
-  const pastAppointments = useMemo(() => {
-    const now = Date.now();
-    return [...(appointments || [])]
-      .filter((appointment) => {
-        const isPastStatus = PAST_STATUSES.has(appointment.status);
-        const start = appointment.scheduled_start ? new Date(appointment.scheduled_start).getTime() : null;
-        if (isPastStatus) {
-          return true;
-        }
-        if (start && start < now) {
-          return true;
-        }
-        return false;
-      })
-      .sort((a, b) => {
-        const aTime = a.scheduled_start ? new Date(a.scheduled_start).getTime() : 0;
-        const bTime = b.scheduled_start ? new Date(b.scheduled_start).getTime() : 0;
-        return bTime - aTime;
-      });
-  }, [appointments]);
-
   const nextAppointment = upcomingAppointments[0] ?? null;
 
   const quickActions = useMemo(() => {

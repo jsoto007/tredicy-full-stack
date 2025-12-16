@@ -7,6 +7,7 @@ import SectionTitle from '../components/SectionTitle.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatStatusLabel, getStatusBadgeClasses } from '../lib/statusStyles.js';
 import { apiGet } from '../lib/api.js';
+import { sanitizeAppointmentForConfirmation } from '../lib/appointments.js';
 
 const BOOKING_RECEIPT_KEY = 'black-ink:last-booking';
 const LOCATION_LINE = '245 Mercer Street, Suite 4F, New York, NY';
@@ -26,8 +27,12 @@ function readLatestAppointment() {
 }
 
 function storeLatestAppointment(appointment) {
+  const sanitized = sanitizeAppointmentForConfirmation(appointment);
+  if (!sanitized) {
+    return;
+  }
   try {
-    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment, savedAt: Date.now() }));
+    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment: sanitized, savedAt: Date.now() }));
   } catch {
     // Ignore persistence failures (e.g. Safari private mode).
   }
@@ -35,9 +40,10 @@ function storeLatestAppointment(appointment) {
 
 export default function BookingConfirmation() {
   const { isAuthenticated } = useAuth();
-  const [appointment] = useState(() => readLatestAppointment());
+  const [appointment, setAppointment] = useState(() => readLatestAppointment());
 
   const location = useLocation();
+  const locationAppointment = location.state?.appointment ?? null;
   const [remoteAppointment, setRemoteAppointment] = useState(null);
   const [isFetchingRemote, setIsFetchingRemote] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -82,6 +88,14 @@ export default function BookingConfirmation() {
       controller.abort();
     };
   }, [appointment, referenceQuery, emailQuery]);
+
+  useEffect(() => {
+    if (!locationAppointment) {
+      return;
+    }
+    setAppointment(locationAppointment);
+    storeLatestAppointment(locationAppointment);
+  }, [locationAppointment]);
 
   const bookingDetails = appointment || remoteAppointment;
   const scheduledStart = bookingDetails?.scheduled_start ? new Date(bookingDetails.scheduled_start) : null;
