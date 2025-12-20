@@ -32,7 +32,7 @@ const NEW_APPOINTMENT_FIELD_IDS = {
   guestPhone: 'new-appointment-guest-phone',
   description: 'new-appointment-description'
 };
-
+1
 const WEEK_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const WEEK_LABELS = {
   monday: 'Monday',
