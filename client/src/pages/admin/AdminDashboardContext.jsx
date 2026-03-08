@@ -249,24 +249,41 @@ export function AdminDashboardProvider({ children }) {
         const params = new URLSearchParams();
         params.set('page', page);
         params.set('per_page', perPage);
-        const response = await apiGet(`/api/admin/appointments?${params.toString()}`);
-        const items = ensureArray(response?.items);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15_000);
+        const response = await apiGet(`/api/admin/appointments?${params.toString()}`, {
+          signal: controller.signal
+        }).finally(() => {
+          clearTimeout(timeout);
+        });
+        // Support both paginated payloads ({ items, meta }) and legacy array payloads.
+        const items = ensureArray(
+          Array.isArray(response) ? response : response?.items ?? response?.appointments
+        );
+        const meta = !Array.isArray(response) && response?.meta ? response.meta : null;
         setAppointments((prev) => (append && page > 1 ? [...prev, ...items] : items));
         setAppointmentsPagination({
-          page,
-          per_page: perPage,
-          total: response?.meta?.total ?? items.length,
-          pages: response?.meta?.pages ?? 1
+          page: meta?.page ?? page,
+          per_page: meta?.per_page ?? perPage,
+          total: meta?.total ?? items.length,
+          pages: meta?.pages ?? 1
         });
         markFetched('appointments');
         return response;
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          showNotice({ tone: 'error', message: 'Appointments request timed out. Please retry.' });
+        } else {
+          showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to load appointments.') });
+        }
+        throw err;
       } finally {
         if (isInitialLoad) {
           setAppointmentsLoading(false);
         }
       }
     },
-    [appointmentsPagination.per_page, markFetched]
+    [appointmentsPagination.per_page, markFetched, showNotice]
   );
 
   const loadMoreAppointments = useCallback(async () => {

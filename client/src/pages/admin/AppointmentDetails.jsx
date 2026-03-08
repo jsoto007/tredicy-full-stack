@@ -410,25 +410,7 @@ export default function AppointmentDetails() {
     setActivePreviewAssetId(null);
   }, []);
 
-  useEffect(() => {
-    if (!selectedPreviewAsset) {
-      return undefined;
-    }
-    const handleKeyDown = (event) => {
-      if (shouldIgnoreHotkeys(event)) {
-        return;
-      }
-      if (event.key === 'Escape') {
-        handleClosePreview();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedPreviewAsset, handleClosePreview]);
-
-  const handlePreviewNav = (direction) => {
+  const handlePreviewNav = useCallback((direction) => {
     if (!selectedPreviewAsset || !previewableAssets.length) {
       return;
     }
@@ -442,10 +424,73 @@ export default function AppointmentDetails() {
         : (currentIndex - 1 + previewableAssets.length) % previewableAssets.length;
     const nextId = previewableAssets[nextIndex].id;
     setActivePreviewAssetId(nextId);
-  };
+  }, [selectedPreviewAsset, previewableAssets]);
+
+  useEffect(() => {
+    if (!selectedPreviewAsset) {
+      return undefined;
+    }
+    // Lock background scroll while the lightbox is open.
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event) => {
+      if (shouldIgnoreHotkeys(event)) {
+        return;
+      }
+      if (event.key === 'Escape') {
+        handleClosePreview();
+      }
+      if (event.key === 'ArrowRight') {
+        handlePreviewNav('next');
+      }
+      if (event.key === 'ArrowLeft') {
+        handlePreviewNav('prev');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [selectedPreviewAsset, handleClosePreview, handlePreviewNav]);
 
   const handleTriggerImageUpload = () => {
     imageInputRef.current?.click();
+  };
+
+  /**
+   * Download a private upload through the admin-only /download endpoint.
+   * We use fetch() with credentials:include so the session cookie is sent,
+   * then convert the response to a blob and trigger a browser save-dialog.
+   */
+  const downloadAsset = async (fileUrl, fallbackName = 'download') => {
+    if (!fileUrl) return;
+    // Derive the filename from the URL path.
+    const urlPath = fileUrl.split('?')[0];
+    const filenameFromUrl = urlPath.split('/').pop() || fallbackName;
+    // Build the admin download endpoint from the /api/uploads/<filename> proxy URL.
+    // e.g. /api/uploads/abc123.jpg  →  /api/admin/uploads/abc123.jpg/download
+    let downloadUrl = fileUrl;
+    const uploadsMatch = fileUrl.match(/\/api\/uploads\/(.+)/);
+    if (uploadsMatch) {
+      downloadUrl = `/api/admin/uploads/${uploadsMatch[1]}/download`;
+    }
+    try {
+      const res = await fetch(downloadUrl, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download = filenameFromUrl;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    } catch (err) {
+      setFeedback({ tone: 'offline', message: 'Unable to download file. Please try again.' });
+    }
   };
 
   const handleImageUpload = async (event) => {
@@ -802,6 +847,7 @@ export default function AppointmentDetails() {
                           src={backgroundImage}
                           alt={`${asset.kind || 'Client asset'} preview`}
                           className="h-full w-full cursor-pointer object-cover transition duration-300 group-hover:scale-[1.02]"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                       </div>
                     </button>
@@ -998,9 +1044,22 @@ export default function AppointmentDetails() {
                     </div>
                     <div className="flex flex-col items-end gap-3 sm:flex-row sm:items-center">
                       {fileUrl ? (
-                        <Button as="a" href={fileUrl} target="_blank" rel="noreferrer" variant="secondary">
-                          Open
-                        </Button>
+                        <>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => handleOpenPreview(asset.id)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => downloadAsset(fileUrl, `${asset.kind || 'file'}-${asset.id}`)}
+                          >
+                            Download
+                          </Button>
+                        </>
                       ) : null}
                       <Button
                         type="button"
@@ -1026,16 +1085,15 @@ export default function AppointmentDetails() {
             ) : null}
           </div>
         </Card>
+        {/* ── Lightbox overlay ── */}
         {selectedPreviewAsset ? (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 px-3 py-6 sm:px-6 relative">
-            <button
-              type="button"
-              className="absolute inset-0"
-              onClick={handleClosePreview}
-              aria-label="Close asset viewer overlay"
-            />
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-3 py-6 sm:px-6"
+            onClick={handleClosePreview}
+          >
             <div
               className="relative z-10 flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6"
+              onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
@@ -1110,8 +1168,12 @@ export default function AppointmentDetails() {
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Button as="a" href={current.resolvedUrl} target="_blank" rel="noreferrer" variant="secondary">
-                            Open in new tab
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => downloadAsset(current.resolvedUrl, `${current.kind || 'file'}-${current.id}`)}
+                          >
+                            ↓ Download
                           </Button>
                           <Button type="button" variant="ghost" onClick={() => handlePreviewNav('prev')}>
                             Previous
@@ -1139,11 +1201,10 @@ export default function AppointmentDetails() {
                       type="button"
                       key={asset.id}
                       onClick={() => handleOpenPreview(asset.id)}
-                      className={`flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border text-xs uppercase transition ${
-                        isActive
-                          ? 'border-gray-900 ring-2 ring-gray-900 dark:border-gray-100 dark:ring-gray-100'
-                          : 'border-gray-200'
-                      }`}
+                      className={`flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border text-xs uppercase transition ${isActive
+                        ? 'border-gray-900 ring-2 ring-gray-900 dark:border-gray-100 dark:ring-gray-100'
+                        : 'border-gray-200'
+                        }`}
                       aria-label={`Open ${asset.kind || 'asset'} preview`}
                     >
                       {isImageThumb ? (

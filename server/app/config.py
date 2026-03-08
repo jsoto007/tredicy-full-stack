@@ -103,12 +103,28 @@ def configure_app(app: Flask) -> SQLAlchemy:
     uploads_dir = Path(os.getenv("UPLOAD_FOLDER", Path(__file__).resolve().parent.parent / "uploads"))
     uploads_dir.mkdir(parents=True, exist_ok=True)
     app.config["UPLOAD_FOLDER"] = str(uploads_dir)
-    app.config.setdefault("MAX_CONTENT_LENGTH", 10 * 1024 * 1024)  # 10 MB upload ceiling
-    app.config["UPLOADS_S3_BUCKET"] = os.getenv("UPLOADS_S3_BUCKET")
-    app.config["UPLOADS_S3_REGION"] = os.getenv("UPLOADS_S3_REGION")
+
+    # Upload size ceiling — can be overridden via .env
+    max_upload_bytes = _int_from_env("R2_UPLOAD_MAX_BYTES", 10 * 1024 * 1024)
+    app.config.setdefault("MAX_CONTENT_LENGTH", max_upload_bytes)
+
+    # Cloudflare R2 / S3-compatible storage
+    # R2_* vars take precedence; UPLOADS_S3_* are kept for backwards compatibility.
+    app.config["UPLOADS_S3_BUCKET"] = os.getenv("R2_BUCKET") or os.getenv("UPLOADS_S3_BUCKET")
+    app.config["UPLOADS_S3_REGION"] = os.getenv("R2_REGION") or os.getenv("UPLOADS_S3_REGION") or "auto"
     app.config["UPLOADS_S3_PREFIX"] = os.getenv("UPLOADS_S3_PREFIX", "uploads")
-    app.config["UPLOADS_PUBLIC_BASE_URL"] = os.getenv("UPLOADS_PUBLIC_BASE_URL")
-    app.config["UPLOADS_S3_ACL"] = os.getenv("UPLOADS_S3_ACL", "public-read")
+    # R2 endpoint URL (e.g. https://<account_id>.r2.cloudflarestorage.com)
+    app.config["UPLOADS_S3_ENDPOINT_URL"] = os.getenv("R2_ENDPOINT_URL") or os.getenv("UPLOADS_S3_ENDPOINT_URL")
+    # R2 credentials (separate from general AWS creds so they don't conflict)
+    app.config["UPLOADS_S3_ACCESS_KEY_ID"] = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
+    app.config["UPLOADS_S3_SECRET_ACCESS_KEY"] = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
+    # Public base URL for gallery images (publicly readable objects only).
+    # Private appointment assets are served through the Flask proxy — leave this blank for them.
+    app.config["UPLOADS_PUBLIC_BASE_URL"] = os.getenv("R2_PUBLIC_BASE_URL") or os.getenv("UPLOADS_PUBLIC_BASE_URL")
+    # R2 does NOT support ACLs — keep this empty so boto3 doesn't send the ACL header.
+    app.config["UPLOADS_S3_ACL"] = os.getenv("UPLOADS_S3_ACL", "")
+    # Presigned URL TTL in seconds (used for admin download links to private objects)
+    app.config["UPLOADS_SIGNED_URL_TTL"] = _int_from_env("R2_SIGNED_URL_TTL_SECONDS", 900)
 
     app.config["SQUARE_APPLICATION_ID"] = os.getenv("SQUARE_APPLICATION_ID")
     app.config["SQUARE_LOCATION_ID"] = os.getenv("SQUARE_LOCATION_ID")

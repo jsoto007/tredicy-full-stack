@@ -203,6 +203,26 @@ def _build_s3_key(filename: str) -> str:
     return filename
 
 
+def _make_s3_client():
+    """Build a boto3 S3 client wired for Cloudflare R2 (or plain AWS S3).
+
+    R2 requires an explicit endpoint_url and uses Access Key / Secret Key
+    stored in the R2_* env vars (mapped to UPLOADS_S3_* in config.py).
+    """
+    kwargs: dict = {
+        "region_name": current_app.config.get("UPLOADS_S3_REGION") or None,
+    }
+    endpoint_url = current_app.config.get("UPLOADS_S3_ENDPOINT_URL")
+    if endpoint_url:
+        kwargs["endpoint_url"] = endpoint_url
+    access_key = current_app.config.get("UPLOADS_S3_ACCESS_KEY_ID")
+    secret_key = current_app.config.get("UPLOADS_S3_SECRET_ACCESS_KEY")
+    if access_key and secret_key:
+        kwargs["aws_access_key_id"] = access_key
+        kwargs["aws_secret_access_key"] = secret_key
+    return boto3.client("s3", **kwargs)
+
+
 def _get_upload_root() -> Path:
     upload_dir = Path(current_app.config["UPLOAD_FOLDER"])
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -334,16 +354,21 @@ def _store_media_s3(file_storage, safe_name: str):
     key = _build_s3_key(safe_name)
     payload, content_type = _prepare_upload_payload(file_storage, safe_name)
     extra_args = {"ContentType": content_type or "application/octet-stream"}
-    acl = current_app.config.get("UPLOADS_S3_ACL")
+    # R2 does not support ACLs — only set ACL when explicitly configured.
+    acl = current_app.config.get("UPLOADS_S3_ACL") or ""
     if acl:
         extra_args["ACL"] = acl
-    s3_client = boto3.client("s3", region_name=current_app.config.get("UPLOADS_S3_REGION") or None)
+    s3_client = _make_s3_client()
     try:
         s3_client.upload_fileobj(BytesIO(payload), bucket, key, ExtraArgs=extra_args)
     except (BotoCoreError, ClientError) as exc:
         raise MediaStorageError(str(exc)) from exc
+    # Always persist a DB record so the Flask proxy can serve private files
+    # without streaming from R2 on every request (avoids public bucket URLs).
     _persist_upload_record(safe_name, payload, content_type or "application/octet-stream")
-    return key, _public_s3_url(bucket, key)
+    # Return the /api/uploads/ proxy URL — private assets must never expose a
+    # direct R2 URL; the serve_uploaded_file route enforces access control.
+    return key, f"/api/uploads/{safe_name}"
 
 
 def store_uploaded_media(file_storage, safe_name: str):
@@ -366,10 +391,7 @@ def _cleanup_upload_target(target):
         if not bucket or not key:
             return
         try:
-            boto3.client("s3", region_name=current_app.config.get("UPLOADS_S3_REGION") or None).delete_object(
-                Bucket=bucket,
-                Key=key,
-            )
+            _make_s3_client().delete_object(Bucket=bucket, Key=key)
         except (BotoCoreError, ClientError):
             current_app.logger.warning("Unable to delete orphaned upload %s from bucket %s", key, bucket)
 
@@ -1283,7 +1305,8 @@ def _resolve_upload_access_control(filename: str | None) -> dict | None:
         .first()
     )
     if asset:
-        owner_id = asset.client_uploader_id or (asset.appointment.client_id if asset.appointment else None)
+        # Use the correct column name from the AppointmentAsset model.
+        owner_id = asset.uploaded_by_client_id or (asset.appointment.client_id if asset.appointment else None)
         if owner_id:
             return {"client_id": owner_id}
         return {"admin_only": True}
@@ -2308,6 +2331,42 @@ def serve_uploaded_file(filename):
         current_app.logger.warning("Unable to read upload %s for persistence.", safe_name)
 
     return _with_cache_headers(send_from_directory(str(upload_dir), safe_name, as_attachment=False))
+
+
+@api_bp.route("/api/admin/uploads/<path:filename>/download", methods=["GET"])
+@admin_required
+def admin_download_file(filename):
+    """Force-download a private upload for authenticated admins.
+
+    This endpoint is used by the admin portal's download button so that
+    images / documents are saved to disk rather than opened inline in the
+    browser.  It always requires an active admin session.
+    """
+    upload_dir = _get_upload_root()
+    safe_name = secure_filename(filename)
+    if not safe_name:
+        return jsonify({"error": "File not found."}), 404
+
+    # Serve from the DB blob cache first (works across dynos / redeploys).
+    stored = StoredUpload.query.filter_by(filename=safe_name).one_or_none()
+    if stored:
+        return send_file(
+            BytesIO(stored.data),
+            mimetype=stored.content_type or "application/octet-stream",
+            download_name=safe_name,
+            as_attachment=True,
+        )
+
+    # Fall back to local filesystem.
+    target = upload_dir / safe_name
+    try:
+        target_resolved = target.resolve(strict=True)
+    except OSError:
+        return jsonify({"error": "File not found."}), 404
+    if target_resolved.parent != upload_dir or not target_resolved.is_file():
+        return jsonify({"error": "File not found."}), 404
+
+    return send_from_directory(str(upload_dir), safe_name, as_attachment=True)
 
 
 @api_bp.route("/api/admin/uploads", methods=["POST"])
@@ -4252,21 +4311,24 @@ def admin_list_appointments():
     if status:
         query = query.filter(TattooAppointment.status == status)
 
-    total = query.count()
-
-    appointments = (
+    # Avoid an expensive full COUNT(*) for admin calendar loads in dev/prod.
+    # Fetch one extra row to determine whether a next page exists.
+    appointments_plus_one = (
         query.options(
             joinedload(TattooAppointment.client),
             joinedload(TattooAppointment.assigned_admin),
-            joinedload(TattooAppointment.payments),
         )
         .order_by(TattooAppointment.created_at.desc())
         .offset((page - 1) * per_page)
-        .limit(per_page)
+        .limit(per_page + 1)
         .all()
     )
+    has_next = len(appointments_plus_one) > per_page
+    appointments = appointments_plus_one[:per_page]
 
-    total_pages = math.ceil(total / per_page) if per_page else 1
+    known_total = (page - 1) * per_page + len(appointments) + (1 if has_next else 0)
+    total_pages = page + (1 if has_next else 0)
+
 
     return jsonify(
         {
@@ -4274,7 +4336,7 @@ def admin_list_appointments():
             "meta": {
                 "page": page,
                 "per_page": per_page,
-                "total": total,
+                "total": known_total,
                 "pages": total_pages,
             },
         }
