@@ -65,6 +65,11 @@ function isImageUrl(url) {
   if (trimmed.startsWith('data:image')) {
     return true;
   }
+  // Legacy or encrypted private photos served from our backend API 
+  // might not have extensions in the URL string natively
+  if (trimmed.includes('/api/uploads/')) {
+    return true;
+  }
   const sanitized = trimmed.split('?')[0]?.split('#')[0] ?? '';
   return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(sanitized);
 }

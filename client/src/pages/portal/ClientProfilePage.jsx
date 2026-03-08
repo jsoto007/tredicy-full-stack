@@ -42,9 +42,8 @@ function ToggleSwitch({ checked, disabled, onChange }) {
       className="relative inline-flex h-6 w-12 items-center rounded-full border border-gray-300 bg-white transition dark:border-gray-700 dark:bg-gray-900"
     >
       <span
-        className={`inline-block h-5 w-5 rounded-full bg-black transition ${
-          checked ? 'translate-x-6' : 'translate-x-1'
-        }`}
+        className={`inline-block h-5 w-5 rounded-full bg-black transition ${checked ? 'translate-x-6' : 'translate-x-1'
+          }`}
       />
     </button>
   );
@@ -80,6 +79,15 @@ function isImageFile(file) {
 function isImageName(name) {
   if (!name) {
     return false;
+  }
+  const urlString = String(name).trim();
+  if (urlString.startsWith('data:image/')) {
+    return true;
+  }
+  // Legacy or encrypted private photos served from our backend API 
+  // might not have extensions in the URL string natively
+  if (urlString.includes('/api/uploads/')) {
+    return true;
   }
   return IMAGE_NAME_PATTERN.test(name);
 }
