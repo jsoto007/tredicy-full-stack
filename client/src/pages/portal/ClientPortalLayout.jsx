@@ -26,7 +26,7 @@ export default function ClientPortalLayout() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white text-gray-900 dark:bg-black dark:text-gray-100">
+      <div className="flex min-h-screen items-center justify-center bg-white text-gray-900">
         <p className="text-sm uppercase tracking-[0.4em] text-gray-500">Loading portal…</p>
       </div>
     );
@@ -42,29 +42,29 @@ export default function ClientPortalLayout() {
 
   const linkClasses = ({ isActive }) =>
     classNames(
-      'rounded-full px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black',
+      'rounded-full px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.3em] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
       isActive
-        ? 'border-b-2 border-black text-black dark:border-white dark:text-white'
-        : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-gray-100'
+        ? 'border-b-2 border-black text-black'
+        : 'text-gray-600 hover:text-black'
     );
 
   const mobileNavItemClass =
-    'text-gray-600 transition-colors hover:text-black focus:outline-none focus-visible:underline dark:text-gray-300 dark:hover:text-gray-100';
+    'text-gray-600 transition-colors hover:text-black focus:outline-none focus-visible:underline';
 
   const circleButtonClass =
-    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-300 dark:hover:text-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black';
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
 
   const menuButtonClass = `${circleButtonClass} md:hidden`;
 
   return (
     <ClientPortalProvider>
-      <div className="min-h-screen bg-white dark:bg-black">
-        <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-sm dark:border-gray-800 dark:bg-black/90">
+      <div className="min-h-screen bg-white">
+        <div className="sticky top-0 z-30 border-b border-gray-200 bg-white/90 backdrop-blur-sm">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4">
             <div className="flex items-center gap-6">
               <Link
                 to="/"
-                className="text-[0.65rem] font-semibold uppercase tracking-[0.5em] text-gray-900 transition hover:text-gray-600 dark:text-gray-100 dark:hover:text-white"
+                className="text-[0.65rem] font-semibold uppercase tracking-[0.5em] text-gray-900 transition hover:text-gray-600"
               >
                 BLACKWORKNYC
               </Link>
@@ -105,7 +105,7 @@ export default function ClientPortalLayout() {
           {mobileMenuOpen ? (
             <div
               id="portal-mobile-navigation"
-              className="border-t border-gray-200 bg-white px-6 py-4 text-xs uppercase tracking-[0.3em] dark:border-gray-800 dark:bg-black md:hidden"
+              className="border-t border-gray-200 bg-white px-6 py-4 text-xs uppercase tracking-[0.3em] md:hidden"
             >
               <nav className="flex flex-col gap-3">
                 {USER_NAV_ITEMS.map((item) => (

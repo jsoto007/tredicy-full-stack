@@ -463,7 +463,7 @@ class AppointmentPayment(TimestampMixin, db.Model):
         db.ForeignKey("tattoo_appointments.id"),
         nullable=False,
     )
-    provider = db.Column(db.String(40), nullable=False, default="square")
+    provider = db.Column(db.String(40), nullable=False, default="stripe")
     provider_payment_id = db.Column(db.String(120), nullable=False)
     status = db.Column(db.String(40), nullable=False)
     amount_cents = db.Column(db.Integer, nullable=False)

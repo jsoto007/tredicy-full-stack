@@ -69,7 +69,7 @@ const GENERAL_POINTS = [
 
 export default function Policies() {
   return (
-    <main className="bg-white text-gray-900 dark:bg-black dark:text-gray-100">
+    <main className="bg-white text-gray-900">
       <div className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-16">
         <SectionTitle
           eyebrow="Policies"
@@ -77,55 +77,55 @@ export default function Policies() {
           description="Please read these Terms of Service, the Tattoo Consent Form, and supplementary policies carefully before booking."
         />
 
-        <div className="space-y-6 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+        <div className="space-y-6 text-xs uppercase tracking-[0.3em] text-gray-500">
           <p>BLACKWORKNYC LLC</p>
           <p>Brooklyn, NY · November, 2025</p>
         </div>
 
         <section className="space-y-4">
           <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-gray-700 dark:text-gray-300">Tattoo Consent Form</p>
-            <p className="text-xs uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+            <p className="text-sm font-semibold uppercase tracking-[0.4em] text-gray-700">Tattoo Consent Form</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-gray-500">
               READING TO SHOW THAT YOU UNDERSTAND EACH PROVISION. FEEL FREE TO ASK ANY QUESTIONS REGARDING THIS WAIVER.
             </p>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             In consideration of receiving a tattoo from Blackworknyc LLC, including its artists, associates, apprentices,
             agents, or employees (collectively the Tattoo Studio), I agree to the following:
           </p>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <ul className="space-y-2 text-sm text-gray-700">
             {WAIVER_STATEMENTS.map((statement) => (
               <li key={statement} className="list-disc pl-5">
                 {statement}
               </li>
             ))}
           </ul>
-          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <div className="space-y-2 text-sm text-gray-600">
             {VARIATION_PARAGRAPHS.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             IMPORTANT: PLEASE ASK YOUR ARTIST ABOUT THE PRICE OF YOUR TATTOO BEFORE BEGINNING THE PROCEDURE - it is your
             responsibility to confirm the price of the tattoo.
           </p>
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             Terms of Service
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             These Terms of Service constitute a binding agreement, and contain important information regarding your rights,
             remedies, and obligations, including limitations, exclusions, arbitration, class action waivers, jurisdiction,
             and compliance with applicable laws.
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Blackworknyc LLC provides an online informational site regarding the company’s tattooing services. The Terms
             include this Tattoo Consent release, guidelines, and any supplemental terms posted for updates or information
             purposes. Our privacy practices are described in the Privacy Policy available at{' '}
             <a
-              className="underline text-gray-900 dark:text-gray-100"
+              className="underline text-gray-900"
               href="https://www.blackworknyc.com/privacy-policy"
               target="_blank"
               rel="noreferrer"
@@ -138,10 +138,10 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             Explanation of the Site
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Blackworknyc LLC may provide an online interactive and informational website through which it shares
             information about its tattooing services and related offerings. In some cases, the Site offers e-commerce
             services and links to third-party dealers, distributors, and affiliates. Notwithstanding the foregoing, the Site
@@ -150,8 +150,8 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Disclaimers</p>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Disclaimers</p>
+          <ul className="space-y-2 text-sm text-gray-700">
             {DISCLAIMER_POINTS.map((point) => (
               <li key={point} className="list-disc pl-5">
                 {point}
@@ -161,21 +161,21 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Eligibility</p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Eligibility</p>
+          <p className="text-sm text-gray-600">
             The Site is intended for persons 18 years of age or older. Access to or use by anyone under 18 is prohibited, and
             by accessing the Site you represent and warrant that you meet the age requirement.
           </p>
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Accounts</p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Accounts</p>
+          <p className="text-sm text-gray-600">
             You may be required to register for an account to access certain User Features. Any information you provide is
             considered User Content and may be used to create and maintain your account. You agree to be solely responsible
             for account security and any activities occurring under your credentials.
           </p>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <ul className="space-y-2 text-sm text-gray-700">
             {ACCOUNTS_POINTS.map((point) => (
               <li key={point} className="list-disc pl-5">
                 {point}
@@ -185,10 +185,10 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             Orders, Returns, and Other Financial Terms
           </p>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <ul className="space-y-2 text-sm text-gray-700">
             {PAYMENT_POINTS.map((point) => (
               <li key={point} className="list-disc pl-5">
                 {point}
@@ -198,43 +198,43 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">User Conduct</p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">User Conduct</p>
+          <p className="text-sm text-gray-600">
             You are responsible for compliance with all applicable laws when using the site. Blackworknyc LLC reserves the
             right to investigate violations and remove any material it deems objectionable or harmful.
           </p>
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             Intellectual Property and User License
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Blackworknyc LLC grants you a limited, non-exclusive license to access and use the site and any content
             provided by us solely for your use. You agree not to copy, adapt, modify, create derivative works, distribute,
             license, sell, transmit, broadcast, or otherwise exploit the site except as expressly permitted.
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             By providing any User Content, you grant Blackworknyc LLC a worldwide, irrevocable, perpetual, royalty-free
             license to use, copy, adapt, distribute, and create derivative works from that content.
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             If you submit Suggestions for improvements, all rights in those Suggestions are assigned to Blackworknyc LLC.
           </p>
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             Dispute Resolution
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Any dispute arising out of or relating to these Terms will be resolved through binding arbitration administered
             by the American Arbitration Association under the Commercial Arbitration Rules and Supplementary Procedures
             for Consumer Related Disputes. Arbitration will occur in New York, New York unless otherwise mutually agreed. A
             claim not exceeding $10,000 will proceed on written submissions unless a hearing is requested, and you and
             Blackworknyc LLC each waive the right to a jury trial and to participate in class or representative proceedings.
           </p>
-          <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="space-y-2 text-sm text-gray-600">
             {DISPUTE_PARAGRAPHS.map((paragraph) => (
               <p key={paragraph}>{paragraph}</p>
             ))}
@@ -242,10 +242,10 @@ export default function Policies() {
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">
             General Provisions
           </p>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+          <ul className="space-y-2 text-sm text-gray-700">
             {GENERAL_POINTS.map((point) => (
               <li key={point} className="list-disc pl-5">
                 {point}
@@ -254,7 +254,7 @@ export default function Policies() {
           </ul>
         </section>
 
-        <section className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+        <section className="space-y-2 text-sm text-gray-600">
           <p>If you have any questions, contact:</p>
           <p>
             Blackworknyc LLC<br />

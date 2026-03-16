@@ -25,7 +25,7 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit'
 });
 
-const DEFAULT_DESCRIPTION = `Private, appointment-only sessions designed through collaborative consultations that honor your story and a refined blackwork aesthetic.`;
+const DEFAULT_DESCRIPTION = `Melodi Nails works by appointment so each manicure, pedicure, or acrylic service has enough time for proper prep, detail work, and a polished finish.`;
 
 function formatTimeValue(value) {
   if (!value) {
@@ -163,33 +163,33 @@ export default function StudioHours() {
   const showFallback = !summaryRows.length && !loading && !error;
 
   return (
-    <section id="hours" className="bg-white text-gray-900 dark:bg-black dark:text-white">
+    <section id="hours" className="bg-[#fffaf5] text-[#23301d]">
       <FadeIn className="mx-auto flex w-full max-w-5xl justify-center px-6 py-16" delayStep={0.18}>
-        <Card className="space-y-6 border border-gray-200/30 bg-white/90 px-8 py-10 shadow-2xl shadow-black/10 dark:border-white/10 dark:bg-black/80">
+        <Card className="space-y-6 border border-[#dbc9b4]/60 bg-[#fffdf9]/95 px-8 py-10 shadow-[0_20px_60px_rgba(42,57,35,0.10)]">
           <SectionTitle
-            eyebrow="Studio hours"
-            title="Studio availability"
-            description="Our availability updates in real-time. Please book an appointment to begin your custom piece."
+            eyebrow="Hours"
+            title="Appointment availability"
+            description="Availability updates in real-time based on service duration, so each booking has the right amount of time."
             align="center"
           />
           <div className="flex justify-center">
             <Link
               to="/share-your-idea"
-              className="inline-flex items-center gap-2 rounded-full border border-gray-900 px-6 py-2 text-sm font-medium text-gray-900 transition hover:bg-gray-200 dark:border-white/30 dark:bg-white/0 dark:text-white dark:hover:bg-white/10"
+              className="inline-flex items-center gap-2 rounded-full border border-[#2a3923] px-6 py-2 text-sm font-medium text-[#2a3923] transition hover:bg-[#f3e7d9]"
             >
               Book Appointment <span className="text-lg">→</span>
             </Link>
           </div>
           <div className="space-y-4 text-center">
             {loading ? (
-              <p className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Loading studio hours…</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">Loading studio hours…</p>
             ) : error ? (
               <p className="text-sm uppercase tracking-[0.3em] text-rose-500">{error}</p>
             ) : showFallback ? (
-              <p className="text-sm uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Currently not accepting walk-ins. </p>
+              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">Currently not accepting walk-ins.</p>
             ) : null}
           </div>
-          <p className="text-sm md:text-base leading-relaxed text-gray-500 dark:text-gray-400 max-w-xl mx-auto border-t border-gray-200/40 dark:border-white/10 pt-6 mt-2 text-center">
+          <p className="mx-auto mt-2 max-w-xl border-t border-[#dbc9b4]/60 pt-6 text-center text-sm leading-relaxed text-[#5e6755] md:text-base">
             {DEFAULT_DESCRIPTION}
           </p>
         </Card>

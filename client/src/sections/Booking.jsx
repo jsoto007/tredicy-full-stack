@@ -11,10 +11,10 @@ export default function Booking() {
     () =>
       BOOKING_REQUIREMENTS.map((item, index) => (
         <li key={item} className="group flex items-start gap-4">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-sm font-bold text-white shadow-[0_10px_30px_-12px_rgba(0,0,0,0.65)] transition duration-200 group-hover:-translate-x-[2px] group-hover:-translate-y-[2px] dark:bg-white dark:text-black dark:shadow-[0_10px_30px_-12px_rgba(255,255,255,0.6)]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2a3923] text-sm font-bold text-white shadow-[0_10px_30px_-12px_rgba(42,57,35,0.55)] transition duration-200 group-hover:-translate-x-[2px] group-hover:-translate-y-[2px]">
             {index + 1}
           </span>
-          <span className="pt-2 text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-gray-800 dark:text-gray-100">
+          <span className="pt-2 text-xs font-semibold uppercase leading-relaxed tracking-[0.25em] text-[#32412a]">
             {item}
           </span>
         </li>
@@ -25,26 +25,26 @@ export default function Booking() {
   return (
     <section
       id="booking"
-      className="bg-white py-20 text-gray-900 dark:bg-black dark:text-gray-100"
+      className="bg-[#ECE7E2] py-20 text-[#23301d]"
     >
       <FadeIn className="mx-auto max-w-6xl space-y-10 px-6" delayStep={0.18}>
         <div className="space-y-4 md:max-w-3xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#6f7863]">
             Booking
           </p>
-          <h2 className="text-4xl font-semibold uppercase leading-[1.05] tracking-tight text-black sm:text-5xl dark:text-white">
-            Reserve your session
+          <h2 className="text-4xl font-semibold leading-[1.05] tracking-[0.06em] text-[#2a3923] sm:text-5xl">
+            Reserve your appointment
           </h2>
-          <p className="text-base leading-relaxed text-gray-600 dark:text-gray-300">
-            Share your idea, upload verification, and lock in a working hour that fits your schedule.
+          <p className="text-base leading-relaxed text-[#5e6755]">
+            Choose a nail service, pick a time that fits your schedule, and check out securely with Stripe.
           </p>
         </div>
 
-        <Card className="relative overflow-hidden px-8 py-10 shadow-soft transition duration-300 sm:p-10">
+        <Card className="relative overflow-hidden bg-[#fffdf9] px-8 py-10 transition duration-300 sm:p-10">
           <div className="grid gap-10 md:grid-cols-[1fr_auto] md:items-start">
             <div className="space-y-6">
-              <p className="border-b-2 border-gray-200 pb-6 text-base leading-relaxed text-gray-700 dark:border-gray-800 dark:text-gray-200">
-                Bookings include secure document upload for design prep and age checks. Files are encrypted and private.
+              <p className="border-b-2 border-[#dbc9b4] pb-6 text-base leading-relaxed text-[#4f5847]">
+                Guest checkout is supported. Add notes or an inspiration image if you want, then pay the deposit or the full amount.
               </p>
               <ul className="space-y-4">{requirementList}</ul>
             </div>

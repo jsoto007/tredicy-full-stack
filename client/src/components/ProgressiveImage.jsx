@@ -20,10 +20,10 @@ export default function ProgressiveImage({
   }, [src]);
 
   return (
-    <div className={classNames('relative isolate overflow-hidden bg-gray-100 dark:bg-gray-900', className)}>
+    <div className={classNames('relative isolate overflow-hidden bg-gray-100', className)}>
       <div
         className={classNames(
-          'absolute inset-0 animate-pulse bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900',
+          'absolute inset-0 animate-pulse bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100',
           loaded && 'opacity-0 transition-opacity duration-200'
         )}
         aria-hidden="true"

@@ -27,8 +27,8 @@ export default function ActivateAccount() {
       return '';
     }
     return status.tone === 'error'
-      ? 'border-rose-400 bg-rose-50 text-rose-700 dark:border-rose-500 dark:bg-rose-950/40 dark:text-rose-300'
-      : 'border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-500 dark:bg-emerald-950/30 dark:text-emerald-200';
+      ? 'border-rose-400 bg-rose-50 text-rose-700'
+      : 'border-emerald-400 bg-emerald-50 text-emerald-800';
   }, [status]);
 
   const handleSubmit = async (event) => {
@@ -61,7 +61,7 @@ export default function ActivateAccount() {
   };
 
   return (
-    <main className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
+    <main className="bg-white py-16 text-gray-900">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6">
         <SectionTitle
           eyebrow="Account"
@@ -76,7 +76,7 @@ export default function ActivateAccount() {
         <Card className="space-y-6">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="activation-token" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-token" className="text-xs uppercase tracking-[0.3em] text-gray-500">
                 Activation token
               </label>
               <input
@@ -85,12 +85,12 @@ export default function ActivateAccount() {
                 value={token}
                 onChange={(event) => setToken(event.target.value)}
                 placeholder="Paste the token from your email"
-                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                 required
               />
             </div>
             <div>
-              <label htmlFor="activation-password" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-password" className="text-xs uppercase tracking-[0.3em] text-gray-500">
                 New password
               </label>
               <input
@@ -98,13 +98,13 @@ export default function ActivateAccount() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                 minLength={8}
                 required
               />
             </div>
             <div>
-              <label htmlFor="activation-password-confirm" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <label htmlFor="activation-password-confirm" className="text-xs uppercase tracking-[0.3em] text-gray-500">
                 Confirm password
               </label>
               <input
@@ -112,7 +112,7 @@ export default function ActivateAccount() {
                 type="password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                 minLength={8}
                 required
               />
@@ -121,15 +121,15 @@ export default function ActivateAccount() {
               {submitting ? 'Activating...' : 'Activate account'}
             </Button>
           </form>
-          <p className="text-[0.7rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-[0.7rem] uppercase tracking-[0.35em] text-gray-500">
             Already signed in?{' '}
-            <Link to="/portal/dashboard" className="font-semibold underline dark:text-gray-200">
+            <Link to="/portal/dashboard" className="font-semibold underline">
               Go to dashboard
             </Link>
           </p>
-          <p className="text-[0.7rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+          <p className="text-[0.7rem] uppercase tracking-[0.35em] text-gray-500">
             Need a new activation link?{' '}
-            <Link to="/auth" className="font-semibold text-gray-900 underline dark:text-gray-100">
+            <Link to="/auth" className="font-semibold text-gray-900 underline">
               Request one from the auth page
             </Link>
           </p>

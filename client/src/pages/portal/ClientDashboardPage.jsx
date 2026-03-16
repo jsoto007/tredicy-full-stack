@@ -128,7 +128,7 @@ export default function ClientDashboardPage() {
       return;
     }
     if (!ideaNotes.trim()) {
-      setIdeaError('Describe your idea before sending it.');
+      setIdeaError('Describe the nail look you want before sending it.');
       return;
     }
     setIdeaSubmitting(true);
@@ -144,7 +144,7 @@ export default function ClientDashboardPage() {
         description: ideaNotes.trim(),
         preferred_date: null
       });
-      setIdeaStatus('Idea shared with the studio. Expect a reply soon.');
+      setIdeaStatus('Your nail inspiration was shared with the studio. Expect a reply soon.');
       setIdeaNotes('');
     } catch (err) {
       setIdeaError(err?.message || 'Unable to send your idea right now.');
@@ -168,25 +168,25 @@ export default function ClientDashboardPage() {
     return (
       <article
         key={appointment.id}
-        className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950/70 dark:text-gray-200 sm:flex-row sm:items-center"
+        className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm sm:flex-row sm:items-center"
       >
         <div className="w-full sm:w-32">
-          <p className="text-xs uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">{leftDate}</p>
-          <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{leftTime}</p>
+          <p className="text-xs uppercase tracking-[0.4em] text-gray-500">{leftDate}</p>
+          <p className="text-lg font-semibold text-gray-900">{leftTime}</p>
         </div>
         <div className="flex-1 space-y-2">
-          <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500">
             {getAppointmentTypeLabel(appointment)}
           </p>
           {appointment.assigned_admin ? (
-            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appointment.assigned_admin.name}</p>
+            <p className="text-sm font-semibold text-gray-900">{appointment.assigned_admin.name}</p>
           ) : null}
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
             <Badge className={getStatusBadgeClasses(appointment.status)}>
               {formatStatusLabel(appointment.status)}
             </Badge>
-            {appointment.tattoo?.placement ? (
-              <span className="text-gray-500 dark:text-gray-400">{appointment.tattoo.placement.replace(/_/g, ' ')}</span>
+            {appointment.service?.name ? (
+              <span className="text-gray-500">{appointment.service.name}</span>
             ) : null}
           </div>
         </div>
@@ -239,7 +239,7 @@ export default function ClientDashboardPage() {
     return (
       <main className="space-y-8">
         <SectionTitle eyebrow="Client portal" title="Dashboard" description="We hit a snag." />
-        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{error}</Card>
+        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600">{error}</Card>
         <Button as={Link} to="/auth" variant="secondary">
           Return to sign in
         </Button>
@@ -260,14 +260,14 @@ export default function ClientDashboardPage() {
       <Card>
         <div className="grid gap-6 md:grid-cols-[1fr_280px] md:items-center">
           <div className="space-y-3">
-            <p className="text-[0.6rem] uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">Welcome back, {welcomeName}</p>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Track appointments, share inspiration, and stay informed with ease.</h1>
+            <p className="text-[0.6rem] uppercase tracking-[0.4em] text-gray-500">Welcome back, {welcomeName}</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Track appointments, share inspiration, and stay informed with ease.</h1>
           </div>
-          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/80 p-4 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-200">
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50/80 p-4 text-sm text-gray-700">
             {nextAppointment ? (
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">Next session</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">Next session</p>
+                <p className="text-lg font-semibold text-gray-900">
                   {formatSessionDate(nextAppointment.scheduled_start)} · {formatSessionTime(nextAppointment.scheduled_start)}
                 </p>
                 <Button variant="ghost" onClick={() => handleViewDetails(nextAppointment)}>
@@ -276,8 +276,8 @@ export default function ClientDashboardPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">No upcoming sessions yet</p>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Book a consult to set up your next session.</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">No upcoming sessions yet</p>
+                <p className="text-sm text-gray-600">Book a consult to set up your next session.</p>
                 <Button as={Link} to="/share-your-idea">
                   Book consult
                 </Button>
@@ -291,8 +291,8 @@ export default function ClientDashboardPage() {
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Upcoming appointment</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">All details are read-only here; toggle to edit via Profile.</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Upcoming appointment</p>
+              <p className="text-sm text-gray-500">All details are read-only here; toggle to edit via Profile.</p>
             </div>
             <Button as={Link} to="/portal/appointments" variant="ghost">
               View all
@@ -301,7 +301,7 @@ export default function ClientDashboardPage() {
           {nextAppointment ? (
             renderAppointmentCard(nextAppointment, 'upcoming')
           ) : (
-            <div className="space-y-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <div className="space-y-2 text-xs uppercase tracking-[0.3em] text-gray-500">
               <p>You don’t have any upcoming sessions yet.</p>
               <Button as={Link} to="/share-your-idea" variant="ghost">
                 Book consult
@@ -313,8 +313,8 @@ export default function ClientDashboardPage() {
         <Card ref={notificationsRef} className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Notifications</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Latest studio updates.</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Notifications</p>
+              <p className="text-sm text-gray-500">Latest studio updates.</p>
             </div>
             <Button as={Link} to="/portal/profile" variant="ghost">
               View all
@@ -323,17 +323,17 @@ export default function ClientDashboardPage() {
           {notifications?.items?.length ? (
             <div className="space-y-3">
               {notifications.items.slice(0, 3).map((notification) => (
-                <article key={notification.id} className="rounded-2xl border border-gray-200 bg-white/80 p-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-950/50 dark:text-gray-200">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">{notification.title}</p>
-                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <article key={notification.id} className="rounded-2xl border border-gray-200 bg-white/80 p-3 text-sm text-gray-700">
+                  <p className="font-semibold text-gray-900">{notification.title}</p>
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
                     {new Date(notification.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </p>
-                  <p className="mt-1 text-[0.75rem] text-gray-600 dark:text-gray-300">{notification.body}</p>
+                  <p className="mt-1 text-[0.75rem] text-gray-600">{notification.body}</p>
                 </article>
               ))}
             </div>
           ) : (
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">No studio updates yet.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">No studio updates yet.</p>
           )}
         </Card>
       </div>
@@ -341,8 +341,8 @@ export default function ClientDashboardPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Quick actions</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Shortcuts to the features you use most often.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Quick actions</p>
+            <p className="text-sm text-gray-500">Shortcuts to the features you use most often.</p>
           </div>
           <Button variant="ghost" onClick={() => navigate('/share-your-idea')}>
             Book consult
@@ -354,10 +354,10 @@ export default function ClientDashboardPage() {
               key={action.label}
               type="button"
               onClick={action.action}
-              className="flex w-full items-center justify-between gap-2 rounded-full border border-gray-200 bg-gray-50/70 px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.3em] text-gray-700 transition hover:border-black hover:text-black dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-200 dark:hover:border-white"
+              className="flex w-full items-center justify-between gap-2 rounded-full border border-gray-200 bg-gray-50/70 px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.3em] text-gray-700 transition hover:border-black hover:text-black"
             >
               <span>{action.label}</span>
-              <span className="text-[0.6rem] text-gray-400 dark:text-gray-500">→</span>
+              <span className="text-[0.6rem] text-gray-400">→</span>
             </button>
           ))}
         </div>
@@ -366,8 +366,8 @@ export default function ClientDashboardPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Recent uploads</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tap to preview and share additional notes with the studio.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Recent uploads</p>
+            <p className="text-sm text-gray-500">Tap to preview and share additional notes with the studio.</p>
           </div>
           <Button variant="ghost" onClick={() => navigate('/portal/profile', { state: { focus: 'inspiration' } })}>
             Upload inspiration
@@ -380,7 +380,7 @@ export default function ClientDashboardPage() {
                 key={upload.id}
                 type="button"
                 onClick={() => setPreviewImage(upload)}
-                className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white text-left dark:border-gray-800"
+                className="relative h-32 w-32 flex-shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-white text-left"
               >
                 <img
                   src={resolveApiUrl(upload.file_url)}
@@ -394,7 +394,7 @@ export default function ClientDashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="mt-4 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">No inspiration uploads yet.</p>
+          <p className="mt-4 text-xs uppercase tracking-[0.3em] text-gray-500">No inspiration uploads yet.</p>
         )}
       </Card>
 
@@ -408,15 +408,15 @@ export default function ClientDashboardPage() {
           </Button>
         </>
       }>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Describe your concept or inspiration for your next session.</p>
+        <p className="text-sm text-gray-600">Describe your concept or inspiration for your next session.</p>
         <textarea
           rows={4}
           value={ideaNotes}
           onChange={(event) => setIdeaNotes(event.target.value)}
-          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-black dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-black"
         />
-        {ideaError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{ideaError}</p> : null}
-        {ideaStatus ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{ideaStatus}</p> : null}
+        {ideaError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{ideaError}</p> : null}
+        {ideaStatus ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">{ideaStatus}</p> : null}
       </Dialog>
 
       <Dialog
@@ -425,7 +425,7 @@ export default function ClientDashboardPage() {
         title={actionDialog ? formatDialogTitle(actionDialog.type) : 'Note'}
         footer={<Button onClick={() => setActionDialog(null)}>Close</Button>}
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400">{buildActionMessage()}</p>
+        <p className="text-sm text-gray-600">{buildActionMessage()}</p>
       </Dialog>
 
       <Dialog
@@ -435,9 +435,9 @@ export default function ClientDashboardPage() {
         footer={<Button onClick={() => setSelectedAppointment(null)}>Close</Button>}
       >
         {selectedAppointment ? (
-          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{formatFriendlyDate(selectedAppointment.scheduled_start)}</p>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <div className="space-y-3 text-sm text-gray-700">
+            <p className="font-semibold text-gray-900">{formatFriendlyDate(selectedAppointment.scheduled_start)}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
               {getAppointmentTypeLabel(selectedAppointment)}
             </p>
             {selectedAppointment.assigned_admin ? (
@@ -449,7 +449,7 @@ export default function ClientDashboardPage() {
                 {formatStatusLabel(selectedAppointment.status)}
               </span>
             </p>
-            {selectedAppointment.tattoo?.notes ? <p>Notes: {selectedAppointment.tattoo.notes}</p> : null}
+            {selectedAppointment.service?.notes ? <p>Notes: {selectedAppointment.service.notes}</p> : null}
           </div>
         ) : null}
       </Dialog>

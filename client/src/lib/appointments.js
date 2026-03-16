@@ -1,4 +1,4 @@
-const DEFAULT_APPOINTMENT_TYPE_LABEL = 'Tattoo session';
+const DEFAULT_APPOINTMENT_TYPE_LABEL = 'Nail appointment';
 const MAX_LABEL_LENGTH = 60;
 
 function normalizeDescription(value) {
@@ -27,6 +27,10 @@ export function getAppointmentTypeLabel(appointment) {
   const sessionName = appointment.session_option?.name?.trim();
   if (sessionName) {
     return sessionName;
+  }
+  const serviceName = appointment.service?.name?.trim();
+  if (serviceName) {
+    return serviceName;
   }
   const descriptionLabel = normalizeDescription(appointment.client_description);
   if (descriptionLabel) {
@@ -69,6 +73,20 @@ export function sanitizeAppointmentForConfirmation(appointment) {
           placement: appointment.tattoo.placement || null,
           size: appointment.tattoo.size || null,
           notes: appointment.tattoo.notes || null
+        }
+      : null,
+    service: appointment.service
+      ? {
+          name: appointment.service.name || appointment.session_option?.name || null,
+          notes: appointment.service.notes || appointment.client_description || null
+        }
+      : null,
+    session_option: appointment.session_option
+      ? {
+          id: appointment.session_option.id,
+          name: appointment.session_option.name,
+          duration_minutes: appointment.session_option.duration_minutes,
+          price_cents: appointment.session_option.price_cents
         }
       : null,
     assigned_admin: appointment.assigned_admin

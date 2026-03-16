@@ -462,10 +462,10 @@ function IconChevronRight(props) {
 function ActionIconButton({ icon: Icon, label, onClick, tone = 'default', active = false }) {
   const toneClasses =
     tone === 'danger'
-      ? 'text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/50'
-      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-900';
+      ? 'text-red-500 hover:bg-red-50 hover:text-red-600'
+      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900';
   const activeClasses = active
-    ? 'bg-gray-100 text-gray-900 dark:bg-gray-800/70 dark:text-gray-100'
+    ? 'bg-gray-100 text-gray-900'
     : 'bg-transparent';
 
   return (
@@ -473,7 +473,7 @@ function ActionIconButton({ icon: Icon, label, onClick, tone = 'default', active
       type="button"
       onClick={onClick}
       aria-label={label}
-      className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition ${toneClasses} ${activeClasses} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 dark:focus-visible:outline-gray-100`}
+      className={`inline-flex h-10 w-10 items-center justify-center rounded-full transition ${toneClasses} ${activeClasses} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900`}
     >
       <Icon className="h-4 w-4" />
     </button>
@@ -1047,15 +1047,15 @@ export default function AdminCalendar() {
   };
 
   const renderEmptyState = (message) => (
-    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
-      <IconCalendar className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600">
+      <IconCalendar className="h-8 w-8 text-gray-400" />
       <p>{message}</p>
     </div>
   );
 
   const renderLoadingState = (message = 'Loading appointments...') => (
-    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
-      <svg className="h-6 w-6 animate-spin text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none">
+    <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600">
+      <svg className="h-6 w-6 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
         <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
       </svg>
@@ -1139,19 +1139,19 @@ export default function AdminCalendar() {
         type="button"
         onClick={() => setSelectedAppointmentId(appointment.id)}
         key={appointment.id}
-        className="w-full space-y-2 rounded-2xl border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-gray-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:border-gray-800 dark:bg-gray-950 dark:hover:border-gray-700 dark:focus-visible:ring-gray-500"
+        className="w-full space-y-2 rounded-2xl border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-gray-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
       >
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{timeRange}</p>
+          <p className="text-sm font-semibold text-gray-900">{timeRange}</p>
           <span
             className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${statusClasses}`}
           >
             {statusLabel}
           </span>
         </div>
-        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300">
+        <div className="flex items-center justify-between text-xs text-gray-600">
           <span className="font-medium">{clientName}</span>
-          <span className="text-gray-500 dark:text-gray-400">{reference}</span>
+          <span className="text-gray-500">{reference}</span>
         </div>
       </button>
     );
@@ -1183,18 +1183,18 @@ export default function AdminCalendar() {
         return (
           <div
             key={dateKey || day.toISOString()}
-            className={`space-y-2 rounded-2xl border bg-white p-3 shadow-sm dark:bg-gray-950 ${isToday
-              ? 'border-gray-900 ring-2 ring-gray-900/10 dark:border-gray-200 dark:ring-gray-200/20'
-              : 'border-gray-200 dark:border-gray-800'
+            className={`space-y-2 rounded-2xl border bg-white p-3 shadow-sm ${isToday
+              ? 'border-gray-900 ring-2 ring-gray-900/10'
+              : 'border-gray-200'
               }`}
           >
             <button
               type="button"
               onClick={() => openDayModal(day)}
-              className="flex w-full items-center justify-between text-sm font-semibold text-gray-900 transition hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-200"
+              className="flex w-full items-center justify-between text-sm font-semibold text-gray-900 transition hover:text-gray-600"
             >
               <span>{day.toLocaleDateString([], { weekday: 'short' })}</span>
-              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-gray-900 dark:text-gray-200">
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-700">
                 {day.getDate()}
               </span>
             </button>
@@ -1205,15 +1205,15 @@ export default function AdminCalendar() {
                     key={entry.id}
                     type="button"
                     onClick={() => setSelectedAppointmentId(entry.id)}
-                    className="w-full rounded-xl bg-gray-50 p-2 text-left text-xs transition hover:border hover:border-gray-200 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:bg-gray-900 dark:hover:bg-gray-800 dark:focus-visible:ring-gray-500"
+                    className="w-full rounded-xl bg-gray-50 p-2 text-left text-xs transition hover:border hover:border-gray-200 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                   >
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{formatAppointmentTimeRange(entry)}</p>
-                    <p className="text-gray-600 dark:text-gray-300">{entry.client?.display_name || entry.guest_name}</p>
+                    <p className="font-semibold text-gray-900">{formatAppointmentTimeRange(entry)}</p>
+                    <p className="text-gray-600">{entry.client?.display_name || entry.guest_name}</p>
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500">
                 {isLoadingAppointments ? 'Loading appointments...' : 'No appointments'}
               </p>
             )}
@@ -1231,13 +1231,13 @@ export default function AdminCalendar() {
 
     return (
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
-        <section className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:p-6">
+        <section className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">
                 Schedule for
               </p>
-              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              <p className="text-base font-semibold text-gray-900">
                 {formatInTimeZone(focusDate, TIMEZONE, 'EEEE, MMMM d, yyyy')}
               </p>
             </div>
@@ -1245,20 +1245,20 @@ export default function AdminCalendar() {
               Open day
             </Button>
           </div>
-          <ol className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <ol className="space-y-2 text-sm text-gray-600">
             {selectedEntries.length ? (
               selectedEntries.map((entry) => (
                 <li key={entry.id}>
                   <button
                     type="button"
                     onClick={() => setSelectedAppointmentId(entry.id)}
-                    className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-3 py-2 text-left transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 dark:border-gray-800 dark:hover:bg-gray-900 dark:focus-visible:ring-gray-500"
+                    className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-3 py-2 text-left transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                   >
                     <div className="flex-1">
-                      <p className="text-gray-900 dark:text-gray-100">
+                      <p className="text-gray-900">
                         {entry.client?.display_name || entry.guest_name || 'Guest client'}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
                         <span>{formatAppointmentTimeRange(entry)}</span>
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
@@ -1273,18 +1273,18 @@ export default function AdminCalendar() {
                 </li>
               ))
             ) : (
-              <li className="rounded-2xl border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <li className="rounded-2xl border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500">
                 {isLoadingAppointments ? 'Loading appointments...' : 'No appointments scheduled.'}
               </li>
             )}
           </ol>
         </section>
 
-        <section className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:p-6 lg:max-w-md lg:justify-self-end">
-          <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <section className="space-y-4 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 lg:max-w-md lg:justify-self-end">
+          <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
             <span>{formatInTimeZone(focusDate, TIMEZONE, 'MMMM yyyy')}</span>
           </div>
-          <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+          <div className="grid grid-cols-7 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-500">
             {weekdayLabels.map((label) => (
               <span key={`mini-${label}`}>{label}</span>
             ))}
@@ -1302,19 +1302,19 @@ export default function AdminCalendar() {
                   type="button"
                   onClick={() => setFocusDay(day)}
                   className={`flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold transition ${isSelected
-                    ? 'bg-gray-900 text-white shadow-sm dark:bg-gray-100 dark:text-gray-900'
+                    ? 'bg-gray-900 text-white shadow-sm'
                     : isToday
-                      ? 'border border-gray-900 text-gray-900 dark:border-gray-200 dark:text-gray-100'
+                      ? 'border border-gray-900 text-gray-900'
                       : isCurrentMonth
-                        ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900'
-                        : 'text-gray-400 dark:text-gray-600'
+                        ? 'text-gray-700 hover:bg-gray-100'
+                        : 'text-gray-400'
                     }`}
                   aria-label={`View ${formatInTimeZone(day, TIMEZONE, 'MMMM d')}`}
                 >
                   <span className="relative flex h-full w-full items-center justify-center">
                     {day.getDate()}
                     {entries.length ? (
-                      <span className="absolute -bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-gray-900 dark:bg-gray-100" />
+                      <span className="absolute -bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-gray-900" />
                     ) : null}
                   </span>
                 </button>
@@ -1337,9 +1337,9 @@ export default function AdminCalendar() {
       <Dialog open={Boolean(dayModalDate)} onClose={closeDayModal} title="Day schedule">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Selected day</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{modalDateLabel}</p>
-            {isToday ? <p className="text-xs text-gray-500 dark:text-gray-400">Today</p> : null}
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Selected day</p>
+            <p className="text-base font-semibold text-gray-900">{modalDateLabel}</p>
+            {isToday ? <p className="text-xs text-gray-500">Today</p> : null}
           </div>
           <div className="flex items-center gap-2">
             <ActionIconButton icon={IconChevronLeft} label="Previous day" onClick={() => handleDayModalChange(-1)} />
@@ -1390,18 +1390,18 @@ export default function AdminCalendar() {
 
     return (
       <Dialog open={Boolean(selectedAppointment)} onClose={closeAppointmentModal} title="Appointment details">
-        <div className="space-y-2 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900">
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{clientName}</p>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Ref {reference}</p>
+        <div className="space-y-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+          <p className="text-sm font-semibold text-gray-900">{clientName}</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Ref {reference}</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Schedule</p>
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{scheduledLabel}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Duration: {durationLabel}</p>
+          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Schedule</p>
+            <p className="font-semibold text-gray-900">{scheduledLabel}</p>
+            <p className="text-xs text-gray-500">Duration: {durationLabel}</p>
           </div>
-          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Status</p>
+          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Status</p>
             <span
               className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
                 selectedAppointment.status
@@ -1409,19 +1409,19 @@ export default function AdminCalendar() {
             >
               {formatStatusLabel(selectedAppointment.status) || 'Pending'}
             </span>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Assigned: {assigned}</p>
+            <p className="text-xs text-gray-500">Assigned: {assigned}</p>
           </div>
-          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact</p>
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{contact}</p>
+          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Contact</p>
+            <p className="font-semibold text-gray-900">{contact}</p>
           </div>
-          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Type</p>
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{getAppointmentTypeLabel(selectedAppointment)}</p>
+          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Type</p>
+            <p className="font-semibold text-gray-900">{getAppointmentTypeLabel(selectedAppointment)}</p>
           </div>
-          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm dark:border-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Notes</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
+          <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Notes</p>
+            <p className="text-sm text-gray-700">
               {selectedAppointment.client_description || 'No notes yet.'}
             </p>
           </div>
@@ -1440,20 +1440,20 @@ export default function AdminCalendar() {
 
   const renderCreatePanel = () => (
     <form className="space-y-6" onSubmit={handleCreateSubmit}>
-      <div className="flex items-center gap-3 text-gray-700 dark:text-gray-200">
-        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+      <div className="flex items-center gap-3 text-gray-700">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-900 text-white">
           <IconPlus className="h-5 w-5" />
         </span>
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.3em]">Create appointment</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Schedule time for a client or guest.</p>
+          <p className="text-xs text-gray-500">Schedule time for a client or guest.</p>
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.clientId}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Client
           </label>
@@ -1468,7 +1468,7 @@ export default function AdminCalendar() {
                 setTimeout(() => setShowClientSearchResults(false), 120);
               }}
               onChange={(event) => handleClientSearchChange(event.target.value)}
-              className="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-9 pr-24 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-9 pr-24 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
               placeholder="Search by name, phone, or email"
               autoComplete="off"
               onKeyDown={stopGlobalHotkeysWhenTyping}
@@ -1479,13 +1479,13 @@ export default function AdminCalendar() {
               <button
                 type="button"
                 onClick={handleClientClear}
-                className="absolute inset-y-1 right-1 rounded-xl px-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-900"
+                className="absolute inset-y-1 right-1 rounded-xl px-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-600 transition hover:bg-gray-100"
               >
                 Clear
               </button>
             ) : null}
             {showClientSearchResults ? (
-              <div className="absolute z-10 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-950">
+              <div className="absolute z-10 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
                 {filteredClients.length ? (
                   filteredClients.map((client) => (
                     <button
@@ -1495,23 +1495,23 @@ export default function AdminCalendar() {
                         event.preventDefault();
                         handleClientSelect(client);
                       }}
-                      className="block w-full space-y-1 px-3 py-2 text-left transition hover:bg-gray-100 focus:outline-none dark:hover:bg-gray-900"
+                      className="block w-full space-y-1 px-3 py-2 text-left transition hover:bg-gray-100 focus:outline-none"
                     >
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      <p className="text-sm font-semibold text-gray-900">
                         {client.display_name || 'Unnamed client'}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {[client.email, client.phone].filter(Boolean).join(' · ') || 'No contact info'}
                       </p>
                     </button>
                   ))
                 ) : (
-                  <p className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No clients match that search.</p>
+                  <p className="px-3 py-2 text-sm text-gray-500">No clients match that search.</p>
                 )}
               </div>
             ) : null}
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-xs text-gray-500">
             {selectedClient
               ? `Selected ${selectedClient.display_name || 'client'} (#${selectedClient.id}).`
               : 'Select an existing client or leave blank for a guest booking.'}
@@ -1520,7 +1520,7 @@ export default function AdminCalendar() {
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.status}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Status
           </label>
@@ -1528,7 +1528,7 @@ export default function AdminCalendar() {
             id={NEW_APPOINTMENT_FIELD_IDS.status}
             value={newAppointmentDraft.status}
             onChange={(event) => handleCreateDraftChange('status', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           >
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -1540,7 +1540,7 @@ export default function AdminCalendar() {
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestName}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Guest name
           </label>
@@ -1549,14 +1549,14 @@ export default function AdminCalendar() {
             type="text"
             value={newAppointmentDraft.guest_name}
             onChange={(event) => handleCreateDraftChange('guest_name', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             placeholder="Required if no client ID"
           />
         </div>
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Guest email
           </label>
@@ -1565,14 +1565,14 @@ export default function AdminCalendar() {
             type="email"
             value={newAppointmentDraft.guest_email}
             onChange={(event) => handleCreateDraftChange('guest_email', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             placeholder="Required if no client ID"
           />
         </div>
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Start
           </label>
@@ -1582,13 +1582,13 @@ export default function AdminCalendar() {
             step="3600"
             value={newAppointmentDraft.scheduled_start}
             onChange={(event) => handleCreateDraftChange('scheduled_start', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
         </div>
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.duration}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Duration (min)
           </label>
@@ -1599,13 +1599,13 @@ export default function AdminCalendar() {
             step="60"
             value={newAppointmentDraft.duration_minutes}
             onChange={(event) => handleCreateDraftChange('duration_minutes', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
         </div>
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Assign admin
           </label>
@@ -1613,7 +1613,7 @@ export default function AdminCalendar() {
             id={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
             value={newAppointmentDraft.assigned_admin_id}
             onChange={(event) => handleCreateDraftChange('assigned_admin_id', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           >
             <option value="">Unassigned</option>
             {adminOptions.map((option) => (
@@ -1626,7 +1626,7 @@ export default function AdminCalendar() {
         <div className="space-y-2">
           <label
             htmlFor={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Guest phone
           </label>
@@ -1635,14 +1635,14 @@ export default function AdminCalendar() {
             type="tel"
             value={newAppointmentDraft.guest_phone}
             onChange={(event) => handleCreateDraftChange('guest_phone', event.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
         </div>
       </div>
       <div className="space-y-2">
         <label
           htmlFor={NEW_APPOINTMENT_FIELD_IDS.description}
-          className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+          className="text-xs uppercase tracking-[0.3em] text-gray-500"
         >
           Notes
         </label>
@@ -1652,11 +1652,11 @@ export default function AdminCalendar() {
           value={newAppointmentDraft.client_description}
           onChange={(event) => handleCreateDraftChange('client_description', event.target.value)}
           placeholder="Client or session notes (optional)"
-          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
         />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-gray-500 dark:text-gray-400">A confirmation dialog appears before saving.</p>
+        <p className="text-xs text-gray-500">A confirmation dialog appears before saving.</p>
         <Button type="submit">
           <IconPlus className="h-4 w-4" />
           Add to calendar
@@ -1693,7 +1693,7 @@ export default function AdminCalendar() {
                 value={appointmentSearchQuery}
                 onChange={(event) => setAppointmentSearchQuery(event.target.value)}
                 placeholder="Search by client, contact, reference, or status"
-                className="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                className="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-0"
                 onKeyDown={stopGlobalHotkeysWhenTyping}
                 onKeyUp={stopGlobalHotkeysWhenTyping}
                 onKeyDownCapture={stopGlobalHotkeysWhenTyping}
@@ -1704,7 +1704,7 @@ export default function AdminCalendar() {
           <div className="flex flex-wrap items-center gap-3 lg:justify-end">
             <label
               htmlFor="admin-calendar-sort"
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+              className="text-xs uppercase tracking-[0.3em] text-gray-500"
             >
               Sort
             </label>
@@ -1712,7 +1712,7 @@ export default function AdminCalendar() {
               id="admin-calendar-sort"
               value={appointmentSortOption}
               onChange={(event) => setAppointmentSortOption(event.target.value)}
-              className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+              className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             >
               <option value="schedule-asc">Upcoming (chronological)</option>
               <option value="schedule-desc">Latest first</option>
@@ -1723,7 +1723,7 @@ export default function AdminCalendar() {
         </div>
 
         {hasFilteredAppointments && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">{showingLabel}</p>
+          <p className="text-xs text-gray-500">{showingLabel}</p>
         )}
 
         {hasFilteredAppointments ? (
@@ -1731,44 +1731,44 @@ export default function AdminCalendar() {
             <div className="flow-root">
               <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
                 <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                  <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
+                  <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
                     <div className="max-h-[720px] overflow-y-auto">
-                      <table className="min-w-full divide-y divide-gray-300 dark:divide-gray-800">
-                        <thead className="bg-gray-50 dark:bg-gray-900">
+                      <table className="min-w-full divide-y divide-gray-300">
+                        <thead className="bg-gray-50">
                           <tr>
                             <th
                               scope="col"
-                              className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pl-6"
+                              className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6"
                             >
                               Client
                             </th>
                             <th
                               scope="col"
-                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100"
+                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                             >
                               Schedule
                             </th>
                             <th
                               scope="col"
-                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100"
+                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                             >
                               Status
                             </th>
                             <th
                               scope="col"
-                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-gray-100"
+                              className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
                             >
                               Assigned
                             </th>
                             <th
                               scope="col"
-                              className="py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 dark:text-gray-100 sm:pr-6"
+                              className="py-3.5 pl-3 pr-4 text-right text-sm font-semibold text-gray-900 sm:pr-6"
                             >
                               Actions
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                        <tbody className="divide-y divide-gray-200">
                           {filteredAppointments.map((appointment) => {
                             const draft = appointmentDrafts[appointment.id] || buildDraftFromAppointment(appointment);
                             const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
@@ -1797,26 +1797,26 @@ export default function AdminCalendar() {
                             const statusLabel = formatStatusLabel(appointment.status) || 'Pending';
 
                             return [
-                              <tr key={appointment.id} className="bg-white dark:bg-gray-950">
+                              <tr key={appointment.id} className="bg-white">
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                                   <div className="flex items-center">
-                                    <div className="mr-4 flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+                                    <div className="mr-4 flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 text-white">
                                       <IconCalendar className="h-5 w-5" />
                                     </div>
                                     <div>
-                                      <div className="font-semibold text-gray-900 dark:text-gray-100">{clientName}</div>
-                                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">{contact}</div>
-                                      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">Ref {reference}</div>
+                                      <div className="font-semibold text-gray-900">{clientName}</div>
+                                      <div className="mt-1 text-xs text-gray-500">{contact}</div>
+                                      <div className="mt-1 text-xs text-gray-500">Ref {reference}</div>
                                     </div>
                                   </div>
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                  <div className="text-gray-900 dark:text-gray-100">{formattedDate}</div>
-                                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  <div className="text-gray-900">{formattedDate}</div>
+                                  <div className="mt-1 text-xs text-gray-500">
                                     Duration {appointment.duration_minutes ? `${appointment.duration_minutes} min` : '—'}
                                   </div>
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                   <span
                                     className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
                                       appointment.status
@@ -1825,13 +1825,13 @@ export default function AdminCalendar() {
                                     {statusLabel}
                                   </span>
                                   {isDayOff ? (
-                                    <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20 dark:bg-rose-950/50 dark:text-rose-200">
+                                    <span className="ml-2 inline-flex items-center rounded-md bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 ring-1 ring-inset ring-rose-600/20">
                                       Day off
                                     </span>
                                   ) : null}
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-300">
-                                  <div className="text-gray-900 dark:text-gray-100">{assigned}</div>
+                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                                  <div className="text-gray-900">{assigned}</div>
                                 </td>
                                 <td className="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                                   <div className="flex items-center justify-end gap-2">
@@ -1861,14 +1861,14 @@ export default function AdminCalendar() {
                                 </td>
                               </tr>,
                               isEditing ? (
-                                <tr key={`${appointment.id}-edit`} className="bg-gray-50 dark:bg-gray-900">
+                                <tr key={`${appointment.id}-edit`} className="bg-gray-50">
                                   <td colSpan={5} className="px-4 py-5 sm:px-6">
                                     <div className="space-y-4">
                                       <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
                                           <label
                                             htmlFor={statusId}
-                                            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                                            className="text-xs uppercase tracking-[0.3em] text-gray-500"
                                           >
                                             Status
                                           </label>
@@ -1878,7 +1878,7 @@ export default function AdminCalendar() {
                                             onChange={(event) =>
                                               handleAppointmentDraftChange(appointment.id, 'status', event.target.value)
                                             }
-                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           >
                                             {statusOptions.map((option) => (
                                               <option key={option.value} value={option.value}>
@@ -1890,7 +1890,7 @@ export default function AdminCalendar() {
                                         <div className="space-y-2">
                                           <label
                                             htmlFor={startId}
-                                            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                                            className="text-xs uppercase tracking-[0.3em] text-gray-500"
                                           >
                                             Start
                                           </label>
@@ -1902,13 +1902,13 @@ export default function AdminCalendar() {
                                             onChange={(event) =>
                                               handleAppointmentDraftChange(appointment.id, 'scheduled_start', event.target.value)
                                             }
-                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           />
                                         </div>
                                         <div className="space-y-2">
                                           <label
                                             htmlFor={durationId}
-                                            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                                            className="text-xs uppercase tracking-[0.3em] text-gray-500"
                                           >
                                             Duration (min)
                                           </label>
@@ -1921,13 +1921,13 @@ export default function AdminCalendar() {
                                             onChange={(event) =>
                                               handleAppointmentDraftChange(appointment.id, 'duration_minutes', event.target.value)
                                             }
-                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           />
                                         </div>
                                         <div className="space-y-2">
                                           <label
                                             htmlFor={adminId}
-                                            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                                            className="text-xs uppercase tracking-[0.3em] text-gray-500"
                                           >
                                             Assigned admin
                                           </label>
@@ -1937,7 +1937,7 @@ export default function AdminCalendar() {
                                             onChange={(event) =>
                                               handleAppointmentDraftChange(appointment.id, 'assigned_admin_id', event.target.value)
                                             }
-                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                                            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           >
                                             <option value="">Unassigned</option>
                                             {adminOptions.map((option) => (
@@ -1951,7 +1951,7 @@ export default function AdminCalendar() {
                                       <div className="space-y-2">
                                         <label
                                           htmlFor={notesId}
-                                          className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                                          className="text-xs uppercase tracking-[0.3em] text-gray-500"
                                         >
                                           Notes
                                         </label>
@@ -1962,11 +1962,11 @@ export default function AdminCalendar() {
                                           onChange={(event) =>
                                             handleAppointmentDraftChange(appointment.id, 'client_description', event.target.value)
                                           }
-                                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                         />
                                       </div>
                                       <div className="flex flex-wrap items-center justify-between gap-3">
-                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        <p className="text-xs text-gray-500">
                                           Last update{' '}
                                           {appointment.updated_at
                                             ? new Date(appointment.updated_at).toLocaleString([], {
@@ -2031,14 +2031,14 @@ export default function AdminCalendar() {
       <Card className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white">
               <IconCalendar className="h-6 w-6" />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                 Studio calendar
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">{appointmentCountLabel}</p>
+              <p className="text-sm text-gray-600">{appointmentCountLabel}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -2071,24 +2071,24 @@ export default function AdminCalendar() {
             </div>
           </Dialog>
         ) : null}
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                 View
               </p>
-              <p className="text-sm text-gray-700 dark:text-gray-200">{calendarHeadline}</p>
+              <p className="text-sm text-gray-700">{calendarHeadline}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 p-1 text-xs font-semibold uppercase tracking-[0.2em] dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center rounded-full border border-gray-200 bg-gray-50 p-1 text-xs font-semibold uppercase tracking-[0.2em]">
                 {['day', 'week', 'month'].map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => handleSetViewMode(mode)}
                     className={`rounded-full px-4 py-2 transition ${viewMode === mode
-                      ? 'bg-gray-900 text-white shadow-sm dark:bg-gray-100 dark:text-gray-900'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
+                      ? 'bg-gray-900 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     {mode}
@@ -2108,7 +2108,7 @@ export default function AdminCalendar() {
             {viewMode === 'day' ? renderDayView() : viewMode === 'week' ? renderWeekView() : renderMonthView()}
           </div>
         </div>
-        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           {renderAppointmentList()}
         </div>
       </Card>
@@ -2116,14 +2116,14 @@ export default function AdminCalendar() {
       <Card className="space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white">
               <IconClock className="h-6 w-6" />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                 Studio availability
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-300">Manage weekly hours and closures.</p>
+              <p className="text-sm text-gray-600">Manage weekly hours and closures.</p>
             </div>
           </div>
           <Button type="button" onClick={requestScheduleUpdate}>
@@ -2133,7 +2133,7 @@ export default function AdminCalendar() {
         </div>
         <div className="grid gap-6">
           <section className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
               Operating hours
             </h3>
             <div className="space-y-3">
@@ -2147,12 +2147,12 @@ export default function AdminCalendar() {
                       )
                       : '';
                 const statusStyles = entry.is_open
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200'
-                  : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-gray-200 text-gray-700';
                 return (
                   <div
                     key={entry.day}
-                    className="space-y-3 rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                    className="space-y-3 rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-2">
@@ -2161,11 +2161,11 @@ export default function AdminCalendar() {
                           type="checkbox"
                           checked={entry.is_open}
                           onChange={(event) => handleHoursDraftChange(entry.day, 'is_open', event.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-950 dark:focus:ring-gray-100"
+                          className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                         />
                         <label
                           htmlFor={`hours-${entry.day}`}
-                          className="text-sm font-semibold text-gray-800 dark:text-gray-100"
+                          className="text-sm font-semibold text-gray-800"
                         >
                           {WEEK_LABELS[entry.day]}
                         </label>
@@ -2178,7 +2178,7 @@ export default function AdminCalendar() {
                       <div className="space-y-1">
                         <label
                           htmlFor={`open-${entry.day}`}
-                          className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs uppercase tracking-[0.3em] text-gray-500"
                         >
                           Opens
                         </label>
@@ -2188,13 +2188,13 @@ export default function AdminCalendar() {
                           value={entry.open_time}
                           onChange={(event) => handleHoursDraftChange(entry.day, 'open_time', event.target.value)}
                           disabled={!entry.is_open}
-                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50"
                         />
                       </div>
                       <div className="space-y-1">
                         <label
                           htmlFor={`close-${entry.day}`}
-                          className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs uppercase tracking-[0.3em] text-gray-500"
                         >
                           Closes
                         </label>
@@ -2204,13 +2204,13 @@ export default function AdminCalendar() {
                           value={entry.close_time}
                           onChange={(event) => handleHoursDraftChange(entry.day, 'close_time', event.target.value)}
                           disabled={!entry.is_open}
-                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50"
                         />
                       </div>
                       <div className="space-y-1">
                         <label
                           htmlFor={`minimum-${entry.day}`}
-                          className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs uppercase tracking-[0.3em] text-gray-500"
                         >
                           Min booking (hrs)
                         </label>
@@ -2225,7 +2225,7 @@ export default function AdminCalendar() {
                             handleHoursDraftChange(entry.day, 'minimum_duration_minutes', event.target.value);
                           }}
                           disabled={!entry.is_open}
-                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                          className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -2235,15 +2235,15 @@ export default function AdminCalendar() {
             </div>
           </section>
           <section className="space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
               Scheduled closures
             </h3>
-            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5 dark:border-gray-800 dark:bg-gray-900">
+            <div className="rounded-3xl border border-gray-100 bg-gray-50 p-5">
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <div className="space-y-2">
                   <label
                     htmlFor="closure-date"
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
                   >
                     Date
                   </label>
@@ -2252,13 +2252,13 @@ export default function AdminCalendar() {
                     type="date"
                     value={closureDateInput}
                     onChange={(event) => setClosureDateInput(event.target.value)}
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                   />
                 </div>
                 <div className="space-y-2">
                   <label
                     htmlFor="closure-reason"
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
                   >
                     Reason (optional)
                   </label>
@@ -2268,7 +2268,7 @@ export default function AdminCalendar() {
                     value={closureReasonInput}
                     onChange={(event) => setClosureReasonInput(event.target.value)}
                     placeholder="Staffing, holiday, or prep"
-                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                   />
                 </div>
                 <div className="flex items-end">
@@ -2284,7 +2284,7 @@ export default function AdminCalendar() {
                 </div>
               </div>
               {closureFormError ? (
-                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">
+                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-rose-500">
                   {closureFormError}
                 </p>
               ) : null}
@@ -2293,15 +2293,15 @@ export default function AdminCalendar() {
                   closures.map((closure) => (
                     <div
                       key={closure.id}
-                      className="space-y-3 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950"
+                      className="space-y-3 rounded-3xl border border-gray-200 bg-white p-4 shadow-sm"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          <p className="text-sm font-semibold text-gray-900">
                             {formatClosureDate(closure.date)}
                           </p>
                           {closure.reason ? (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{closure.reason}</p>
+                            <p className="text-xs text-gray-500">{closure.reason}</p>
                           ) : null}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -2332,7 +2332,7 @@ export default function AdminCalendar() {
                           <div className="space-y-2">
                             <label
                               htmlFor={`closure-edit-date-${closure.id}`}
-                              className="text-[11px] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                              className="text-[11px] uppercase tracking-[0.3em] text-gray-500"
                             >
                               Date
                             </label>
@@ -2341,13 +2341,13 @@ export default function AdminCalendar() {
                               type="date"
                               value={editingClosureDate}
                               onChange={(event) => setEditingClosureDate(event.target.value)}
-                              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                             />
                           </div>
                           <div className="space-y-2">
                             <label
                               htmlFor={`closure-edit-reason-${closure.id}`}
-                              className="text-[11px] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                              className="text-[11px] uppercase tracking-[0.3em] text-gray-500"
                             >
                               Reason (optional)
                             </label>
@@ -2357,7 +2357,7 @@ export default function AdminCalendar() {
                               value={editingClosureReason}
                               onChange={(event) => setEditingClosureReason(event.target.value)}
                               placeholder="Staffing, holiday, or prep"
-                              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                              className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                             />
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -2380,7 +2380,7 @@ export default function AdminCalendar() {
                             </Button>
                           </div>
                           {editingClosureError ? (
-                            <p className="col-span-full text-xs uppercase tracking-[0.3em] text-rose-500 dark:text-rose-400">
+                            <p className="col-span-full text-xs uppercase tracking-[0.3em] text-rose-500">
                               {editingClosureError}
                             </p>
                           ) : null}
@@ -2389,7 +2389,7 @@ export default function AdminCalendar() {
                     </div>
                   ))
                 ) : (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 px-4 py-2 text-xs uppercase tracking-[0.3em] text-gray-500">
                     <IconCalendar className="h-4 w-4" />
                     No closures yet
                   </span>
@@ -2444,7 +2444,7 @@ export default function AdminCalendar() {
           <p>This action cannot be undone.</p>
         ) : null}
         {confirmation?.type === 'schedule' ? (
-          <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+          <ul className="space-y-1 text-sm text-gray-600">
             {confirmation.payload.operating_hours
               .filter((entry) => entry.is_open)
               .map((entry) => (
@@ -2458,7 +2458,7 @@ export default function AdminCalendar() {
           </ul>
         ) : null}
         {confirmation?.type === 'closureDelete' && confirmation?.closureDate ? (
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Removing the closure scheduled for <strong>{formatClosureDate(confirmation.closureDate)}</strong>.
           </p>
         ) : null}

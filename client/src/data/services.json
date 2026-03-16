@@ -1,23 +1,44 @@
 [
   {
-    "id": "service-blackwork",
-    "title": "Custom Illustrative and Microrealism",
-    "tagline": "Your Own Story",
-    "description": "Precise, detailed tattoo work that tells your story through the art of tattooing.",
-    "duration": "4-8 hours sessions"
+    "id": "service-russian-manicure",
+    "title": "Russian Manicure",
+    "tagline": "Clean finish",
+    "description": "Dry manicure focused on detailed cuticle care, skin refinement, gel polish, and calcium gel for a polished natural finish.",
+    "duration": "Approx. 60-90 minutes"
   },
   {
-    "id": "service-fine-line",
-    "title": "Fine Line Detailing",
-    "tagline": "Quiet precision",
-    "description": "Feather-light fine line work that celebrates personal stories, portraits, and botanical studies with surgical precision for lasting clarity.",
-    "duration": "1-3 hours sessions"
+    "id": "service-gel-pedicure",
+    "title": "Gel Pedicure",
+    "tagline": "Soft care",
+    "description": "Nail and foot cleanup, exfoliation, hydration, and long-lasting semi-permanent gel color in your preferred shade.",
+    "duration": "Approx. 60 minutes"
   },
   {
-    "id": "service-color",
-    "title": "Color Stories",
-    "tagline": "Tonal depth",
-    "description": "Muted color stories and tonal layering that highlight form without overwhelming the monochrome foundation of each custom tattoo.",
-    "duration": "3-6 hours sessions"
+    "id": "service-acrylic-color",
+    "title": "Color Acrylic Set",
+    "tagline": "Bold color",
+    "description": "A full acrylic set in the color of your choice for durable, statement nails tailored to your preferred length and shape.",
+    "duration": "Approx. 90-120 minutes"
+  },
+  {
+    "id": "service-baby-boomer",
+    "title": "Baby Boomer",
+    "tagline": "Soft blend",
+    "description": "A smooth acrylic fade between two tones for a soft, elevated look that stays classic and photo-ready.",
+    "duration": "Approx. 90-120 minutes"
+  },
+  {
+    "id": "service-french",
+    "title": "Perfect French",
+    "tagline": "Signature detail",
+    "description": "A precise French finish over a structured acrylic base, ideal for clients who want crisp lines and a timeless set.",
+    "duration": "Approx. 90-120 minutes"
+  },
+  {
+    "id": "service-paraffin",
+    "title": "Paraffin Treatment",
+    "tagline": "Extra hydration",
+    "description": "A warm paraffin treatment for hands or feet to boost hydration, comfort, and circulation as an add-on to your visit.",
+    "duration": "Approx. 15 minutes"
   }
 ]

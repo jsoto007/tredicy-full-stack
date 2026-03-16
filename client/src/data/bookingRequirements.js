@@ -1,5 +1,5 @@
 export const BOOKING_REQUIREMENTS = [
-  'Upload your ID and share your reference photos',
-  'Tell us your concept + preferred placement/size',
-  'Select a date and pay your deposit to book'
+  'Enter your contact information',
+  'Choose a nail service and available time slot',
+  'Add optional notes or an inspiration image, then pay the deposit or full amount'
 ];

@@ -33,7 +33,7 @@ const STATUS_OPTIONS = [
 
 const APPOINTMENT_STATUS_FIELD_ID = 'appointment-status-select';
 const ICON_BADGE_CLASS =
-  'flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-black/10 dark:from-gray-100 dark:via-gray-200 dark:to-gray-400 dark:text-gray-900 dark:ring-white/15';
+  'flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-black/10';
 
 function formatDateTime(value) {
   if (!value) {
@@ -547,7 +547,7 @@ export default function AppointmentDetails() {
 
   if (!appointmentNumericId || Number.isNaN(appointmentNumericId)) {
     return (
-      <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl px-1 sm:px-1">
           <p className="text-sm text-red-500">Invalid appointment identifier.</p>
         </div>
@@ -557,7 +557,7 @@ export default function AppointmentDetails() {
 
   if (loading) {
     return (
-      <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-4 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Loading appointment information..." />
         </div>
@@ -567,7 +567,7 @@ export default function AppointmentDetails() {
 
   if (error) {
     return (
-      <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Something went wrong." />
           <p className="text-sm text-red-500">{error}</p>
@@ -581,7 +581,7 @@ export default function AppointmentDetails() {
 
   if (!appointment) {
     return (
-      <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
           <SectionTitle eyebrow="Admin" title="Appointment details" description="Appointment not found." />
           <Button type="button" onClick={() => navigate('/dashboard/admin/calendar')}>
@@ -609,17 +609,17 @@ export default function AppointmentDetails() {
   const appointmentTypeLabel = getAppointmentTypeLabel(appointment);
 
   return (
-    <main className="bg-gray-100 py-14 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <main className="bg-gray-100 py-14 text-gray-900">
       <FadeIn as="div" className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6" childClassName="w-full">
-        <div className="flex flex-col justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-soft ring-1 ring-gray-200 backdrop-blur-md dark:bg-gray-900/80 dark:ring-gray-800 sm:flex-row sm:items-center">
+        <div className="flex flex-col justify-between gap-4 rounded-3xl bg-white/80 p-6 shadow-soft ring-1 ring-gray-200 backdrop-blur-md sm:flex-row sm:items-center">
           <div className="space-y-3">
-            <span className="inline-flex items-center rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+            <span className="inline-flex items-center rounded-full bg-gray-200 px-4 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-gray-700">
               Signed in as {currentAdmin?.name || 'Admin'}
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Appointment</p>
-              <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-gray-50">{appointmentTitle}</h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Appointment</p>
+              <h1 className="text-3xl font-black tracking-tight text-gray-900">{appointmentTitle}</h1>
+              <p className="mt-2 text-sm text-gray-500">
                 Review client information, assets, and admin-only notes.
               </p>
             </div>
@@ -632,21 +632,21 @@ export default function AppointmentDetails() {
         <Card className="space-y-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Appointment overview</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">Appointment overview</p>
               <div className="flex flex-wrap items-center gap-3">
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusBadgeClasses}`}
                 >
                   {statusBadgeLabel}
                 </span>
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-gray-500">
                   <span>Update status</span>
                   <select
                     id={APPOINTMENT_STATUS_FIELD_ID}
                     value={appointment.status || STATUS_OPTIONS[0].value}
                     onChange={handleStatusChange}
                     disabled={statusUpdating}
-                    className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-800 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                    className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-800 transition focus:border-gray-900 focus:outline-none focus:ring-0"
                   >
                     {appointmentStatusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -657,86 +657,86 @@ export default function AppointmentDetails() {
                 </div>
               </div>
               {statusUpdating ? (
-                <p className="text-xs text-gray-500 dark:text-gray-400">Saving status...</p>
+                <p className="text-xs text-gray-500">Saving status...</p>
               ) : null}
               {statusUpdateError ? (
-                <p className="text-xs text-red-500 dark:text-red-400">{statusUpdateError}</p>
+                <p className="text-xs text-red-500">{statusUpdateError}</p>
               ) : null}
             </div>
             <div className="grid w-full gap-4 sm:grid-cols-2 md:max-w-xl">
-              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Scheduled start</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDateTime(appointment.scheduled_start)}</p>
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Scheduled start</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDateTime(appointment.scheduled_start)}</p>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Duration</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDuration(appointment.duration_minutes)}</p>
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Duration</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDuration(appointment.duration_minutes)}</p>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Suggested duration</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Suggested duration</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">
                   {formatDuration(appointment.suggested_duration_minutes)}
                 </p>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Assigned admin</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Assigned admin</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">
                   {appointment.assigned_admin?.name || 'Unassigned'}
                 </p>
               </div>
-              <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Type</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800 dark:text-gray-100">{appointmentTypeLabel}</p>
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Type</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{appointmentTypeLabel}</p>
               </div>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Tattoo placement</p>
-              <p className="mt-1 text-sm text-gray-800 dark:text-gray-200">
-                {appointment.tattoo?.placement || appointment.tattoo_placement || 'Not provided'}
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Service</p>
+              <p className="mt-1 text-sm text-gray-800">
+                {appointment.service?.name || appointment.session_option?.name || 'Not provided'}
               </p>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Approximate size</p>
-              <p className="mt-1 text-sm text-gray-800 dark:text-gray-200">
-                {appointment.tattoo?.size || appointment.tattoo_size || 'Not provided'}
+            <div className="rounded-2xl bg-gray-50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Duration</p>
+              <p className="mt-1 text-sm text-gray-800">
+                {appointment.duration_minutes ? `${appointment.duration_minutes} minutes` : 'Not provided'}
               </p>
             </div>
-            <div className="md:col-span-2 rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/60">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Placement notes</p>
-              <p className="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                {appointment.tattoo?.notes || appointment.placement_notes || 'No placement notes.'}
+            <div className="md:col-span-2 rounded-2xl bg-gray-50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Client notes</p>
+              <p className="mt-1 text-sm text-gray-700">
+                {appointment.service?.notes || appointment.client_description || appointment.placement_notes || 'No notes added.'}
               </p>
             </div>
           </div>
-          <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-500 dark:bg-amber-900/20">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700 dark:text-amber-200">Client notes</p>
-            <p className="mt-1 text-sm text-amber-900 dark:text-amber-100">{appointment.client_description || 'No notes from client.'}</p>
+          <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700">Client notes</p>
+            <p className="mt-1 text-sm text-amber-900">{appointment.client_description || 'No notes from client.'}</p>
           </div>
         </Card>
 
         <Card className="space-y-6">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact & account</h3>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">Contact & account</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={`${ICON_BADGE_CLASS} text-[11px] font-black uppercase tracking-[0.25em]`}>
                 {contact.name?.slice(0, 2).toUpperCase() || 'CT'}
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Primary contact</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{contact.name || 'Not provided'}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Primary contact</p>
+                <p className="text-sm font-semibold text-gray-900">{contact.name || 'Not provided'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700`}>
                 <IconMail className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact email</p>
-                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400 dark:text-gray-100">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Contact email</p>
+                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400">
                   {contact.email ? (
-                    <a href={`mailto:${contact.email}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+                    <a href={`mailto:${contact.email}`} className="hover:text-gray-700">
                       {contact.email}
                     </a>
                   ) : (
@@ -745,33 +745,33 @@ export default function AppointmentDetails() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-900 via-gray-800 to-gray-800`}>
                 <IconPhone className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Contact phone</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{contact.phone || 'Not provided'}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Contact phone</p>
+                <p className="text-sm font-semibold text-gray-900">{contact.phone || 'Not provided'}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800`}>
                 <IconLink className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Linked account</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{client.display_name}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Linked account</p>
+                <p className="text-sm font-semibold text-gray-900">{client.display_name}</p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={ICON_BADGE_CLASS}>
                 <IconMail className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account email</p>
-                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400 dark:text-gray-100">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Account email</p>
+                <p className="text-sm font-semibold text-gray-900 underline decoration-dashed decoration-gray-400">
                   {client.email ? (
-                    <a href={`mailto:${client.email}`} className="hover:text-gray-700 dark:hover:text-gray-200">
+                    <a href={`mailto:${client.email}`} className="hover:text-gray-700">
                       {client.email}
                     </a>
                   ) : (
@@ -780,13 +780,13 @@ export default function AppointmentDetails() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm dark:bg-gray-900/60">
+            <div className="flex items-center gap-4 rounded-2xl bg-gray-50 p-4 transition hover:-translate-y-[1px] hover:shadow-sm">
               <div className={`${ICON_BADGE_CLASS} bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800`}>
                 <IconShield className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Account type</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appointment.client ? appointment.client.role : 'Guest'}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Account type</p>
+                <p className="text-sm font-semibold text-gray-900">{appointment.client ? appointment.client.role : 'Guest'}</p>
               </div>
             </div>
           </div>
@@ -800,10 +800,10 @@ export default function AppointmentDetails() {
             className="sr-only"
             onChange={handleImageUpload}
           />
-          <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white/70 p-4 shadow-sm ring-1 ring-gray-50 dark:bg-gray-900/60 dark:ring-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white/70 p-4 shadow-sm ring-1 ring-gray-50 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Assets</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-gray-500">Assets</p>
+              <p className="text-sm text-gray-700">
                 Upload admin notes or share reference material with the client.
               </p>
             </div>
@@ -817,14 +817,14 @@ export default function AppointmentDetails() {
               >
                 {uploadingImage ? 'Uploading…' : 'Upload Photo'}
               </Button>
-              <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white dark:bg-white dark:text-gray-900">
+              <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white">
                 {(appointment.assets?.length || 0).toString().padStart(2, '0')} Attached
               </span>
             </div>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-600 dark:text-gray-400">Client Photos</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-600">Client Photos</h4>
             {imageAssets.length ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {imageAssets.map((asset, index) => {
@@ -847,7 +847,7 @@ export default function AppointmentDetails() {
                           {asset.uploaded_by_client ? 'Client' : 'Admin'}
                         </span>
                       </div>
-                      <div className="relative h-32 w-full overflow-hidden bg-gray-100 dark:bg-gray-900">
+                      <div className="relative h-32 w-full overflow-hidden bg-gray-100">
                         <img
                           src={backgroundImage}
                           alt={`${asset.kind || 'Client asset'} preview`}
@@ -860,7 +860,7 @@ export default function AppointmentDetails() {
                 })}
               </div>
             ) : (
-              <div className="rounded-2xl border border-dashed border-gray-300 bg-white/60 px-4 py-5 text-center text-sm text-gray-600 dark:bg-gray-900/40 dark:text-gray-300">
+              <div className="rounded-2xl border border-dashed border-gray-300 bg-white/60 px-4 py-5 text-center text-sm text-gray-600">
                 No client photos uploaded yet.
               </div>
             )}
@@ -868,7 +868,7 @@ export default function AppointmentDetails() {
 
           <form
             onSubmit={handleAssetSubmit}
-            className="grid gap-4 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50 dark:bg-gray-900/70"
+            className="grid gap-4 rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50"
           >
             <input
               ref={attachmentInputRef}
@@ -882,7 +882,7 @@ export default function AppointmentDetails() {
               <div className="space-y-2">
                 <label
                   htmlFor={ASSET_FIELD_IDS.kind}
-                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
                 >
                   Type
                 </label>
@@ -890,7 +890,7 @@ export default function AppointmentDetails() {
                   id={ASSET_FIELD_IDS.kind}
                   value={assetDraft.kind}
                   onChange={(event) => handleAssetDraftChange('kind', event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 >
                   {assetOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -900,16 +900,16 @@ export default function AppointmentDetails() {
                 </select>
               </div>
               <div className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                   Share with client (visible)
                 </span>
-                <div className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs uppercase tracking-[0.3em] text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2 text-xs uppercase tracking-[0.3em] text-gray-600">
                   <input
                     id={ASSET_FIELD_IDS.share}
                     type="checkbox"
                     checked={assetDraft.is_visible_to_client}
                     onChange={(event) => handleAssetDraftChange('is_visible_to_client', event.target.checked)}
-                    className="h-4 w-4 rounded border border-gray-400 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-900"
+                    className="h-4 w-4 rounded border border-gray-400 text-indigo-600 focus:ring-indigo-500"
                   />
                   <label htmlFor={ASSET_FIELD_IDS.share}>Share with client</label>
                 </div>
@@ -917,11 +917,11 @@ export default function AppointmentDetails() {
             </div>
             <div className="grid gap-4 md:grid-cols-2 md:items-end">
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Attach File</p>
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 shadow-inner dark:bg-gray-900">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">Attach File</p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 shadow-inner">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">File</p>
-                    <p className="text-[11px] text-gray-600 dark:text-gray-300">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">File</p>
+                    <p className="text-[11px] text-gray-600">
                       {assetUploadFile ? assetUploadFile.name : 'No file selected'}
                     </p>
                   </div>
@@ -938,7 +938,7 @@ export default function AppointmentDetails() {
               <div className="space-y-2">
                 <label
                   htmlFor={ASSET_FIELD_IDS.fileUrl}
-                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
                 >
                   File URL (optional)
                 </label>
@@ -948,14 +948,14 @@ export default function AppointmentDetails() {
                   placeholder="https://example.com/file.png"
                   value={assetDraft.file_url}
                   onChange={(event) => handleAssetDraftChange('file_url', event.target.value)}
-                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                  className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                 />
               </div>
             </div>
             <div className="space-y-2">
               <label
                 htmlFor={ASSET_FIELD_IDS.note}
-                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
               >
                 Note (optional)
               </label>
@@ -965,11 +965,11 @@ export default function AppointmentDetails() {
                 placeholder="Add note text"
                 value={assetDraft.note_text}
                 onChange={(event) => handleAssetDraftChange('note_text', event.target.value)}
-                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-500/20"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-inner focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               />
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+              <span className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
                 Share with client (visible)
               </span>
               <Button type="submit" disabled={busyAssetId === 'new'}>
@@ -996,7 +996,7 @@ export default function AppointmentDetails() {
               return (
                 <div
                   key={asset.id}
-                  className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50 transition hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900/70"
+                  className="rounded-2xl border border-gray-100 bg-white/80 p-4 shadow-sm ring-1 ring-gray-50 transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-1 flex-wrap items-start gap-4">
@@ -1004,7 +1004,7 @@ export default function AppointmentDetails() {
                         <button
                           type="button"
                           onClick={(event) => handleOpenPreview(asset.id, event)}
-                          className="group relative flex-shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-gray-900"
+                          className="group relative flex-shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
                           aria-label={`Open ${kindLabel} viewer`}
                         >
                           {isImagePreview ? (
@@ -1014,16 +1014,16 @@ export default function AppointmentDetails() {
                               className="h-32 w-32 cursor-pointer object-cover transition duration-300 group-hover:scale-[1.02]"
                             />
                           ) : (
-                            <div className="flex h-32 w-32 flex-col items-center justify-center gap-1 bg-gray-50 text-gray-700 transition group-hover:bg-gray-100 dark:bg-gray-950 dark:text-gray-200 dark:group-hover:bg-gray-900">
+                            <div className="flex h-32 w-32 flex-col items-center justify-center gap-1 bg-gray-50 text-gray-700 transition group-hover:bg-gray-100">
                               <span className="text-xs font-semibold uppercase">{extension || 'Doc'}</span>
-                              <span className="text-[11px] uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                              <span className="text-[11px] uppercase tracking-[0.25em] text-gray-500">
                                 Preview
                               </span>
                             </div>
                           )}
                           <span
                             aria-hidden="true"
-                            className="absolute inset-0 ring-1 ring-inset ring-gray-900/5 transition group-hover:ring-indigo-200 dark:ring-gray-50/5"
+                            className="absolute inset-0 ring-1 ring-inset ring-gray-900/5 transition group-hover:ring-indigo-200"
                           />
                         </button>
                       ) : null}
@@ -1036,14 +1036,14 @@ export default function AppointmentDetails() {
                             {asset.is_visible_to_client ? 'Visible to Client' : 'Admin Only'}
                           </span>
                           {asset.uploaded_by_client ? (
-                            <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white dark:bg-gray-100 dark:text-gray-900">
+                            <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white">
                               Client Upload
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{description}</p>
+                        <p className="text-base font-semibold text-gray-900">{description}</p>
                         {hasFile ? (
-                          <p className="text-sm text-gray-600 dark:text-gray-300">{isImagePreview ? 'Image attached' : isPdfPreview ? 'PDF attached' : `${extension?.toUpperCase() || 'FILE'} attached`}</p>
+                          <p className="text-sm text-gray-600">{isImagePreview ? 'Image attached' : isPdfPreview ? 'PDF attached' : `${extension?.toUpperCase() || 'FILE'} attached`}</p>
                         ) : null}
                       </div>
                     </div>
@@ -1076,15 +1076,15 @@ export default function AppointmentDetails() {
                       </Button>
                     </div>
                   </div>
-                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.25em] text-gray-500">
                     Uploaded by {asset.uploaded_by_admin?.name || asset.uploaded_by_client?.display_name || 'unknown'}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}</p>
+                  <p className="text-xs text-gray-500">{asset.created_at ? new Date(asset.created_at).toLocaleString() : ''}</p>
                 </div>
               );
             })}
             {!appointment.assets?.length ? (
-              <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:text-gray-400">
+              <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
                 No assets linked to this appointment yet.
               </div>
             ) : null}
@@ -1097,19 +1097,19 @@ export default function AppointmentDetails() {
             onClick={handleClosePreview}
           >
             <div
-              className="relative z-10 flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 dark:bg-gray-950 dark:ring-white/10 sm:p-6"
+              className="relative z-10 flex w-full max-w-5xl max-h-[90vh] flex-col gap-4 overflow-y-auto rounded-3xl bg-white p-4 shadow-2xl ring-1 ring-black/10 sm:p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 type="button"
                 onClick={handleClosePreview}
-                className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:scale-105 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+                className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 shadow-sm transition hover:scale-105 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
                 aria-label="Close asset viewer"
               >
                 <span className="text-lg leading-none">×</span>
               </button>
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                   Asset viewer
                 </p>
                 <div className="flex items-center gap-2">
@@ -1130,7 +1130,7 @@ export default function AppointmentDetails() {
                     const isPdf = currentUrl && isPdfUrl(currentUrl);
                     if (isImage) {
                       return (
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 dark:bg-gray-900">
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
                           <img
                             src={currentUrl}
                             alt={`${current.kind || 'Asset'} preview`}
@@ -1141,7 +1141,7 @@ export default function AppointmentDetails() {
                     }
                     if (isPdf) {
                       return (
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 dark:bg-gray-900">
+                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
                           <iframe
                             title={`${current.kind || 'Asset'} document`}
                             src={currentUrl}
@@ -1151,9 +1151,9 @@ export default function AppointmentDetails() {
                       );
                     }
                     return (
-                      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-sm text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                      <div className="flex h-[240px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-300 bg-gray-50 text-center text-sm text-gray-600">
                         <p className="text-base font-semibold uppercase">{getFileExtension(currentUrl) || 'File'}</p>
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
                           Preview not available
                         </p>
                       </div>
@@ -1167,8 +1167,8 @@ export default function AppointmentDetails() {
                     return (
                       <>
                         <div className="space-y-2">
-                          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{label}</p>
-                          <p className="break-all text-sm text-gray-700 dark:text-gray-300">
+                          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{label}</p>
+                          <p className="break-all text-sm text-gray-700">
                             {current.note_text || 'File attached'}
                           </p>
                         </div>
@@ -1187,7 +1187,7 @@ export default function AppointmentDetails() {
                             Next
                           </Button>
                         </div>
-                        <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+                        <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400">
                           Uploaded by{' '}
                           {current.uploaded_by_admin?.name || current.uploaded_by_client?.display_name || 'unknown'}
                         </p>
@@ -1207,7 +1207,7 @@ export default function AppointmentDetails() {
                       key={asset.id}
                       onClick={() => handleOpenPreview(asset.id)}
                       className={`flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl border text-xs uppercase transition ${isActive
-                        ? 'border-gray-900 ring-2 ring-gray-900 dark:border-gray-100 dark:ring-gray-100'
+                        ? 'border-gray-900 ring-2 ring-gray-900'
                         : 'border-gray-200'
                         }`}
                       aria-label={`Open ${asset.kind || 'asset'} preview`}
@@ -1215,7 +1215,7 @@ export default function AppointmentDetails() {
                       {isImageThumb ? (
                         <img src={thumbUrl} alt={`${asset.kind || 'Asset'} thumbnail`} className="h-full w-full rounded-lg object-cover cursor-pointer" />
                       ) : (
-                        <span className="text-[11px] tracking-[0.2em] text-gray-600 dark:text-gray-300">
+                        <span className="text-[11px] tracking-[0.2em] text-gray-600">
                           {getFileExtension(thumbUrl) || 'File'}
                         </span>
                       )}

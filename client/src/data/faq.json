@@ -1,17 +1,17 @@
 [
   {
     "id": "faq-1",
-    "question": "How do I prepare for my session?",
-    "answer": "Arrive well rested, skip alcohol for 24 hours, stay hydrated, and eat a solid meal before we begin."
+    "question": "Do I need an account to book?",
+    "answer": "No. You can book as a guest with your first name, last name, email, phone number, selected service, and payment choice."
   },
   {
     "id": "faq-2",
-    "question": "What should I wear?",
-    "answer": "Choose neutral, comfortable clothing that allows easy access to the placement area without stretching the fabric."
+    "question": "Can I bring inspiration photos?",
+    "answer": "Yes. You can upload an inspiration image during booking, and you can also leave optional notes so the nail tech knows the look you want."
   },
   {
     "id": "faq-3",
     "question": "How does payment work?",
-    "answer": "A deposit holds your date. The remaining balance is due at the chair via card, cash, or contactless payment."
+    "answer": "At checkout you can pay the admin-set deposit percentage or the full service amount. Stripe securely handles payment before your appointment is confirmed."
   }
 ]

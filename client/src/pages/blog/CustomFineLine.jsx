@@ -1,14 +1,14 @@
 export default function CustomFineLine() {
   return (
-    <article className="space-y-10 text-base leading-relaxed text-gray-600 dark:text-gray-300">
+    <article className="space-y-10 text-base leading-relaxed text-gray-600">
       <header>
-        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500">
           Behind the needle
         </p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
           Behind the Needle: How a Custom Fine Line Tattoo Comes to Life at BlackworkNYC
         </h1>
-        <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
+        <p className="mt-4 text-base text-gray-600">
           A custom fine line tattoo at BlackworkNYC is much more than just an appointment—it&rsquo;s a full-fledged
           artistic process rooted in careful collaboration, technical mastery, and a deep respect for each client&rsquo;s
           personal vision.
@@ -16,7 +16,7 @@ export default function CustomFineLine() {
       </header>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Consultation and Creative Vision</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Consultation and Creative Vision</h2>
         <p>
           Every tattoo at BlackworkNYC begins with a personalized consultation. Clients are encouraged to share their
           stories, inspirations, and reference images so that the artist can grasp the unique concept behind each
@@ -27,7 +27,7 @@ export default function CustomFineLine() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Design Planning and Preparation</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Design Planning and Preparation</h2>
         <p>
           Once the idea is solidified, the artist brings it to life through a bespoke design phase. This often includes
           sketching several drafts and refining every detail for both aesthetics and practicality on the skin. Fine line
@@ -37,7 +37,7 @@ export default function CustomFineLine() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">The Technical Process: Precision and Technique</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">The Technical Process: Precision and Technique</h2>
         <p>
           The inking process at BlackworkNYC is a study in precision. Artists use specialized fine liners—often single
           needles or micro groupings—to create ultra-clean lines and achieve the signature delicacy of the style. The
@@ -48,7 +48,7 @@ export default function CustomFineLine() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Aftercare and Longevity</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Aftercare and Longevity</h2>
         <p>
           Proper aftercare is essential for maintaining the clarity and longevity of a fine line tattoo. BlackworkNYC
           artists provide clients with thorough guidance on healing: the tattoo is covered for the first 24 hours,
@@ -59,7 +59,7 @@ export default function CustomFineLine() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">A Lasting Work of Art</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">A Lasting Work of Art</h2>
         <p>
           BlackworkNYC&rsquo;s approach is rooted in artistic integrity, technical excellence, and a genuine desire to create
           tattoos that evolve into cherished, lifelong marks. The artist&rsquo;s background in microrealism and architectural

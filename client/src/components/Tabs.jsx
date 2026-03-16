@@ -46,7 +46,7 @@ export default function Tabs({ tabs, activeTab, onTabChange, renderPanel }) {
       <div
         role="tablist"
         aria-label="Tabs"
-        className="inline-flex rounded-full border border-gray-200 bg-gray-100 p-1 text-xs font-semibold uppercase tracking-[0.3em] dark:border-gray-800 dark:bg-gray-900"
+        className="inline-flex rounded-full border border-gray-200 bg-gray-100 p-1 text-xs font-semibold uppercase tracking-[0.3em]"
       >
         {tabs.map((tab, index) => {
           const selected = tab.id === activeTab;
@@ -65,10 +65,10 @@ export default function Tabs({ tabs, activeTab, onTabChange, renderPanel }) {
               aria-selected={selected}
               aria-controls={panelId}
               className={classNames(
-                'rounded-full px-4 py-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black',
+                'rounded-full px-4 py-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white',
                 selected
-                  ? 'bg-black text-white shadow-soft dark:bg-gray-100 dark:text-black'
-                  : 'text-gray-600 hover:text-black dark:text-gray-400 dark:hover:text-gray-100'
+                  ? 'bg-black text-white shadow-soft'
+                  : 'text-gray-600 hover:text-black'
               )}
               onClick={() => onTabChange(tab.id)}
               onKeyDown={(event) => handleKeyDown(event, index)}

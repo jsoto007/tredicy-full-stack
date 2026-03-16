@@ -9,10 +9,10 @@ export default function SectionTitle({ eyebrow, title, description, align = 'lef
   return (
     <div className={classNames('max-w-3xl', wrapper, alignment)}>
       {eyebrow ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">{eyebrow}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#6f7863]">{eyebrow}</p>
       ) : null}
-      <h2 className="mt-4 text-3xl font-semibold uppercase tracking-[0.2em] text-gray-900 dark:text-gray-100">{title}</h2>
-      {description ? <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">{description}</p> : null}
+      <h2 className="mt-4 text-3xl font-semibold tracking-[0.06em] text-[#2a3923] sm:text-4xl">{title}</h2>
+      {description ? <p className="mt-4 text-sm text-[#5e6755]">{description}</p> : null}
     </div>
   );
 }

@@ -14,7 +14,7 @@ from uuid import uuid4
 from urllib.parse import urlsplit
 
 import boto3
-import requests
+import stripe
 from botocore.exceptions import BotoCoreError, ClientError
 from PIL import Image, UnidentifiedImageError
 from flask import Blueprint, current_app, g, jsonify, request, send_file, send_from_directory, session
@@ -188,7 +188,7 @@ class MediaStorageError(Exception):
     pass
 
 
-class SquarePaymentError(Exception):
+class StripePaymentError(Exception):
     pass
 
 
@@ -448,107 +448,94 @@ def decrypt_identity_value(value: str | None) -> str | None:
         return None
 
 
-def _square_payments_active() -> bool:
-    app = current_app
-    if app.config.get("SQUARE_FAKE_PAYMENTS"):
+def _stripe_payments_active() -> bool:
+    if current_app.config.get("STRIPE_FAKE_PAYMENTS"):
         return True
-    return bool(
-        app.config.get("SQUARE_APPLICATION_ID")
-        and app.config.get("SQUARE_LOCATION_ID")
-        and app.config.get("SQUARE_ACCESS_TOKEN")
-    )
+    return bool(current_app.config.get("STRIPE_SECRET_KEY"))
 
 
-def _square_public_enabled() -> bool:
-    app = current_app
-    if app.config.get("SQUARE_FAKE_PAYMENTS"):
+def _stripe_public_enabled() -> bool:
+    if current_app.config.get("STRIPE_FAKE_PAYMENTS"):
         return False
-    return bool(app.config.get("SQUARE_APPLICATION_ID") and app.config.get("SQUARE_LOCATION_ID"))
+    return bool(current_app.config.get("STRIPE_PUBLISHABLE_KEY"))
 
 
-def _square_api_base() -> str:
-    environment = (current_app.config.get("SQUARE_ENVIRONMENT") or "sandbox").lower()
-    if environment == "production":
-        return "https://connect.squareup.com"
-    return "https://connect.squareupsandbox.com"
+def _payment_currency() -> str:
+    return (current_app.config.get("STRIPE_CURRENCY") or "USD").upper()
 
 
-def _square_deposit_amount() -> int:
-    return max(1, int(current_app.config.get("SQUARE_DEPOSIT_AMOUNT_CENTS") or 10000))
+def _payment_country_code() -> str:
+    return (current_app.config.get("STRIPE_COUNTRY_CODE") or "US").upper()
 
 
-def _square_currency() -> str:
-    return (current_app.config.get("SQUARE_DEPOSIT_CURRENCY") or "USD").upper()
+def _stripe_client():
+    api_key = current_app.config.get("STRIPE_SECRET_KEY")
+    if not api_key:
+        raise StripePaymentError("Stripe payments are not configured.")
+    stripe.api_key = api_key
+    return stripe
 
 
-def _square_country_code() -> str:
-    return (current_app.config.get("SQUARE_COUNTRY_CODE") or "US").upper()
+def _public_client_base_url() -> str:
+    configured = (current_app.config.get("CLIENT_BASE_URL") or "").strip().rstrip("/")
+    if configured:
+        return configured
+    return request.host_url.rstrip("/")
 
 
-def charge_square_payment(
+def create_stripe_checkout_session(
     *,
-    source_id: str,
+    appointment: TattooAppointment,
     amount_cents: int,
-    idempotency_key: str | None,
-    verification_token: str | None,
-    buyer_email: str | None,
-    note: str | None,
+    currency: str,
+    note: str,
+    contact_email: str | None,
+    pay_full_amount: bool,
 ) -> dict:
-    charge_amount = max(1, int(amount_cents or _square_deposit_amount()))
-    if current_app.config.get("SQUARE_FAKE_PAYMENTS"):
+    charge_amount = max(1, int(amount_cents or 0))
+    if current_app.config.get("STRIPE_FAKE_PAYMENTS"):
         return {
-            "payment": {
-                "id": f"demo-{secrets.token_hex(6)}",
-                "status": "COMPLETED",
-                "amount_money": {"amount": charge_amount, "currency": _square_currency()},
-                "receipt_url": None,
-                "note": note,
-            }
+            "id": f"cs_demo_{secrets.token_hex(6)}",
+            "url": f"{_public_client_base_url()}/booking/confirmation?appointment_id={appointment.id}&payment=demo",
+            "payment_status": "paid",
+            "payment_intent": f"pi_demo_{secrets.token_hex(6)}",
+            "amount_total": charge_amount,
+            "currency": currency.lower(),
         }
 
-    access_token = current_app.config.get("SQUARE_ACCESS_TOKEN")
-    location_id = current_app.config.get("SQUARE_LOCATION_ID")
-    application_id = current_app.config.get("SQUARE_APPLICATION_ID")
-    if not all([access_token, location_id, application_id]):
-        raise SquarePaymentError("Square payments are not configured.")
-
-    payload = {
-        "idempotency_key": idempotency_key or secrets.token_hex(12),
-        "source_id": source_id,
-        "location_id": location_id,
-        "amount_money": {"amount": charge_amount, "currency": _square_currency()},
-        "autocomplete": True,
-        "note": note or "Tattoo appointment deposit",
-    }
-    if buyer_email:
-        payload["buyer_email_address"] = buyer_email
-    if verification_token:
-        payload["verification_token"] = verification_token
-
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-        "Square-Version": "2024-08-21",
-    }
-    try:
-        response = requests.post(
-            f"{_square_api_base()}/v2/payments",
-            headers=headers,
-            json=payload,
-            timeout=15,
-        )
-    except requests.RequestException as exc:
-        raise SquarePaymentError("Unable to contact Square.") from exc
-
-    if response.status_code >= 400:
-        try:
-            error_body = response.json()
-        except ValueError:
-            error_body = {}
-        message = error_body.get("errors", [{}])[0].get("detail") or "Square payment was declined."
-        raise SquarePaymentError(message)
-
-    return response.json()
+    base_url = _public_client_base_url()
+    checkout = _stripe_client().checkout.Session.create(
+        mode="payment",
+        success_url=f"{base_url}/booking/confirmation?appointment_id={appointment.id}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{base_url}/share-your-idea?appointment_id={appointment.id}&payment=cancelled",
+        client_reference_id=str(appointment.id),
+        customer_email=contact_email or None,
+        payment_intent_data={
+            "metadata": {
+                "appointment_id": str(appointment.id),
+                "reference_code": appointment.reference_code or "",
+                "pay_full_amount": "true" if pay_full_amount else "false",
+            }
+        },
+        metadata={
+            "appointment_id": str(appointment.id),
+            "reference_code": appointment.reference_code or "",
+        },
+        line_items=[
+            {
+                "quantity": 1,
+                "price_data": {
+                    "currency": currency.lower(),
+                    "unit_amount": charge_amount,
+                    "product_data": {
+                        "name": note,
+                        "description": appointment.session_option.name if appointment.session_option and appointment.session_option.name else "Nail appointment",
+                    },
+                },
+            }
+        ],
+    )
+    return checkout
 
 
 def _latest_identity_assets_for_client(client: ClientAccount):
@@ -846,6 +833,82 @@ def load_booking_fee_percent() -> int:
     return max(value, MINIMUM_BOOKING_FEE_PERCENT)
 
 
+def sync_checkout_payment_for_appointment(
+    appointment: TattooAppointment,
+    checkout_session_id: str | None,
+):
+    if not appointment or not checkout_session_id:
+        raise StripePaymentError("Stripe session is required.")
+
+    existing_payment = next(
+        (
+            payment
+            for payment in (appointment.payments or [])
+            if payment.provider == "stripe" and payment.provider_payment_id == checkout_session_id
+        ),
+        None,
+    )
+
+    if current_app.config.get("STRIPE_FAKE_PAYMENTS"):
+        if existing_payment and existing_payment.status == "paid":
+            return existing_payment
+        amount_cents = existing_payment.amount_cents if existing_payment else 0
+        if not existing_payment:
+            existing_payment = AppointmentPayment(
+                appointment=appointment,
+                provider="stripe",
+                provider_payment_id=checkout_session_id,
+                amount_cents=amount_cents,
+                currency=_payment_currency(),
+                status="paid",
+                note="Stripe demo payment",
+            )
+            db.session.add(existing_payment)
+        else:
+            existing_payment.status = "paid"
+        appointment.status = "pending"
+        return existing_payment
+
+    checkout = _stripe_client().checkout.Session.retrieve(checkout_session_id)
+    if str(checkout.get("client_reference_id") or "") != str(appointment.id):
+        raise StripePaymentError("Stripe session does not match this appointment.")
+    if checkout.get("payment_status") != "paid":
+        raise StripePaymentError("Stripe payment has not completed.")
+
+    payment_intent_id = checkout.get("payment_intent")
+    payment_intent = _stripe_client().PaymentIntent.retrieve(payment_intent_id) if payment_intent_id else None
+    amount_total = int(checkout.get("amount_total") or 0)
+    receipt_url = None
+    if payment_intent and getattr(payment_intent, "charges", None):
+        charges = payment_intent.charges.data or []
+        if charges:
+            receipt_url = charges[0].receipt_url
+
+    if not existing_payment:
+        existing_payment = AppointmentPayment(
+            appointment=appointment,
+            provider="stripe",
+            provider_payment_id=checkout_session_id,
+            status="paid",
+            amount_cents=amount_total,
+            currency=(checkout.get("currency") or _payment_currency()).upper(),
+            receipt_url=receipt_url,
+            note="Stripe Checkout payment",
+        )
+        db.session.add(existing_payment)
+    else:
+        existing_payment.status = "paid"
+        existing_payment.amount_cents = amount_total or existing_payment.amount_cents
+        existing_payment.currency = (checkout.get("currency") or existing_payment.currency or _payment_currency()).upper()
+        existing_payment.receipt_url = receipt_url or existing_payment.receipt_url
+        existing_payment.note = existing_payment.note or "Stripe Checkout payment"
+
+    if appointment.status == "awaiting_payment":
+        appointment.status = "pending"
+
+    return existing_payment
+
+
 def _hash_activation_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
@@ -1076,6 +1139,11 @@ def serialize_appointment(appointment, *, include_assets=True):
             "size": appointment.tattoo_size,
             "notes": appointment.placement_notes,
         },
+        "service": {
+            "name": session_option_data["name"] if session_option_data else None,
+            "notes": appointment.client_description,
+        },
+        "product": session_option_data,
         "session_option": session_option_data,
         "session_price_cents": session_price_cents,
         "client": {
@@ -1098,7 +1166,7 @@ def serialize_appointment(appointment, *, include_assets=True):
         "pricing": {
             "hourly_rate_cents": load_hourly_rate_cents(),
             "total_cents": session_price_cents,
-            "currency": _square_currency(),
+            "currency": _payment_currency(),
             "booking_fee_percent": load_booking_fee_percent(),
         },
         "has_identity_documents": appointment.has_identity_documents(),
@@ -2432,21 +2500,19 @@ def admin_upload_media():
 
 @api_bp.route("/api/payments/config", methods=["GET"])
 def payment_configuration():
-    enabled = _square_public_enabled()
+    enabled = _stripe_public_enabled()
     return jsonify(
         {
-            "square": {
+            "stripe": {
                 "enabled": enabled,
-                "demo_mode": bool(current_app.config.get("SQUARE_FAKE_PAYMENTS")),
-                "requires_payment": _square_payments_active(),
-                "application_id": current_app.config.get("SQUARE_APPLICATION_ID") if enabled else None,
-                "location_id": current_app.config.get("SQUARE_LOCATION_ID") if enabled else None,
-                "environment": current_app.config.get("SQUARE_ENVIRONMENT") or "sandbox",
+                "demo_mode": bool(current_app.config.get("STRIPE_FAKE_PAYMENTS")),
+                "requires_payment": _stripe_payments_active(),
+                "publishable_key": current_app.config.get("STRIPE_PUBLISHABLE_KEY") if enabled else None,
                 "booking_fee_percent": load_booking_fee_percent(),
                 "minimum_booking_fee_percent": MINIMUM_BOOKING_FEE_PERCENT,
                 "supports_full_payment": True,
-                "currency": _square_currency(),
-                "country_code": _square_country_code(),
+                "currency": _payment_currency(),
+                "country_code": _payment_country_code(),
             }
         }
     )
@@ -2457,7 +2523,7 @@ def pricing_hourly_rate():
     return jsonify(
         {
             "hourly_rate_cents": load_hourly_rate_cents(),
-            "currency": _square_currency(),
+            "currency": _payment_currency(),
             "booking_fee_percent": load_booking_fee_percent(),
             "session_options": [serialize_session_option(option) for option in load_active_session_options()],
         }
@@ -2506,7 +2572,7 @@ def pricing_estimate():
             "total_cents": total_cents,
             "hourly_rate_cents": load_hourly_rate_cents(),
             "session_option": serialize_session_option(session_option) if session_option else None,
-            "currency": _square_currency(),
+            "currency": _payment_currency(),
         }
     )
 
@@ -3120,7 +3186,7 @@ def admin_update_hourly_rate():
     return jsonify(
         {
             "hourly_rate_cents": hourly_rate_cents,
-            "currency": _square_currency(),
+            "currency": _payment_currency(),
         }
     )
 
@@ -3888,12 +3954,7 @@ def create_appointment():
     errors = []
     signup_verification_code = None
 
-    payments_active = _square_payments_active()
-
-    payments_demo_mode = bool(current_app.config.get("SQUARE_FAKE_PAYMENTS"))
-    square_source_id = (payload.get("square_source_id") or "").strip()
-    square_idempotency_key = (payload.get("square_idempotency_key") or "").strip() or None
-    square_verification_token = (payload.get("square_verification_token") or "").strip() or None
+    payments_active = _stripe_payments_active()
 
     client_account_id = payload.get("client_account_id")
     create_account = parse_bool(payload.get("create_account"), default=False)
@@ -3908,47 +3969,13 @@ def create_appointment():
     contact_email_override = (payload.get("contact_email") or "").strip()
     contact_phone_override = (payload.get("contact_phone") or "").strip() or None
 
-    tattoo_placement = (payload.get("tattoo_placement") or "").strip()
-    tattoo_size = (payload.get("tattoo_size") or "").strip()
-    placement_notes = (payload.get("placement_notes") or "").strip()
-
-    id_front_url = (payload.get("id_front_url") or "").strip()
-    id_back_url = (payload.get("id_back_url") or "").strip()
     inspiration_urls = payload.get("inspiration_urls") or []
-    reuse_identity_requested = parse_bool(payload.get("reuse_identity_on_file"), default=False)
-    if id_front_url or id_back_url:
-        reuse_identity_requested = False
-    description = (payload.get("description") or "").strip()
-    terms_agreed_at_raw = (payload.get("terms_agreed_at") or "").strip()
-    terms_agreed_at = None
-    if not terms_agreed_at_raw:
-        errors.append(
-            {
-                "field": "terms_agreed_at",
-                "message": "You must agree to the terms of service to continue.",
-            }
-        )
-    else:
-        parsed_terms_agreed_at = parse_iso_datetime(terms_agreed_at_raw)
-        if not parsed_terms_agreed_at:
-            errors.append(
-                {
-                    "field": "terms_agreed_at",
-                    "message": "Invalid timestamp for terms acceptance.",
-                }
-            )
-        else:
-            terms_agreed_at = parsed_terms_agreed_at
-            if terms_agreed_at.tzinfo is not None:
-                terms_agreed_at = terms_agreed_at.astimezone(timezone.utc).replace(tzinfo=None)
+    description = (payload.get("notes") or payload.get("description") or "").strip()
 
     if inspiration_urls and not isinstance(inspiration_urls, list):
         errors.append({"field": "inspiration_urls", "message": "Inspiration URLs must be a list of strings."})
     else:
         inspiration_urls = [url for url in inspiration_urls if isinstance(url, str) and url.strip()]
-
-    if not inspiration_urls and not description:
-        errors.append({"field": "description", "message": "Provide inspiration images or a written description."})
 
     if client_account_id:
         client_account = ClientAccount.query.get(client_account_id)
@@ -3975,13 +4002,6 @@ def create_appointment():
         booking_minimum_duration = _minimum_duration_for_weekday(booking_weekday, hours_map=booking_hours_map)
         booking_day_label = INDEX_TO_DAY.get(booking_weekday, "this day").capitalize()
 
-    duration_minutes = payload.get("duration_minutes")
-    if duration_minutes is not None:
-        try:
-            duration_minutes = int(duration_minutes)
-        except (TypeError, ValueError):
-            errors.append({"field": "duration_minutes", "message": "Duration must be an integer."})
-
     session_option_id = payload.get("session_option_id")
     session_option = None
     if session_option_id is not None and session_option_id != "":
@@ -3996,14 +4016,18 @@ def create_appointment():
             else:
                 session_option = option
 
-    if not tattoo_placement:
-        errors.append({"field": "tattoo_placement", "message": "Placement is required."})
-    if not tattoo_size:
-        errors.append({"field": "tattoo_size", "message": "Approximate size is required."})
+    if not session_option:
+        errors.append({"field": "session_option_id", "message": "Please choose a nail service."})
 
     if not client_account:
+        if not first_name:
+            errors.append({"field": "first_name", "message": "First name is required."})
+        if not last_name:
+            errors.append({"field": "last_name", "message": "Last name is required."})
         if not email:
             errors.append({"field": "email", "message": "Email is required."})
+        if not phone:
+            errors.append({"field": "phone", "message": "Phone number is required."})
         if create_account and (not password or len(password) < PASSWORD_MIN_LENGTH):
             errors.append({"field": "password", "message": f"Password must be at least {PASSWORD_MIN_LENGTH} characters."})
 
@@ -4044,19 +4068,6 @@ def create_appointment():
     if client_account and create_account and password and client_account.email and not client_account.email_verified_at:
         _token, signup_verification_code = _issue_email_verification_token(client_account)
 
-    stored_identity_assets = {}
-    reuse_identity = False
-    if client_account and client_account_id:
-        stored_identity_assets = _latest_identity_assets_for_client(client_account)
-        stored_identity_assets = {
-            kind: encrypt_identity_value(url) if url else url for kind, url in stored_identity_assets.items()
-        }
-        reuse_identity = reuse_identity_requested and bool(stored_identity_assets.get("id_front"))
-
-    if not reuse_identity:
-        if not id_front_url:
-            errors.append({"field": "id_front_url", "message": "Front ID image is required."})
-
     resolved_contact_name = contact_name or None
     resolved_contact_email = contact_email_override or None
     resolved_contact_phone = contact_phone_override or None
@@ -4072,30 +4083,8 @@ def create_appointment():
         resolved_contact_email = resolved_contact_email or email
         resolved_contact_phone = resolved_contact_phone or phone
 
-    suggested_duration = calculate_suggested_duration_minutes(tattoo_placement, tattoo_size)
-    if duration_minutes is None:
-        duration_minutes = suggested_duration
-
-    if session_option:
-        duration_minutes = session_option.duration_minutes
-
-    if not session_option:
-        if duration_minutes < booking_minimum_duration:
-            hours_label = booking_minimum_duration / 60
-            duration_desc = (
-                f"{int(hours_label)} hour{'s' if hours_label != 1 else ''}"
-                if hours_label.is_integer()
-                else f"{hours_label:.1f} hours"
-            )
-            label_suffix = f" on {booking_day_label}" if booking_day_label else ""
-            errors.append(
-                {
-                    "field": "duration_minutes",
-                    "message": f"Minimum session length{label_suffix} is {duration_desc}.",
-                }
-            )
-        if duration_minutes % DEFAULT_SLOT_INTERVAL_MINUTES != 0:
-            errors.append({"field": "duration_minutes", "message": "Duration must use whole-hour increments."})
+    suggested_duration = session_option.duration_minutes if session_option else None
+    duration_minutes = suggested_duration
 
     if scheduled_start and duration_minutes and not errors:
         available_slots, _window = build_available_slots(
@@ -4137,35 +4126,15 @@ def create_appointment():
     if requires_payment:
         if not payments_active:
             return jsonify({"error": "Payments are currently unavailable. Please try again soon."}), 503
-        if not payments_demo_mode and not square_source_id:
-            errors.append({"field": "payment_method", "message": "Add a payment method to secure your booking."})
 
     if errors:
         return jsonify({"errors": errors}), 400
 
-    payment_result = None
     payment_note = (
-        "Full session payment"
+        f"{session_option.name or 'Nail appointment'} - full payment"
         if pay_full_amount
-        else f"Booking fee ({booking_fee_percent}% deposit)"
+        else f"{session_option.name or 'Nail appointment'} - {booking_fee_percent}% deposit"
     )
-    if requires_payment:
-        try:
-            payment_result = charge_square_payment(
-                source_id=square_source_id or ("demo-source" if payments_demo_mode else ""),
-                amount_cents=charge_amount,
-                idempotency_key=square_idempotency_key,
-                verification_token=square_verification_token,
-                buyer_email=contact_email_value,
-                note=payment_note,
-            )
-        except SquarePaymentError as exc:
-            return jsonify({"error": str(exc)}), 402
-
-    if id_front_url:
-        id_front_url = encrypt_identity_value(id_front_url)
-    if id_back_url:
-        id_back_url = encrypt_identity_value(id_back_url)
 
     appointment = TattooAppointment(
         reference_code=generate_reference_code(),
@@ -4173,11 +4142,8 @@ def create_appointment():
         client_description=description or None,
         scheduled_start=scheduled_start,
         duration_minutes=duration_minutes,
-        status="pending",
-        tattoo_placement=tattoo_placement or None,
-        tattoo_size=tattoo_size or None,
-        placement_notes=placement_notes or None,
-        terms_agreed_at=terms_agreed_at,
+        status="awaiting_payment" if requires_payment else "pending",
+        placement_notes=description or None,
         suggested_duration_minutes=suggested_duration,
         session_option=session_option,
     )
@@ -4195,42 +4161,6 @@ def create_appointment():
     db.session.flush()
 
     assets = []
-
-    if reuse_identity:
-        for kind in ("id_front", "id_back"):
-            url = stored_identity_assets.get(kind)
-            if not url:
-                continue
-            assets.append(
-                AppointmentAsset(
-                    appointment=appointment,
-                    client_uploader=client_account,
-                    kind=kind,
-                    file_url=url,
-                    is_visible_to_client=False,
-                )
-            )
-    else:
-        if id_front_url:
-            assets.append(
-                AppointmentAsset(
-                    appointment=appointment,
-                    client_uploader=client_account,
-                    kind="id_front",
-                    file_url=id_front_url,
-                    is_visible_to_client=False,
-                )
-            )
-        if id_back_url:
-            assets.append(
-                AppointmentAsset(
-                    appointment=appointment,
-                    client_uploader=client_account,
-                    kind="id_back",
-                    file_url=id_back_url,
-                    is_visible_to_client=False,
-                )
-            )
 
     for url in inspiration_urls:
         assets.append(
@@ -4255,24 +4185,35 @@ def create_appointment():
         )
 
     db.session.add_all(assets)
-    payment_payload = (payment_result or {}).get("payment") or {}
-    amount_details = payment_payload.get("amount_money") or {}
-    receipt_url = payment_payload.get("receipt_url")
+    receipt_url = None
+    checkout_url = None
+    checkout_session_id = None
     if requires_payment:
+        try:
+            checkout_session = create_stripe_checkout_session(
+                appointment=appointment,
+                amount_cents=charge_amount,
+                currency=_payment_currency(),
+                note=payment_note,
+                contact_email=contact_email_value,
+                pay_full_amount=pay_full_amount,
+            )
+        except StripePaymentError as exc:
+            db.session.rollback()
+            return jsonify({"error": str(exc)}), 503
+        checkout_session_id = checkout_session.get("id")
+        checkout_url = checkout_session.get("url")
         db.session.add(
             AppointmentPayment(
                 appointment=appointment,
-                provider="square",
-                provider_payment_id=payment_payload.get("id") or f"demo-{secrets.token_hex(5)}",
-                status=payment_payload.get("status") or "COMPLETED",
-                amount_cents=int(amount_details.get("amount") or charge_amount),
-                currency=amount_details.get("currency") or _square_currency(),
-                receipt_url=payment_payload.get("receipt_url"),
-                note=payment_payload.get("note") or payment_note,
+                provider="stripe",
+                provider_payment_id=checkout_session_id or f"cs_pending_{secrets.token_hex(5)}",
+                status="pending",
+                amount_cents=charge_amount,
+                currency=_payment_currency(),
+                note=payment_note,
             )
         )
-    else:
-        receipt_url = None
 
     try:
         db.session.commit()
@@ -4288,26 +4229,107 @@ def create_appointment():
         joinedload(TattooAppointment.payments),
     ).get(appointment.id)
 
-    send_booking_confirmation_email(
-        appointment,
-        charge_amount_cents=charge_amount,
-        session_price_cents=session_price_cents,
-        booking_fee_percent=booking_fee_percent,
-        pay_full_amount=pay_full_amount,
-        receipt_url=receipt_url,
-    )
-    send_internal_booking_notification(
-        appointment,
-        charge_amount_cents=charge_amount,
-        session_price_cents=session_price_cents,
-        booking_fee_percent=booking_fee_percent,
-        pay_full_amount=pay_full_amount,
-        receipt_url=receipt_url,
-    )
+    if not requires_payment:
+        send_booking_confirmation_email(
+            appointment,
+            charge_amount_cents=charge_amount,
+            session_price_cents=session_price_cents,
+            booking_fee_percent=booking_fee_percent,
+            pay_full_amount=pay_full_amount,
+            receipt_url=receipt_url,
+        )
+        send_internal_booking_notification(
+            appointment,
+            charge_amount_cents=charge_amount,
+            session_price_cents=session_price_cents,
+            booking_fee_percent=booking_fee_percent,
+            pay_full_amount=pay_full_amount,
+            receipt_url=receipt_url,
+        )
     if signup_verification_code and appointment.client:
         send_signup_email(appointment.client, signup_verification_code)
 
-    return jsonify(serialize_appointment(appointment)), 201
+    return jsonify(
+        {
+            "appointment": serialize_appointment(appointment),
+            "requires_payment": requires_payment,
+            "checkout_url": checkout_url,
+            "checkout_session_id": checkout_session_id,
+        }
+    ), 201
+
+
+@api_bp.route("/api/payments/stripe/verify-session", methods=["POST"])
+def verify_stripe_checkout_session():
+    payload = request.get_json(silent=True) or {}
+    appointment_id = payload.get("appointment_id")
+    checkout_session_id = (payload.get("session_id") or "").strip()
+
+    try:
+        appointment_id = int(appointment_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "appointment_id must be a whole number."}), 400
+
+    if not checkout_session_id:
+        return jsonify({"error": "session_id is required."}), 400
+
+    appointment = TattooAppointment.query.options(
+        joinedload(TattooAppointment.client),
+        joinedload(TattooAppointment.assigned_admin),
+        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
+        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+        joinedload(TattooAppointment.payments),
+        joinedload(TattooAppointment.session_option),
+    ).get(appointment_id)
+    if not appointment:
+        return jsonify({"error": "Appointment not found."}), 404
+
+    had_paid_payment = any(payment.provider == "stripe" and payment.status == "paid" for payment in appointment.payments)
+    try:
+        payment = sync_checkout_payment_for_appointment(appointment, checkout_session_id)
+        db.session.commit()
+    except StripePaymentError as exc:
+        db.session.rollback()
+        return jsonify({"error": str(exc)}), 400
+    except stripe.error.StripeError as exc:
+        db.session.rollback()
+        return jsonify({"error": str(exc)}), 400
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to verify payment right now."}), 500
+
+    appointment = TattooAppointment.query.options(
+        joinedload(TattooAppointment.client),
+        joinedload(TattooAppointment.assigned_admin),
+        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
+        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
+        joinedload(TattooAppointment.payments),
+        joinedload(TattooAppointment.session_option),
+    ).get(appointment.id)
+
+    if payment and not had_paid_payment:
+        booking_fee_percent = load_booking_fee_percent()
+        session_price_cents = appointment.session_option.price_cents if appointment.session_option else calculate_session_price_cents(appointment.duration_minutes)
+        charge_amount = payment.amount_cents
+        pay_full_amount = charge_amount >= session_price_cents if session_price_cents else False
+        send_booking_confirmation_email(
+            appointment,
+            charge_amount_cents=charge_amount,
+            session_price_cents=session_price_cents,
+            booking_fee_percent=booking_fee_percent,
+            pay_full_amount=pay_full_amount,
+            receipt_url=payment.receipt_url,
+        )
+        send_internal_booking_notification(
+            appointment,
+            charge_amount_cents=charge_amount,
+            session_price_cents=session_price_cents,
+            booking_fee_percent=booking_fee_percent,
+            pay_full_amount=pay_full_amount,
+            receipt_url=payment.receipt_url,
+        )
+
+    return jsonify(serialize_appointment(appointment)), 200
 
 
 @api_bp.route("/api/admin/appointments", methods=["GET"])

@@ -73,7 +73,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <main className="bg-white py-16 text-gray-900 dark:bg-black dark:text-gray-100">
+    <main className="bg-white py-16 text-gray-900">
       <div className="mx-auto flex max-w-3xl flex-col gap-8 px-6">
         <SectionTitle
           eyebrow="Security"
@@ -82,61 +82,61 @@ export default function ResetPassword() {
         />
         <Card className="space-y-6">
           {notice ? (
-            <div className="rounded-2xl border border-emerald-500 bg-emerald-50 px-4 py-3 text-xs uppercase tracking-[0.3em] text-emerald-700 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <div className="rounded-2xl border border-emerald-500 bg-emerald-50 px-4 py-3 text-xs uppercase tracking-[0.3em] text-emerald-700">
               {notice}
             </div>
           ) : null}
           {error ? (
-            <div className="rounded-2xl border border-rose-500 bg-rose-50 px-4 py-3 text-xs uppercase tracking-[0.3em] text-rose-700 dark:border-rose-400 dark:bg-rose-950/30 dark:text-rose-200">
+            <div className="rounded-2xl border border-rose-500 bg-rose-50 px-4 py-3 text-xs uppercase tracking-[0.3em] text-rose-700">
               {error}
             </div>
           ) : null}
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Email</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Email</span>
                 <input
                   type="email"
                   value={form.email}
                   onChange={handleChange('email')}
                   required
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                   placeholder="you@example.com"
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Verification code</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Verification code</span>
                 <input
                   type="text"
                   value={form.code}
                   onChange={handleChange('code')}
                   required
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                   placeholder="6-digit code"
                 />
               </label>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">New password</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">New password</span>
                 <input
                   type="password"
                   value={form.new_password}
                   onChange={handleChange('new_password')}
                   required
                   minLength={MIN_PASSWORD_LENGTH}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Confirm password</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Confirm password</span>
                 <input
                   type="password"
                   value={form.confirm_password}
                   onChange={handleChange('confirm_password')}
                   required
                   minLength={MIN_PASSWORD_LENGTH}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 />
               </label>
             </div>
@@ -144,10 +144,10 @@ export default function ResetPassword() {
               <Button type="submit" disabled={submitting}>
                 {submitting ? 'Updating…' : 'Update password'}
               </Button>
-              <Link to="/forgot-password" className="text-xs uppercase tracking-[0.3em] text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-gray-100">
+              <Link to="/forgot-password" className="text-xs uppercase tracking-[0.3em] text-gray-500 hover:text-black">
                 Resend code
               </Link>
-              <Link to="/auth" className="text-xs uppercase tracking-[0.3em] text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-gray-100">
+              <Link to="/auth" className="text-xs uppercase tracking-[0.3em] text-gray-500 hover:text-black">
                 Back to sign in
               </Link>
             </div>

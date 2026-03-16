@@ -39,7 +39,7 @@ function ToggleSwitch({ checked, disabled, onChange }) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="relative inline-flex h-6 w-12 items-center rounded-full border border-gray-300 bg-white transition dark:border-gray-700 dark:bg-gray-900"
+      className="relative inline-flex h-6 w-12 items-center rounded-full border border-gray-300 bg-white transition"
     >
       <span
         className={`inline-block h-5 w-5 rounded-full bg-black transition ${checked ? 'translate-x-6' : 'translate-x-1'
@@ -492,7 +492,7 @@ export default function ClientProfilePage() {
     return (
       <main className="space-y-8">
         <SectionTitle eyebrow="Client portal" title="Profile" description="We hit a snag." />
-        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{error}</Card>
+        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600">{error}</Card>
         <Button variant="secondary" onClick={() => navigate('/auth')}>
           Return to sign in
         </Button>
@@ -502,20 +502,20 @@ export default function ClientProfilePage() {
 
   return (
     <main className="space-y-8">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-gray-100 via-white to-gray-100 p-6 shadow-lg ring-1 ring-black/5 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 dark:ring-white/10 sm:p-8">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-r from-gray-100 via-white to-gray-100 p-6 shadow-lg ring-1 ring-black/5 sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xl font-bold uppercase text-white shadow-lg shadow-indigo-200 dark:shadow-none">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-xl font-bold uppercase text-white shadow-lg shadow-indigo-200">
               {initials}
             </div>
             <div>
-              <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Profile</p>
-              <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-50">{profileName}</h1>
-              <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 shadow-sm ring-1 ring-black/5 backdrop-blur dark:bg-gray-900/40 dark:ring-white/10">
+              <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Profile</p>
+              <h1 className="text-3xl font-semibold text-gray-900">{profileName}</h1>
+              <div className="mt-2 flex flex-wrap gap-2 text-sm text-gray-600">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 shadow-sm ring-1 ring-black/5 backdrop-blur">
                   ✨ Member since {memberSince}
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-200 dark:ring-emerald-800/60">
+                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 ring-1 ring-emerald-100">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                   Active
                 </span>
@@ -526,21 +526,21 @@ export default function ClientProfilePage() {
             <Button variant="ghost" onClick={() => setIsEditingProfile((prev) => !prev)}>
               {isEditingProfile ? 'Cancel edit' : 'Edit profile'}
             </Button>
-            <Button onClick={() => navigate('/share-your-idea')}>Book consultation</Button>
+            <Button onClick={() => navigate('/share-your-idea')}>Book appointment</Button>
           </div>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur dark:bg-gray-900/60 dark:text-gray-200 dark:ring-white/10">
-            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Email</p>
-            <p className="truncate text-base font-semibold text-gray-900 dark:text-gray-50">{profile?.email || '—'}</p>
+          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur">
+            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Email</p>
+            <p className="truncate text-base font-semibold text-gray-900">{profile?.email || '—'}</p>
           </div>
-          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur dark:bg-gray-900/60 dark:text-gray-200 dark:ring-white/10">
-            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Phone</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-gray-50">{profile?.phone || '—'}</p>
+          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur">
+            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Phone</p>
+            <p className="text-base font-semibold text-gray-900">{profile?.phone || '—'}</p>
           </div>
-          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur dark:bg-gray-900/60 dark:text-gray-200 dark:ring-white/10">
-            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Last login</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-gray-50">{lastLogin}</p>
+          <div className="rounded-2xl bg-white/80 p-4 text-sm text-gray-600 shadow-sm ring-1 ring-black/5 backdrop-blur">
+            <p className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Last login</p>
+            <p className="text-base font-semibold text-gray-900">{lastLogin}</p>
           </div>
         </div>
       </section>
@@ -548,8 +548,8 @@ export default function ClientProfilePage() {
       <Card ref={profileRef} className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Personal information</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Manage your contact details without leaving the portal.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Personal information</p>
+            <p className="text-sm text-gray-500">Manage your contact details without leaving the portal.</p>
           </div>
           <Button variant="ghost" onClick={() => setIsEditingProfile((prev) => !prev)}>
             {isEditingProfile ? 'Exit edit mode' : 'Edit details'}
@@ -559,46 +559,46 @@ export default function ClientProfilePage() {
           <form className="space-y-5" onSubmit={handleProfileSubmit}>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">First name</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">First name</span>
                 <input
                   value={profileForm.first_name}
                   onChange={handleProfileChange('first_name')}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                   required
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Last name</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Last name</span>
                 <input
                   value={profileForm.last_name}
                   onChange={handleProfileChange('last_name')}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                   required
                 />
               </label>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Email</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Email</span>
                 <input
                   type="email"
                   value={profileForm.email}
                   onChange={handleProfileChange('email')}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                   required
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Phone</span>
+                <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Phone</span>
                 <input
                   value={profileForm.phone}
                   onChange={handleProfileChange('phone')}
-                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                  className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 />
               </label>
             </div>
-            {profileStatus ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{profileStatus}</p> : null}
-            {profileError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{profileError}</p> : null}
+            {profileStatus ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">{profileStatus}</p> : null}
+            {profileError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{profileError}</p> : null}
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={isSavingProfile}>
                 {isSavingProfile ? 'Saving…' : 'Save profile'}
@@ -610,28 +610,28 @@ export default function ClientProfilePage() {
           </form>
         ) : (
           <dl className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">First name</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">First name</dt>
               <dd className="text-base font-semibold">{profile?.first_name || '—'}</dd>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Last name</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Last name</dt>
               <dd className="text-base font-semibold">{profile?.last_name || '—'}</dd>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Email</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Email</dt>
               <dd className="text-base font-semibold">{profile?.email || '—'}</dd>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Phone</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Phone</dt>
               <dd className="text-base font-semibold">{profile?.phone || '—'}</dd>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Member since</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Member since</dt>
               <dd className="text-base font-semibold">{memberSince}</dd>
             </div>
-            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900 dark:text-gray-100 dark:ring-gray-800">
-              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">Last login</dt>
+            <div className="rounded-2xl bg-gray-50 p-4 text-gray-700 ring-1 ring-gray-200">
+              <dt className="text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">Last login</dt>
               <dd className="text-base font-semibold">{lastLogin}</dd>
             </div>
           </dl>
@@ -641,23 +641,23 @@ export default function ClientProfilePage() {
       <Card className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Security</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Verify your email and keep your password fresh.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Security</p>
+            <p className="text-sm text-gray-500">Verify your email and keep your password fresh.</p>
           </div>
           {passwordStatus ? (
-            <p className="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{passwordStatus}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">{passwordStatus}</p>
           ) : null}
           {passwordError ? (
-            <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{passwordError}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{passwordError}</p>
           ) : null}
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200 dark:bg-gray-950/70 dark:ring-gray-800">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Email verification</p>
-            <p className="mt-1 text-sm text-gray-700 dark:text-gray-200">
+          <div className="rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Email verification</p>
+            <p className="mt-1 text-sm text-gray-700">
               {emailVerified ? 'Email verified.' : 'Verify your email to enable password recovery and reminders.'}
             </p>
-            <p className="mt-2 text-[0.7rem] uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+            <p className="mt-2 text-[0.7rem] uppercase tracking-[0.25em] text-gray-500">
               Last password change: {lastPasswordChange}
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -677,42 +677,42 @@ export default function ClientProfilePage() {
               </Button>
             </div>
             {verificationStatus ? (
-              <p className="mt-3 text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{verificationStatus}</p>
+              <p className="mt-3 text-xs uppercase tracking-[0.3em] text-emerald-600">{verificationStatus}</p>
             ) : null}
             {verificationError ? (
-              <p className="mt-3 text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{verificationError}</p>
+              <p className="mt-3 text-xs uppercase tracking-[0.3em] text-rose-600">{verificationError}</p>
             ) : null}
           </div>
-          <form className="space-y-3 rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200 dark:bg-gray-950/70 dark:ring-gray-800" onSubmit={handlePasswordSubmit}>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Update password</p>
+          <form className="space-y-3 rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200" onSubmit={handlePasswordSubmit}>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Update password</p>
             <label className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Current password</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Current password</span>
               <input
                 type="password"
                 value={passwordForm.current_password}
                 onChange={handlePasswordChange('current_password')}
-                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 required
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">New password</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-gray-500">New password</span>
               <input
                 type="password"
                 value={passwordForm.new_password}
                 onChange={handlePasswordChange('new_password')}
-                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 required
                 minLength={8}
               />
             </label>
             <label className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Confirm password</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Confirm password</span>
               <input
                 type="password"
                 value={passwordForm.confirm_password}
                 onChange={handlePasswordChange('confirm_password')}
-                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
                 required
                 minLength={8}
               />
@@ -721,7 +721,7 @@ export default function ClientProfilePage() {
               <Button type="submit" disabled={passwordSaving}>
                 {passwordSaving ? 'Saving…' : 'Update password'}
               </Button>
-              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500">
                 Minimum 8 characters.
               </p>
             </div>
@@ -732,15 +732,15 @@ export default function ClientProfilePage() {
       <Card ref={documentsRef} className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Documents & studio files</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Access shared PDFs, policies, and guides without reloading.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Documents & studio files</p>
+            <p className="text-sm text-gray-500">Access shared PDFs, policies, and guides without reloading.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" onClick={focusInspirationUpload}>
               Upload files
             </Button>
             <Button variant="secondary" onClick={() => navigate('/share-your-idea')}>
-              Book consultation
+              Book appointment
             </Button>
           </div>
         </div>
@@ -749,9 +749,9 @@ export default function ClientProfilePage() {
             {combinedDocuments.map((document) => (
               <article
                 key={document.id}
-                className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800 dark:bg-gray-950/70 dark:text-gray-200"
+                className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
                   {isImageName(document.file_url || document.title) ? (
                     <img
                       src={resolveApiUrl(document.file_url)}
@@ -767,17 +767,17 @@ export default function ClientProfilePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-gray-50">{document.title}</p>
-                    <p className="text-[0.6rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+                    <p className="text-lg font-semibold text-gray-900">{document.title}</p>
+                    <p className="text-[0.6rem] uppercase tracking-[0.35em] text-gray-500">
                       {document.kind ? document.kind.replace(/_/g, ' ') : 'document'}
                     </p>
                   </div>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.35em] text-gray-600">
                     {document.source === 'you' ? 'You' : 'Studio'}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-300">{document.notes}</p>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-gray-500 dark:text-gray-400">
+                <p className="text-sm text-gray-500">{document.notes}</p>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[0.65rem] uppercase tracking-[0.35em] text-gray-500">
                   <span>{formatDate(document.created_at)}</span>
                   <Button
                     as="a"
@@ -793,10 +793,10 @@ export default function ClientProfilePage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-6 py-10 text-center text-gray-500 dark:border-gray-800 dark:bg-gray-950/50 dark:text-gray-400">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 px-6 py-10 text-center text-gray-500">
             <div className="text-3xl">📁</div>
-            <p className="mt-2 text-sm font-semibold text-gray-700 dark:text-gray-200">No documents yet</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Upload files or check back when the studio shares theirs.</p>
+            <p className="mt-2 text-sm font-semibold text-gray-700">No documents yet</p>
+            <p className="text-xs text-gray-500">Upload files or check back when the studio shares theirs.</p>
           </div>
         )}
       </Card>
@@ -804,8 +804,8 @@ export default function ClientProfilePage() {
       <Card className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Communication preferences</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Choose how you want reminders and aftercare updates.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Communication preferences</p>
+            <p className="text-sm text-gray-500">Choose how you want reminders and aftercare updates.</p>
           </div>
           {prefSaving ? <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Saving…</p> : null}
         </div>
@@ -813,11 +813,11 @@ export default function ClientProfilePage() {
           {PREFERENCE_CONFIG.map((preference) => (
             <div
               key={preference.key}
-              className="flex items-start justify-between rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:ring-black/10 dark:bg-gray-950/60 dark:ring-gray-800"
+              className="flex items-start justify-between rounded-2xl bg-gray-50 p-4 ring-1 ring-gray-200 transition hover:-translate-y-0.5 hover:ring-black/10"
             >
               <div className="space-y-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-900 dark:text-gray-100">{preference.label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{preference.description}</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-900">{preference.label}</p>
+                <p className="text-xs text-gray-500">{preference.description}</p>
               </div>
               <ToggleSwitch
                 checked={!!preferences[preference.key]}
@@ -827,15 +827,15 @@ export default function ClientProfilePage() {
             </div>
           ))}
         </div>
-        {prefMessage ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{prefMessage}</p> : null}
-        {prefError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{prefError}</p> : null}
+        {prefMessage ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">{prefMessage}</p> : null}
+        {prefError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{prefError}</p> : null}
       </Card>
 
       <Card ref={inspirationRef} className="space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Uploads</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Share references or documents with the studio without refreshing the page.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Uploads</p>
+            <p className="text-sm text-gray-500">Share references or documents with the studio without refreshing the page.</p>
           </div>
           <Button variant="ghost" onClick={() => setIsInspirationOpen((prev) => !prev)}>
             {isInspirationOpen ? 'Hide upload' : 'Upload files'}
@@ -858,16 +858,16 @@ export default function ClientProfilePage() {
                 tabIndex={0}
                 onClick={() => inspirationUploadRef.current?.click()}
                 onKeyDown={handleDropZoneKeyDown}
-                className="mt-1 cursor-pointer rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-6 text-center shadow-inner transition hover:border-indigo-400 hover:bg-white dark:border-gray-700 dark:bg-gray-950/60 dark:hover:border-indigo-500"
+                className="mt-1 cursor-pointer rounded-2xl border border-dashed border-gray-300 bg-gray-50/70 p-6 text-center shadow-inner transition hover:border-indigo-400 hover:bg-white"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={handleDrop}
               >
                 <label htmlFor="inspiration-upload" className="flex flex-col items-center gap-2">
                   <span className="text-3xl">📤</span>
-                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">Drop PNG, JPEG, WebP, PDF, DOC/DOCX, or TXT files</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Up to 6 files. Click to choose from your device.</span>
+                  <span className="text-sm font-semibold text-gray-800">Drop PNG, JPEG, WebP, PDF, DOC/DOCX, or TXT files</span>
+                  <span className="text-xs text-gray-500">Up to 6 files. Click to choose from your device.</span>
                 </label>
-                <p className="mt-3 text-[0.7rem] text-gray-500 dark:text-gray-400">
+                <p className="mt-3 text-[0.7rem] text-gray-500">
                   {inspirationFiles.length
                     ? `${inspirationFiles.length} file${inspirationFiles.length > 1 ? 's' : ''} ready to upload`
                     : 'No files selected yet.'}
@@ -878,10 +878,10 @@ export default function ClientProfilePage() {
                   {inspirationFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950/70"
+                      className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-sm"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="truncate font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{file.file.name}</p>
+                        <p className="truncate font-semibold uppercase tracking-[0.3em] text-gray-500">{file.file.name}</p>
                         <button
                           type="button"
                           onClick={() => handleRemoveFile(file.id)}
@@ -893,7 +893,7 @@ export default function ClientProfilePage() {
                       {file.previewUrl ? (
                         <img src={file.previewUrl} alt={file.file.name} className="mt-2 h-28 w-full rounded-xl object-cover" />
                       ) : (
-                        <div className="mt-2 flex h-28 items-center justify-center rounded-xl bg-gray-100 text-[0.7rem] text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+                        <div className="mt-2 flex h-28 items-center justify-center rounded-xl bg-gray-100 text-[0.7rem] text-gray-500">
                           Preview unavailable
                         </div>
                       )}
@@ -903,21 +903,21 @@ export default function ClientProfilePage() {
               ) : null}
             </div>
             <label className="flex flex-col gap-2">
-              <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Notes for the artist (optional)</span>
+              <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Notes for the artist (optional)</span>
               <textarea
                 rows={3}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
-                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+                className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-black"
               />
             </label>
-            {uploadError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{uploadError}</p> : null}
-            {uploadMessage ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400">{uploadMessage}</p> : null}
+            {uploadError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{uploadError}</p> : null}
+            {uploadMessage ? <p className="text-xs uppercase tracking-[0.3em] text-emerald-600">{uploadMessage}</p> : null}
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" disabled={isUploading || !inspirationFiles.length}>
                 {isUploading ? 'Uploading…' : 'Upload files'}
               </Button>
-              <p className="text-xs text-gray-500 dark:text-gray-400">We keep the latest six uploads ready for review.</p>
+              <p className="text-xs text-gray-500">We keep the latest six uploads ready for review.</p>
             </div>
           </form>
         ) : null}
@@ -926,9 +926,9 @@ export default function ClientProfilePage() {
             {documents.map((document) => (
               <article
                 key={document.id}
-                className="rounded-2xl border border-gray-200 bg-white/80 p-3 text-sm text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800 dark:bg-gray-950/60 dark:text-gray-200"
+                className="rounded-2xl border border-gray-200 bg-white/80 p-3 text-sm text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+                <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
                   {isImageName(document.file_url || document.title) ? (
                     <img
                       src={resolveApiUrl(document.file_url)}
@@ -944,17 +944,17 @@ export default function ClientProfilePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">{document.title}</p>
-                    <p className="text-[0.55rem] uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">{document.kind.replace(/_/g, ' ')}</p>
+                    <p className="font-semibold text-gray-900">{document.title}</p>
+                    <p className="text-[0.55rem] uppercase tracking-[0.4em] text-gray-500">{document.kind.replace(/_/g, ' ')}</p>
                   </div>
-                  <span className="text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">
+                  <span className="text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-gray-500">
                     {document.source === 'you' ? 'You' : 'Studio'}
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{document.notes}</p>
-                <div className="mt-3 flex items-center justify-between text-[0.6rem] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <p className="mt-1 text-xs text-gray-500">{document.notes}</p>
+                <div className="mt-3 flex items-center justify-between text-[0.6rem] uppercase tracking-[0.3em] text-gray-500">
                   <span>{formatDate(document.created_at)}</span>
-                  <a href={resolveApiUrl(document.file_url)} target="_blank" rel="noreferrer" className="font-semibold text-gray-900 underline dark:text-gray-100">
+                  <a href={resolveApiUrl(document.file_url)} target="_blank" rel="noreferrer" className="font-semibold text-gray-900 underline">
                     View file
                   </a>
                 </div>
@@ -962,15 +962,15 @@ export default function ClientProfilePage() {
             ))}
           </div>
         ) : (
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">No uploads yet.</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-gray-500">No uploads yet.</p>
         )}
       </Card>
 
-      <Card className="space-y-4 border-rose-200/80 bg-rose-50/80 text-rose-900 ring-1 ring-rose-200 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-100 dark:ring-rose-800/60">
+      <Card className="space-y-4 border-rose-200/80 bg-rose-50/80 text-rose-900 ring-1 ring-rose-200">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-rose-700 dark:text-rose-200">Danger zone</p>
-            <p className="text-sm text-rose-800 dark:text-rose-100">Remove your account and all associated data.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-rose-700">Danger zone</p>
+            <p className="text-sm text-rose-800">Remove your account and all associated data.</p>
           </div>
           <Button variant="secondary" onClick={openDeleteDialog}>
             Delete account
@@ -1003,10 +1003,10 @@ export default function ClientProfilePage() {
           className="space-y-4"
           onSubmit={handleDeleteAccount}
         >
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600">
             This action cannot be undone. Click delete below to permanently remove your account and all associated data.
           </p>
-          {deleteError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{deleteError}</p> : null}
+          {deleteError ? <p className="text-xs uppercase tracking-[0.3em] text-rose-600">{deleteError}</p> : null}
         </form>
       </Dialog>
     </main>

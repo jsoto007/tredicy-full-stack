@@ -34,21 +34,21 @@ export default function Testimonials() {
   );
 
   return (
-    <section id="testimonials" className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <section id="testimonials" className="bg-[#fffaf5] py-16 text-[#23301d]">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
         <SectionTitle
           eyebrow="Testimonials"
-          title="Trusted by collectors"
-          description="A few words from clients who return for linework refreshers, large-scale projects, and thoughtful cover-ups."
+          title="Clients leave glowing"
+          description="A few quick notes from clients who come to Melodi Nails for beautiful finishes, organized booking, and an experience that feels calm from start to finish."
         />
         <FadeIn key={entriesKey} className="grid gap-8 md:grid-cols-3" childClassName="h-full" delayStep={0.12}>
           {displayedEntries.map((entry) => (
-            <Card key={entry.id} className="h-full space-y-6">
+            <Card key={entry.id} className="h-full space-y-6 bg-[#fffdf9]">
               <div className="space-y-4">
                 <Stars rating={entry.rating} />
-                <p className="text-sm text-gray-600 dark:text-gray-300">&ldquo;{entry.quote}&rdquo;</p>
+                <p className="text-sm text-slate-900">&ldquo;{entry.quote}&rdquo;</p>
               </div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{entry.name}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6f7863]">{entry.name}</p>
             </Card>
           ))}
         </FadeIn>

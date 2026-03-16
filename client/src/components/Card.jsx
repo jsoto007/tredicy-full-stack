@@ -3,7 +3,7 @@ function classNames(...classes) {
 }
 
 const baseClasses =
-  'rounded-2xl border border-gray-200 bg-white/90 p-6 shadow-soft backdrop-blur-sm transition dark:border-gray-800 dark:bg-gray-950/80 sm:p-8';
+  'rounded-[2rem] border border-[#d9cbbc] bg-[#fffdf9]/92 p-6 shadow-[0_18px_50px_rgba(42,57,35,0.08)] backdrop-blur-sm transition sm:p-8';
 
 export default function Card({ className = '', children, ...props }) {
   return (

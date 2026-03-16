@@ -8,7 +8,7 @@ from flask import current_app
 
 from .base import brand_name, client_base_url, email_logo_url, mailgun_send
 
-DEFAULT_STUDIO_LOCATION = "42 West Street, Suite 406, Brooklyn, NY"
+DEFAULT_STUDIO_LOCATION = "1205 College Ave, Bronx, NY 10456"
 BOOKING_SUPPORT_EMAIL = "Booking@mail.blackworknyc.com"
 NYC_TZ = ZoneInfo("America/New_York")
 
@@ -17,7 +17,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _default_currency() -> str:
-    return (current_app.config.get("SQUARE_DEPOSIT_CURRENCY") or "USD").upper()
+    return (current_app.config.get("STRIPE_CURRENCY") or "USD").upper()
 
 
 def _format_currency(amount_cents: int | float | None, currency: str | None = None) -> str:
@@ -81,8 +81,11 @@ def send_booking_confirmation_email(
     payment_currency = payments[0].currency if payments else _default_currency()
     reference = appointment.reference_code or f"Appointment #{appointment.id}"
     scheduled_label = _format_appointment_datetime(appointment.scheduled_start, appointment.duration_minutes)
-    placement_display = _format_field_label(appointment.tattoo_placement) or "n/a"
-    size_display = _format_field_label(appointment.tattoo_size) or "n/a"
+    service_name = (
+        appointment.session_option.name
+        if getattr(appointment, "session_option", None) and appointment.session_option.name
+        else "Nail appointment"
+    )
     if appointment.duration_minutes:
         hours = appointment.duration_minutes / 60.0
         duration_label = f"{hours:.1f}h" if not hours.is_integer() else f"{int(hours)}h"
@@ -156,14 +159,15 @@ def send_booking_confirmation_email(
         f"Hi {appointment.contact_name or 'there'},",
         f"Thank you for booking with {brand}. Your appointment is confirmed. Here are the details:",
         f"- Reference: {reference}",
-        f"- Session: {scheduled_label} ({duration_label})",
+        f"- Appointment: {scheduled_label} ({duration_label})",
         f"- Studio address: {studio_location}",
-        f"- Placement: {placement_display}",
-        f"- Size: {size_display}",
+        f"- Service: {service_name}",
         f"- Payment: {payment_label} ({_format_currency(charge_amount_cents, payment_currency)})",
     ]
     if session_price_cents:
-        lines.append(f"- Session price: {_format_currency(session_price_cents, payment_currency)}")
+        lines.append(f"- Service price: {_format_currency(session_price_cents, payment_currency)}")
+    if appointment.client_description:
+        lines.append(f"- Notes: {appointment.client_description}")
     if receipt_url:
         lines.append(f"- Receipt: {receipt_url}")
     lines.append(f"- Manage: {manage_url}")
@@ -194,13 +198,14 @@ def send_booking_confirmation_email(
         )
 
     _detail_row("Reference", reference)
-    _detail_row("Session", f"{scheduled_label} ({duration_label})")
+    _detail_row("Appointment", f"{scheduled_label} ({duration_label})")
     _detail_row("Studio address", studio_location)
-    _detail_row("Placement", placement_display)
-    _detail_row("Size", size_display)
+    _detail_row("Service", service_name)
     _detail_row("Payment", f"{payment_label} ({_format_currency(charge_amount_cents, payment_currency)})")
     if session_price_cents:
-        _detail_row("Session price", _format_currency(session_price_cents, payment_currency))
+        _detail_row("Service price", _format_currency(session_price_cents, payment_currency))
+    if appointment.client_description:
+        _detail_row("Notes", appointment.client_description)
     if receipt_url:
         _detail_row("Receipt", receipt_url, link_text="View receipt")
     _detail_row("Manage", manage_url, link_text="Open your portal")

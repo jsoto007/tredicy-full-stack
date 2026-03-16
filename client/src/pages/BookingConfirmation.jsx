@@ -6,12 +6,12 @@ import Button from '../components/Button.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatStatusLabel, getStatusBadgeClasses } from '../lib/statusStyles.js';
-import { apiGet } from '../lib/api.js';
+import { apiGet, apiPost } from '../lib/api.js';
 import { sanitizeAppointmentForConfirmation } from '../lib/appointments.js';
 
-const BOOKING_RECEIPT_KEY = 'black-ink:last-booking';
-const LOCATION_LINE = '42 West Street, Suite 406, Brooklyn, NY';
-const STUDIO_EMAIL = 'artem@blackworknyc.com';
+const BOOKING_RECEIPT_KEY = 'melodi-nails:last-booking';
+const LOCATION_LINE = '1205 College Ave, Bronx, NY 10456';
+const STUDIO_EMAIL = 'hello@melodinails.com';
 const DIRECTIONS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(LOCATION_LINE)}`;
 function readLatestAppointment() {
   try {
@@ -50,9 +50,45 @@ export default function BookingConfirmation() {
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const referenceQuery = searchParams.get('reference')?.trim();
   const emailQuery = searchParams.get('email')?.trim();
+  const appointmentIdQuery = searchParams.get('appointment_id')?.trim();
+  const sessionIdQuery = searchParams.get('session_id')?.trim();
 
   useEffect(() => {
-    if (appointment || !referenceQuery || !emailQuery) {
+    if (!appointmentIdQuery || !sessionIdQuery) {
+      return;
+    }
+    let isActive = true;
+    setIsFetchingRemote(true);
+    setFetchError(null);
+    apiPost('/api/payments/stripe/verify-session', {
+      appointment_id: appointmentIdQuery,
+      session_id: sessionIdQuery
+    })
+      .then((payload) => {
+        if (!isActive) {
+          return;
+        }
+        setRemoteAppointment(payload);
+        storeLatestAppointment(payload);
+      })
+      .catch((error) => {
+        if (!isActive) {
+          return;
+        }
+        setFetchError(error.message || 'Unable to verify Stripe payment.');
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsFetchingRemote(false);
+        }
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [appointmentIdQuery, sessionIdQuery]);
+
+  useEffect(() => {
+    if (appointment || remoteAppointment || !referenceQuery || !emailQuery) {
       return;
     }
     let isActive = true;
@@ -87,7 +123,7 @@ export default function BookingConfirmation() {
       isActive = false;
       controller.abort();
     };
-  }, [appointment, referenceQuery, emailQuery]);
+  }, [appointment, remoteAppointment, referenceQuery, emailQuery]);
 
   useEffect(() => {
     if (!locationAppointment) {
@@ -97,7 +133,7 @@ export default function BookingConfirmation() {
     storeLatestAppointment(locationAppointment);
   }, [locationAppointment]);
 
-  const bookingDetails = appointment || remoteAppointment;
+  const bookingDetails = remoteAppointment || appointment;
   const scheduledStart = bookingDetails?.scheduled_start ? new Date(bookingDetails.scheduled_start) : null;
   const formattedDateLabel = useMemo(
     () => (scheduledStart ? DAY_FORMATTER.format(scheduledStart) : 'Pending scheduling'),
@@ -129,10 +165,10 @@ export default function BookingConfirmation() {
     bookingDetails?.contact_email || bookingDetails?.contact?.email || bookingDetails?.client?.email || '—';
   const contactPhone =
     bookingDetails?.contact_phone || bookingDetails?.contact?.phone || bookingDetails?.client?.phone || '—';
-  const placementLabel =
-    bookingDetails?.tattoo?.placement || bookingDetails?.tattoo_placement || 'Placement pending';
-  const sizeLabel = bookingDetails?.tattoo?.size || bookingDetails?.tattoo_size || 'Size pending';
-  const placementNotes = bookingDetails?.tattoo?.notes || bookingDetails?.placement_notes || '';
+  const serviceLabel =
+    bookingDetails?.service?.name || bookingDetails?.session_option?.name || 'Service pending';
+  const placementNotes =
+    bookingDetails?.service?.notes || bookingDetails?.client_description || bookingDetails?.tattoo?.notes || '';
   const descriptionCopy = bookingDetails?.client_description || '';
   const artistName =
     bookingDetails?.assigned_admin?.name ||
@@ -147,26 +183,26 @@ export default function BookingConfirmation() {
       href={payment.receipt_url}
       target="_blank"
       rel="noreferrer"
-      className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 underline-offset-4 hover:underline dark:text-gray-400"
+      className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 underline-offset-4 hover:underline"
     >
-      View Square receipt
+      View Stripe receipt
     </a>
   ) : (
     payment?.status || 'Captured during booking'
   );
 
   return (
-    <main className="bg-white py-12 text-gray-900 dark:bg-black dark:text-gray-100">
+    <main className="bg-white py-12 text-gray-900">
       <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4">
         <FadeIn>
           <SectionTitle
             eyebrow="Booked"
             title="Appointment confirmed"
-            description="Thanks for securing your session. We emailed a confirmation with calendar invites—check your inbox or spam folder."
+            description="Thanks for securing your appointment. We emailed a confirmation with calendar invites—check your inbox or spam folder."
           />
         </FadeIn>
         <FadeIn>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             If you don’t see the email, double-check spam or promotions. The confirmation includes Google and Apple calendar options so you can lock in the time.
           </p>
         </FadeIn>
@@ -176,11 +212,11 @@ export default function BookingConfirmation() {
             <Card className="space-y-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Reference</p>
-                  <p className="text-2xl font-semibold tracking-[0.2em] text-gray-900 dark:text-gray-100">
+                  <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Reference</p>
+                  <p className="text-2xl font-semibold tracking-[0.2em] text-gray-900">
                     {bookingDetails.reference_code || 'Pending'}
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Booked for {contactName}</p>
+                  <p className="text-sm text-gray-500">Booked for {contactName}</p>
                 </div>
                 <span
                   className={`inline-flex w-fit items-center rounded-full px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] ${statusClasses}`}
@@ -203,7 +239,7 @@ export default function BookingConfirmation() {
                   secondary={scheduledStart ? `${timeZoneLabel || 'Local'} time` : 'Scheduling in progress'}
                 />
                 <DetailItem
-                  label="Session length"
+                  label="Appointment length"
                   value={durationLabel}
                   secondary={suggestedDurationLabel ? `Suggested ${suggestedDurationLabel}` : null}
                 />
@@ -215,7 +251,7 @@ export default function BookingConfirmation() {
                       href={DIRECTIONS_URL}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 underline-offset-4 hover:underline dark:text-gray-400"
+                      className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500 underline-offset-4 hover:underline"
                     >
                       View map
                     </a>
@@ -226,7 +262,7 @@ export default function BookingConfirmation() {
                   value={artistName}
                   secondary={artistEmail || 'Assigned shortly'}
                 />
-                <DetailItem label="Deposit" value={depositLabel || 'Recorded'} secondary={depositSecondary} />
+                <DetailItem label="Payment" value={depositLabel || 'Recorded'} secondary={depositSecondary} />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -235,15 +271,13 @@ export default function BookingConfirmation() {
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Tattoo details</p>
-                <p className="text-sm text-gray-900 dark:text-gray-100">
-                  {placementLabel} · {sizeLabel}
-                </p>
-                {placementNotes ? <p className="text-sm text-gray-600 dark:text-gray-300">{placementNotes}</p> : null}
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Appointment details</p>
+                <p className="text-sm text-gray-900">{serviceLabel}</p>
+                {placementNotes ? <p className="text-sm text-gray-600">{placementNotes}</p> : null}
                 {descriptionCopy ? (
-                  <div className="rounded-2xl border border-dashed border-gray-300 p-4 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">
-                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Client notes</p>
-                    <p className="mt-2 leading-relaxed text-gray-700 dark:text-gray-200">{descriptionCopy}</p>
+                  <div className="rounded-2xl border border-dashed border-gray-300 p-4 text-sm text-gray-600">
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Client notes</p>
+                    <p className="mt-2 leading-relaxed text-gray-700">{descriptionCopy}</p>
                   </div>
                 ) : null}
               </div>
@@ -273,7 +307,7 @@ export default function BookingConfirmation() {
                 </Button>
               ) : (
                 <Button as={Link} to="/share-your-idea">
-                  Book another session
+                  Book another appointment
                 </Button>
               )}
             </div>
@@ -281,8 +315,8 @@ export default function BookingConfirmation() {
         ) : isFetchingRemote ? (
           <FadeIn>
             <Card className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-300">Retrieving your booking details…</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-600">Retrieving your booking details…</p>
+              <p className="text-xs text-gray-500">
                 If you received a reference and contact email in your booking confirmation, that pair will unlock this page again.
               </p>
             </Card>
@@ -290,11 +324,11 @@ export default function BookingConfirmation() {
         ) : (
           <FadeIn>
             <Card className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-gray-600">
                 {fetchError ||
                   'We couldn’t find booking details for this session. Try refreshing the page or check your confirmation email for the link.'}
               </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500">
                 Use the reference code and contact email sent to you (or revisit the confirmation link) to view the full details even without signing in.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -341,11 +375,11 @@ function DetailItem({ label, value, secondary }) {
   const hasValue = !(value === undefined || value === null || value === '');
   return (
     <div>
-      <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">{label}</p>
-      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{hasValue ? value : '—'}</p>
+      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{label}</p>
+      <p className="text-sm font-semibold text-gray-900">{hasValue ? value : '—'}</p>
       {secondary
         ? typeof secondary === 'string'
-          ? <p className="text-xs text-gray-500 dark:text-gray-400">{secondary}</p>
+          ? <p className="text-xs text-gray-500">{secondary}</p>
           : secondary
         : null}
     </div>

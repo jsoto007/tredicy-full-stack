@@ -54,7 +54,11 @@ def send_appointment_status_update_email(
     brand = brand_name()
     reference = appointment.reference_code or f"Appointment #{appointment.id}"
     scheduled_label = _format_appointment_datetime(appointment.scheduled_start, appointment.duration_minutes)
-    placement = appointment.tattoo_placement or "n/a"
+    service_name = (
+        appointment.session_option.name
+        if getattr(appointment, "session_option", None) and appointment.session_option.name
+        else "Nail appointment"
+    )
     manage_url = f"{client_base_url()}/portal/appointments"
 
     contact_name = (
@@ -71,7 +75,7 @@ def send_appointment_status_update_email(
         text_lines.append(f"- Scheduled: {scheduled_label}")
     text_lines.extend(
         [
-            f"- Placement: {placement}",
+            f"- Service: {service_name}",
             f"- Manage: {manage_url}",
             "Reply to this email if you have questions or updates.",
         ]
@@ -103,7 +107,7 @@ def send_appointment_status_update_email(
     _detail_row("Reference", reference)
     if scheduled_label:
         _detail_row("Scheduled", scheduled_label)
-    _detail_row("Placement", placement)
+    _detail_row("Service", service_name)
     _detail_row("Manage", manage_url, link_text="Open portal")
 
     detail_table = "".join(detail_rows)

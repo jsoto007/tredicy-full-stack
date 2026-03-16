@@ -112,12 +112,11 @@ def _detail_lines(
         f"Contact: {appointment.display_contact_email or 'n/a'}",
         f"Scheduled: {scheduled_label}",
         f"Duration: {duration_label}",
-        f"Placement: {_format_field_label(appointment.tattoo_placement) or 'n/a'}",
-        f"Size: {_format_field_label(appointment.tattoo_size) or 'n/a'}",
+        f"Service: {appointment.session_option.name if getattr(appointment, 'session_option', None) and appointment.session_option.name else 'Nail appointment'}",
         f"Payment: {payment_label} ({_format_currency(charge_amount_cents, payment_currency)})",
     ]
     if session_price_cents:
-        lines.append(f"Session price: {_format_currency(session_price_cents, payment_currency)}")
+        lines.append(f"Service price: {_format_currency(session_price_cents, payment_currency)}")
     if appointment.client_description:
         lines.append(f"Notes: {appointment.client_description}")
     if receipt_url:

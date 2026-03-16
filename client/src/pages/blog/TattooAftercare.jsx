@@ -1,14 +1,14 @@
 export default function TattooAftercare() {
   return (
-    <article className="space-y-10 text-base leading-relaxed text-gray-600 dark:text-gray-300">
+    <article className="space-y-10 text-base leading-relaxed text-gray-600">
       <header>
-        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">
+        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500">
           Aftercare
         </p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
           Tattoo Aftercare Guide
         </h1>
-        <p className="mt-4 text-base text-gray-600 dark:text-gray-300">
+        <p className="mt-4 text-base text-gray-600">
           When you&rsquo;ve just received your tattoo, proper care is essential for healing and maintaining the
           artwork&rsquo;s quality. The first few weeks set the stage for how your tattoo will look for years to come,
           so take these steps seriously and reach out if anything feels off.
@@ -16,7 +16,7 @@ export default function TattooAftercare() {
       </header>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Daily Care Instructions</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Daily Care Instructions</h2>
         <p>Follow these guidelines carefully during the initial healing stages:</p>
         <ol className="list-decimal space-y-3 pl-6">
           <li className="pl-1">
@@ -45,7 +45,7 @@ export default function TattooAftercare() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">What to Expect While Healing</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">What to Expect While Healing</h2>
         <p>
           The healing process typically takes 2–3 weeks. During this time, you may notice redness, slight swelling,
           scabbing, and a bit of flaking&mdash;all normal signs that your skin is repairing itself. Do not pick or
@@ -59,7 +59,7 @@ export default function TattooAftercare() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Recommended Products</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Recommended Products</h2>
         <ul className="space-y-3">
           <li className="flex flex-col gap-1">
             <a href="https://a.co/d/at49ZEE" target="_blank" rel="noopener noreferrer">
@@ -83,7 +83,7 @@ export default function TattooAftercare() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">When to Reach Out</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">When to Reach Out</h2>
         <p>
           If at any point the area becomes excessively swollen, hot to the touch, or produces unusual discharge, contact
           your artist right away. We&rsquo;re here to help you through the full healing process. Email us any time at{' '}

@@ -350,14 +350,14 @@ export default function AdminGallery() {
 
       <Card className="space-y-6">
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Categories</h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Organise artwork into curated collections.</p>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">Categories</h3>
+          <p className="text-sm text-gray-600">Organise artwork into curated collections.</p>
         </div>
         <form onSubmit={handleCategoryCreate} className="grid gap-3 md:grid-cols-3">
           <div>
             <label
               htmlFor={NEW_CATEGORY_FIELD_IDS.name}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+              className="text-xs uppercase tracking-[0.3em] text-gray-500"
             >
               Category name
             </label>
@@ -367,13 +367,13 @@ export default function AdminGallery() {
               placeholder="Category name"
               value={newCategory.name}
               onChange={(event) => handleNewCategoryChange('name', event.target.value)}
-              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             />
           </div>
           <div>
             <label
               htmlFor={NEW_CATEGORY_FIELD_IDS.description}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+              className="text-xs uppercase tracking-[0.3em] text-gray-500"
             >
               Description
             </label>
@@ -383,19 +383,19 @@ export default function AdminGallery() {
               placeholder="Description (optional)"
               value={newCategory.description}
               onChange={(event) => handleNewCategoryChange('description', event.target.value)}
-              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             />
           </div>
           <label
             htmlFor={NEW_CATEGORY_FIELD_IDS.active}
-            className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             <input
               id={NEW_CATEGORY_FIELD_IDS.active}
               type="checkbox"
               checked={newCategory.is_active}
               onChange={(event) => handleNewCategoryChange('is_active', event.target.checked)}
-              className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+              className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
             />
             Active
           </label>
@@ -417,12 +417,12 @@ export default function AdminGallery() {
             return (
               <div
                 key={category.id}
-                className="grid gap-3 rounded-2xl border border-gray-200 p-4 md:grid-cols-4 dark:border-gray-800 dark:bg-gray-950"
+                className="grid gap-3 rounded-2xl border border-gray-200 p-4 md:grid-cols-4"
               >
                 <div>
                   <label
                     htmlFor={nameId}
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
                   >
                     Name
                   </label>
@@ -431,13 +431,13 @@ export default function AdminGallery() {
                     type="text"
                     value={draft.name}
                     onChange={(event) => handleCategoryDraftChange(category.id, 'name', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor={descriptionId}
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
                   >
                     Description
                   </label>
@@ -446,22 +446,22 @@ export default function AdminGallery() {
                     type="text"
                     value={draft.description}
                     onChange={(event) => handleCategoryDraftChange(category.id, 'description', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                   />
                 </div>
                 <div className="flex flex-col justify-between gap-3">
-                  <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Visibility</span>
-                  <div className="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                  <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Visibility</span>
+                  <div className="inline-flex items-center gap-2 text-sm text-gray-700">
                     <input
                       id={activeId}
                       type="checkbox"
                       checked={draft.is_active}
                       onChange={(event) => handleCategoryDraftChange(category.id, 'is_active', event.target.checked)}
-                      className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                      className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
                     />
                     <label htmlFor={activeId}>Active</label>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{category.gallery_item_count} items</p>
+                  <p className="text-xs text-gray-500">{category.gallery_item_count} items</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                   <Button type="button" onClick={() => handleCategorySave(category.id)}>
@@ -482,7 +482,7 @@ export default function AdminGallery() {
             );
           })}
           {!categories.length ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
               Categories will appear here once created.
             </div>
           ) : null}
@@ -491,10 +491,10 @@ export default function AdminGallery() {
 
       <Card className="space-y-6">
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
             Upload new artwork
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Drag a new piece into the spotlight. Preview the post to double-check metadata before you publish.
           </p>
         </div>
@@ -503,7 +503,7 @@ export default function AdminGallery() {
             <div>
               <label
                 htmlFor={NEW_GALLERY_FIELD_IDS.file}
-                className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                className="text-xs uppercase tracking-[0.3em] text-gray-500"
               >
                 Upload
               </label>
@@ -512,10 +512,10 @@ export default function AdminGallery() {
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="mt-2 block w-full text-sm text-gray-700 file:mr-4 file:rounded-full file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.3em] file:text-white hover:file:bg-gray-800 dark:text-gray-200 dark:file:bg-gray-100 dark:file:text-gray-900 dark:hover:file:bg-gray-200"
+                className="mt-2 block w-full text-sm text-gray-700 file:mr-4 file:rounded-full file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.3em] file:text-white hover:file:bg-gray-800"
               />
               {uploadError ? (
-                <p className="mt-2 text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-400">{uploadError}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.3em] text-rose-600">{uploadError}</p>
               ) : null}
               {newItemDraft.previewUrl ? (
                 <img
@@ -529,7 +529,7 @@ export default function AdminGallery() {
               <div>
                 <label
                   htmlFor={NEW_GALLERY_FIELD_IDS.category}
-                  className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  className="text-xs uppercase tracking-[0.3em] text-gray-500"
                 >
                   Category
                 </label>
@@ -537,7 +537,7 @@ export default function AdminGallery() {
                   id={NEW_GALLERY_FIELD_IDS.category}
                   value={newItemDraft.category_id}
                   onChange={(event) => handleNewItemDraftChange('category_id', event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                 >
                   <option value="">Select category</option>
                   {categoryOptions.map((option) => (
@@ -550,7 +550,7 @@ export default function AdminGallery() {
               <div>
                 <label
                   htmlFor={NEW_GALLERY_FIELD_IDS.uploader}
-                  className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                  className="text-xs uppercase tracking-[0.3em] text-gray-500"
                 >
                   Uploaded by
                 </label>
@@ -558,7 +558,7 @@ export default function AdminGallery() {
                   id={NEW_GALLERY_FIELD_IDS.uploader}
                   value={newItemDraft.uploaded_by_admin_id}
                   onChange={(event) => handleNewItemDraftChange('uploaded_by_admin_id', event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                 >
                   <option value="">Select admin</option>
                   {adminOptions.map((option) => (
@@ -568,13 +568,13 @@ export default function AdminGallery() {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500">
                 <input
                   id={NEW_GALLERY_FIELD_IDS.isPublished}
                   type="checkbox"
                   checked={newItemDraft.is_published}
                   onChange={(event) => handleNewItemDraftChange('is_published', event.target.checked)}
-                  className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                  className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
                 />
                 <label htmlFor={NEW_GALLERY_FIELD_IDS.isPublished}>Publish immediately</label>
               </div>
@@ -582,7 +582,7 @@ export default function AdminGallery() {
           </div>
           <label
             htmlFor={NEW_GALLERY_FIELD_IDS.alt}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Alt text
           </label>
@@ -592,11 +592,11 @@ export default function AdminGallery() {
             placeholder="Alt text (required for accessibility)"
             value={newItemDraft.label}
             onChange={(event) => handleNewItemDraftChange('label', event.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
           <label
             htmlFor={NEW_GALLERY_FIELD_IDS.caption}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs uppercase tracking-[0.3em] text-gray-500"
           >
             Caption
           </label>
@@ -606,7 +606,7 @@ export default function AdminGallery() {
             placeholder="Caption (optional)"
             value={newItemDraft.caption}
             onChange={(event) => handleNewItemDraftChange('caption', event.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
           <Button type="submit" disabled={confirmBusy}>
             {confirmBusy ? 'Uploading…' : 'Preview upload'}
@@ -616,10 +616,10 @@ export default function AdminGallery() {
 
       <Card className="space-y-6">
         <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
             Gallery items
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-300">Edit published pieces, toggle visibility, or remove items.</p>
+          <p className="text-sm text-gray-600">Edit published pieces, toggle visibility, or remove items.</p>
         </div>
         <div className="space-y-4">
         {galleryItems.map((item) => {
@@ -638,7 +638,7 @@ export default function AdminGallery() {
             return (
               <div
                 key={item.id}
-                className="grid gap-4 rounded-2xl border border-gray-200 p-4 md:grid-cols-[200px_1fr] dark:border-gray-800 dark:bg-gray-950"
+                className="grid gap-4 rounded-2xl border border-gray-200 p-4 md:grid-cols-[200px_1fr]"
               >
                 <div>
                   <img
@@ -646,7 +646,7 @@ export default function AdminGallery() {
                     alt={item.alt}
                     className="h-40 w-full rounded-xl object-cover"
                   />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                  <p className="mt-2 text-xs text-gray-500">
                     Uploaded {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown'}
                   </p>
                 </div>
@@ -655,7 +655,7 @@ export default function AdminGallery() {
                     <div>
                       <label
                         htmlFor={categoryId}
-                        className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                        className="text-xs uppercase tracking-[0.3em] text-gray-500"
                       >
                         Category
                       </label>
@@ -663,7 +663,7 @@ export default function AdminGallery() {
                         id={categoryId}
                         value={draft.category_id}
                         onChange={(event) => handleGalleryDraftChange(item.id, 'category_id', event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                        className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                       >
                         <option value="">Uncategorised</option>
                         {categoryOptions.map((option) => (
@@ -674,16 +674,16 @@ export default function AdminGallery() {
                       </select>
                     </div>
                     <div>
-                      <span className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                      <span className="text-xs uppercase tracking-[0.3em] text-gray-500">
                         Published
                       </span>
-                      <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                      <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-700">
                         <input
                           id={publishedId}
                           type="checkbox"
                           checked={draft.is_published}
                           onChange={(event) => handleGalleryDraftChange(item.id, 'is_published', event.target.checked)}
-                          className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                          className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
                         />
                         <label htmlFor={publishedId}>Visible</label>
                       </div>
@@ -692,7 +692,7 @@ export default function AdminGallery() {
                   <div>
                     <label
                       htmlFor={altId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                      className="text-xs uppercase tracking-[0.3em] text-gray-500"
                     >
                       Alt text
                     </label>
@@ -701,13 +701,13 @@ export default function AdminGallery() {
                       type="text"
                       value={draft.alt}
                       onChange={(event) => handleGalleryDraftChange(item.id, 'alt', event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                     />
                   </div>
                   <div>
                     <label
                       htmlFor={captionId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                      className="text-xs uppercase tracking-[0.3em] text-gray-500"
                     >
                       Caption
                     </label>
@@ -716,7 +716,7 @@ export default function AdminGallery() {
                       rows={2}
                       value={draft.caption}
                       onChange={(event) => handleGalleryDraftChange(item.id, 'caption', event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:focus:border-gray-400"
+                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                     />
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
@@ -730,7 +730,7 @@ export default function AdminGallery() {
                       href={imageUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                      className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900"
                     >
                       Open image
                     </a>
@@ -740,7 +740,7 @@ export default function AdminGallery() {
             );
           })}
           {!galleryItems.length ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
               Gallery items will appear here as soon as they are published.
             </div>
           ) : null}
@@ -783,7 +783,7 @@ export default function AdminGallery() {
           />
         ) : null}
         {confirmation?.type === 'publish' ? (
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600">
             Category ID {confirmation.payload.category_id} · {' '}
             {confirmation.payload.is_published ? 'Visible immediately.' : 'Saved as draft.'}
           </p>

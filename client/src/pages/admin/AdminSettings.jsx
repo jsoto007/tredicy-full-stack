@@ -367,7 +367,7 @@ export default function AdminSettings() {
       setAdminSessionOptions(Array.isArray(data) ? data : []);
       setAdminSessionError('');
     } catch (fetchError) {
-      setAdminSessionError('Unable to load session options.');
+      setAdminSessionError('Unable to load products.');
     } finally {
       setAdminSessionLoading(false);
     }
@@ -412,7 +412,7 @@ export default function AdminSettings() {
   }, [fetchAdminSessionOptions]);
 
   const handleSessionDelete = async (option) => {
-    if (!window.confirm('Remove this session option? Existing bookings will retain their original data.')) {
+    if (!window.confirm('Remove this product? Existing bookings will retain their original data.')) {
       return;
     }
     try {
@@ -558,10 +558,10 @@ export default function AdminSettings() {
       <div className="grid gap-4 md:grid-cols-3">
         {METRIC_KEYS.map((metric) => (
           <Card key={metric.key} className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
               {metric.label}
             </p>
-            <p className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
+            <p className="text-3xl font-semibold text-gray-900">
               {overview?.[metric.key] ?? '—'}
             </p>
           </Card>
@@ -571,44 +571,44 @@ export default function AdminSettings() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
             Appointments by status
           </h3>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className="space-y-2 text-sm text-gray-700">
             {Object.entries(analytics.appointments_by_status || {}).map(([status, count]) => (
               <li
                 key={status}
-                className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-800"
+                className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
               >
-                <span className="uppercase tracking-[0.25em] text-xs text-gray-500 dark:text-gray-400">{status}</span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{count}</span>
+                <span className="uppercase tracking-[0.25em] text-xs text-gray-500">{status}</span>
+                <span className="text-sm font-semibold text-gray-900">{count}</span>
               </li>
             ))}
             {!Object.keys(analytics.appointments_by_status || {}).length ? (
-              <li className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <li className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500">
                 No appointment data yet.
               </li>
             ) : null}
           </ul>
         </Card>
         <Card className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
             Gallery items by category
           </h3>
-          <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+          <ul className="space-y-2 text-sm text-gray-700">
             {Object.entries(analytics.gallery_items_by_category || {}).map(([category, count]) => (
               <li
                 key={category}
-                className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-800"
+                className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2"
               >
-                <span className="uppercase tracking-[0.25em] text-xs text-gray-500 dark:text-gray-400">
+                <span className="uppercase tracking-[0.25em] text-xs text-gray-500">
                   {category}
                 </span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{count}</span>
+                <span className="text-sm font-semibold text-gray-900">{count}</span>
               </li>
             ))}
             {!Object.keys(analytics.gallery_items_by_category || {}).length ? (
-              <li className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <li className="rounded-lg border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500">
                 No gallery data yet.
               </li>
             ) : null}
@@ -620,21 +620,21 @@ export default function AdminSettings() {
       <Card className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
               Booking fee
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600">
               Determine how much of each session is collected when a client reserves time.
             </p>
           </div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <p className="text-sm font-semibold text-gray-900">
             {pricing?.booking_fee_percent ? `${pricing.booking_fee_percent}% now` : 'Loading…'}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
           <label
             htmlFor="booking-fee-input"
-            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
           >
             Booking fee (%)
           </label>
@@ -648,12 +648,12 @@ export default function AdminSettings() {
                 setBookingFeeError('');
               }}
               placeholder="e.g. 25"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0"
             />
             {bookingFeeError ? (
-              <p className="text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{bookingFeeError}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-rose-500">{bookingFeeError}</p>
             ) : (
-              <p className="text-xs uppercase tracking-[0.2em] text-gray-500 dark:text-gray-400">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">
                 Minimum 20%. Clients can opt to pay the remaining balance later or cover the full amount now.
               </p>
             )}
@@ -667,15 +667,15 @@ export default function AdminSettings() {
       <Card className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
-              Session options
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
+              Products
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600">
               Define the durations, prices, and visibility that clients see when booking.
             </p>
           </div>
           <Button type="button" variant="secondary" onClick={openSessionModal}>
-            Add session option
+            Add product
           </Button>
         </div>
         <div className="space-y-3">
@@ -688,14 +688,14 @@ export default function AdminSettings() {
               return (
                 <div
                   key={option.id}
-                  className={`flex flex-col gap-3 rounded-2xl border bg-white/80 p-4 shadow-sm transition hover:border-gray-300 dark:bg-gray-950 dark:hover:border-gray-700 ${
-                    isEditing ? 'border-indigo-500/40 dark:border-indigo-400/40' : 'border-gray-200 dark:border-gray-800'
+                  className={`flex flex-col gap-3 rounded-2xl border bg-white/80 p-4 shadow-sm transition hover:border-gray-300 ${
+                    isEditing ? 'border-indigo-500/40' : 'border-gray-200'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{optionLabel}</p>
-                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                      <p className="text-sm font-semibold text-gray-900">{optionLabel}</p>
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
                         {formatDurationLabel(option.duration_minutes)} ·{' '}
                         {pricingFormatter.format((option.price_cents ?? 0) / 100)}
                       </p>
@@ -708,7 +708,7 @@ export default function AdminSettings() {
               className={`rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] transition-colors duration-200 focus:outline-none ${
                 isActive
                   ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500/10 focus-visible:ring-2 focus-visible:ring-emerald-400'
-                  : 'border-gray-300 text-gray-500 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-white/10 dark:focus-visible:ring-2 dark:focus-visible:ring-white/30'
+                  : 'border-gray-300 text-gray-500 hover:bg-gray-100'
               }`}
             >
               {visibilityUpdatingId === option.id
@@ -727,23 +727,23 @@ export default function AdminSettings() {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.25em] text-gray-500">
                     <span
                       className={`h-2 w-2 rounded-full transition-colors ${
-                        isActive ? 'bg-emerald-500' : 'bg-gray-400 dark:bg-gray-500'
+                        isActive ? 'bg-emerald-500' : 'bg-gray-400'
                       }`}
                     />
                     <span>{visibilityStatusLabel}</span>
                   </div>
                   {!isActive ? (
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">Still listed for admins while hidden from the booking form.</p>
+                    <p className="text-[11px] text-gray-400">Still listed for admins while hidden from the booking form.</p>
                   ) : null}
                   {isEditing ? (
-                    <div className="space-y-3 rounded-2xl border-t border-gray-200/70 pt-4 transition dark:border-gray-800/60">
+                    <div className="space-y-3 rounded-2xl border-t border-gray-200/70 pt-4 transition">
                       <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
                         <label
                           htmlFor="inline-session-name-input"
-                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
                         >
                           Label (optional)
                         </label>
@@ -754,12 +754,12 @@ export default function AdminSettings() {
                             value={sessionForm.name}
                             onChange={handleSessionFormChange('name')}
                             placeholder="e.g. Two-hour sitting"
-                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
                           />
                         </div>
                         <label
                           htmlFor="inline-session-duration-input"
-                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
                         >
                           Duration (hours)
                         </label>
@@ -770,12 +770,12 @@ export default function AdminSettings() {
                             value={sessionForm.durationHours}
                             onChange={handleSessionFormChange('durationHours')}
                             placeholder="e.g. 1.5"
-                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
                           />
                         </div>
                         <label
                           htmlFor="inline-session-price-input"
-                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+                          className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
                         >
                           Price (USD)
                         </label>
@@ -786,23 +786,23 @@ export default function AdminSettings() {
                             value={sessionForm.price}
                             onChange={handleSessionFormChange('price')}
                             placeholder="e.g. 175.00 or 0 for consults"
-                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
                           />
                         </div>
                         <div className="sm:col-span-3">
-                          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                             <input
                               type="checkbox"
                               checked={sessionForm.is_active}
                               onChange={handleSessionFormChange('is_active')}
-                              className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-gray-400"
+                              className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
                             />
                             Visible to clients
                           </label>
                         </div>
                       </div>
                       {sessionFormError ? (
-                        <p className="text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{sessionFormError}</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-rose-500">{sessionFormError}</p>
                       ) : null}
                       <div className="flex flex-wrap gap-3">
                         <Button type="button" onClick={handleSessionSave} disabled={sessionSaving}>
@@ -818,7 +818,7 @@ export default function AdminSettings() {
               );
             })
           ) : (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-4 text-xs uppercase tracking-[0.3em] text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div className="rounded-2xl border border-dashed border-gray-300 p-4 text-xs uppercase tracking-[0.3em] text-gray-500">
               Create a session type to make durations and pricing available on the booking form.
             </div>
           )}
@@ -828,7 +828,7 @@ export default function AdminSettings() {
       <Dialog
         open={isSessionModalOpen}
         onClose={closeSessionModal}
-        title="Add session option"
+        title="Add product"
         footer={
           <>
             <Button type="button" variant="ghost" onClick={closeSessionModal} disabled={modalSaving}>
@@ -840,9 +840,9 @@ export default function AdminSettings() {
           </>
         }
       >
-        <div className="space-y-4 text-sm text-gray-700 dark:text-gray-300">
+        <div className="space-y-4 text-sm text-gray-700">
           <div className="space-y-1">
-            <label htmlFor="session-modal-name" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <label htmlFor="session-modal-name" className="text-xs uppercase tracking-[0.3em] text-gray-500">
               Label (optional)
             </label>
             <input
@@ -851,11 +851,11 @@ export default function AdminSettings() {
               value={modalForm.name}
               onChange={handleModalFormChange('name')}
               placeholder="e.g. Two-hour sitting"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="session-modal-duration" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <label htmlFor="session-modal-duration" className="text-xs uppercase tracking-[0.3em] text-gray-500">
               Duration (hours)
             </label>
             <input
@@ -864,11 +864,11 @@ export default function AdminSettings() {
               value={modalForm.durationHours}
               onChange={handleModalFormChange('durationHours')}
               placeholder="e.g. 1.5"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
             />
           </div>
           <div className="space-y-1">
-            <label htmlFor="session-modal-price" className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <label htmlFor="session-modal-price" className="text-xs uppercase tracking-[0.3em] text-gray-500">
               Price (USD)
             </label>
             <input
@@ -877,42 +877,42 @@ export default function AdminSettings() {
               value={modalForm.price}
               onChange={handleModalFormChange('price')}
               placeholder="e.g. 175.00 or 0 for consults"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 transition focus:border-gray-900 focus:outline-none focus:ring-0"
             />
           </div>
-          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
             <input
               type="checkbox"
               checked={modalForm.is_active}
               onChange={handleModalFormChange('is_active')}
-              className="h-4 w-4 rounded border border-gray-400 text-gray-900 dark:border-gray-600 dark:bg-gray-900"
+              className="h-4 w-4 rounded border border-gray-400 text-gray-900"
             />
             Visible to clients
           </label>
         </div>
         {modalError ? (
-          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{modalError}</p>
+          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-rose-500">{modalError}</p>
         ) : null}
       </Dialog>
 
       <Card className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
               Pricing
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600">
               Adjust the hourly rate that the API uses to calculate session totals.
             </p>
           </div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <p className="text-sm font-semibold text-gray-900">
             {hourlyRateLabel} / hr
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
           <label
             htmlFor="hourly-rate-input"
-            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400"
+            className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500"
           >
             Hourly rate
           </label>
@@ -926,41 +926,41 @@ export default function AdminSettings() {
                 setRateError('');
               }}
               placeholder="e.g. 220.00"
-              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-400"
+              className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0"
             />
             {rateError ? (
-              <p className="text-xs uppercase tracking-[0.2em] text-rose-500 dark:text-rose-400">{rateError}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-rose-500">{rateError}</p>
             ) : null}
           </div>
           <Button type="button" onClick={handleRateSave} disabled={savingRate} className="w-full sm:w-auto">
             {savingRate ? 'Saving...' : 'Save rate'}
           </Button>
         </div>
-        <p className="text-xs text-gray-600 dark:text-gray-300">
+        <p className="text-xs text-gray-600">
           Session totals and quotes always come from the API so clients see the rate you set here.
         </p>
       </Card>
 
       <Card className="space-y-4">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
           Security & activity
         </h3>
         <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
           {activityTracking.map((log) => (
             <div
               key={log.id}
-              className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200"
+              className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700"
             >
-              <p className="font-semibold text-gray-900 dark:text-gray-100">{log.action}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{log.details || 'No details provided.'}</p>
-              <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+              <p className="font-semibold text-gray-900">{log.action}</p>
+              <p className="text-xs text-gray-500">{log.details || 'No details provided.'}</p>
+              <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400">
                 {log.admin?.name ?? 'System'} · {log.ip_address || 'n/a'} ·{' '}
                 {log.created_at ? new Date(log.created_at).toLocaleString() : ''}
               </p>
             </div>
           ))}
           {!activityTracking.length ? (
-            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
               No recent activity has been recorded.
             </div>
           ) : null}
@@ -970,14 +970,14 @@ export default function AdminSettings() {
       <Card className="space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
               Recent users
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600">
               Browse the latest client profiles and open any record to manage access.
             </p>
           </div>
-          <span className="text-xs uppercase tracking-[0.3em] text-gray-400 dark:text-gray-500">
+          <span className="text-xs uppercase tracking-[0.3em] text-gray-400">
             {profileCountLabel}
           </span>
         </div>
@@ -991,7 +991,7 @@ export default function AdminSettings() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search by name or email..."
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:focus:border-gray-400"
+            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition focus:border-gray-900 focus:outline-none focus:ring-0"
           />
         </div>
         {filteredUsers.length ? (
@@ -1000,26 +1000,26 @@ export default function AdminSettings() {
               return (
                 <div
                   key={user.id}
-                  className="rounded-xl border border-gray-200 bg-white/95 p-4 shadow-sm transition hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700"
+                  className="rounded-xl border border-gray-200 bg-white/95 p-4 shadow-sm transition hover:border-gray-300"
                 >
                   <button
                     type="button"
                     onClick={() => handleUserNavigate(user.id)}
                     className="group w-full text-left"
                   >
-                    <p className="text-sm font-semibold text-gray-900 transition group-hover:text-gray-700 dark:text-gray-100 dark:group-hover:text-gray-200">
+                    <p className="text-sm font-semibold text-gray-900 transition group-hover:text-gray-700">
                       {user.display_name}
                     </p>
-                    <p className="text-xs text-gray-500 transition group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-300">
+                    <p className="text-xs text-gray-500 transition group-hover:text-gray-600">
                       {user.email}
                     </p>
-                    <span className="mt-2 inline-flex items-center text-[11px] uppercase tracking-[0.3em] text-gray-400 transition group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-400">
+                    <span className="mt-2 inline-flex items-center text-[11px] uppercase tracking-[0.3em] text-gray-400 transition group-hover:text-gray-500">
                       {'View details ->'}
                     </span>
                   </button>
                   <div className="mt-3">
-                    <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">Role</p>
-                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-gray-500 dark:text-gray-400">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400">Role</p>
+                    <p className="mt-1 text-xs uppercase tracking-[0.25em] text-gray-500">
                       {user.role}
                     </p>
                   </div>
@@ -1028,7 +1028,7 @@ export default function AdminSettings() {
             })}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+          <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
             {isSearching ? 'No users match your search.' : 'No recent users to display.'}
           </div>
         )}
@@ -1037,10 +1037,10 @@ export default function AdminSettings() {
      <Card className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
               System settings
             </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">
+            <p className="text-sm text-gray-600">
               Reference configuration values loaded for the studio infrastructure.
             </p>
           </div>
@@ -1054,20 +1054,20 @@ export default function AdminSettings() {
                 return (
                   <div
                     key={setting.id}
-                    className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200 sm:col-span-2 lg:col-span-3"
+                    className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700 sm:col-span-2 lg:col-span-3"
                   >
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                       Studio Operating Hours
                     </p>
-                    <ul className="mt-2 divide-y divide-gray-200 text-xs text-gray-700 dark:divide-gray-800 dark:text-gray-200">
+                    <ul className="mt-2 divide-y divide-gray-200 text-xs text-gray-700">
                       {operatingHoursRows.map((row) => (
                         <li key={`${row.key}-${row.detail}`} className="flex items-center justify-between py-1.5">
                           <span className="font-medium uppercase tracking-[0.3em]">{row.dayLabel}</span>
-                          <span className="text-gray-500 dark:text-gray-400">{row.detail}</span>
+                          <span className="text-gray-500">{row.detail}</span>
                         </li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+                    <p className="mt-2 text-[11px] uppercase tracking-[0.25em] text-gray-400">
                       Display-only snapshot of studio availability.
                     </p>
                   </div>
@@ -1087,13 +1087,13 @@ export default function AdminSettings() {
                 }).format(dollars);
               }
               valueNode = (
-                <p className="text-sm text-gray-900 dark:text-gray-100">
-                  {formatted} <span className="text-xs text-gray-500 dark:text-gray-400">/ hr</span>
+                <p className="text-sm text-gray-900">
+                  {formatted} <span className="text-xs text-gray-500">/ hr</span>
                 </p>
               );
             } else {
               valueNode = (
-                <p className="text-sm text-gray-900 dark:text-gray-100">
+                <p className="text-sm text-gray-900">
                   {String(setting.value)}
                 </p>
               );
@@ -1102,20 +1102,20 @@ export default function AdminSettings() {
             return (
               <div
                 key={setting.id}
-                className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-200"
+                className="rounded-xl border border-gray-200 p-3 text-sm text-gray-700"
               >
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                   {formatSettingLabel(setting.key)}
                 </p>
                 {valueNode}
-                <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400 dark:text-gray-500">
+                <p className="text-[11px] uppercase tracking-[0.25em] text-gray-400">
                   {setting.is_editable ? 'Editable' : 'Locked'}
                 </p>
               </div>
             );
           })}
           {!settings.length ? (
-            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
               Configuration values will appear once synced from the API.
             </div>
           ) : null}

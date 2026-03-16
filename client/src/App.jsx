@@ -27,7 +27,7 @@ export default function App() {
   const isPortalRoute = location.pathname.startsWith('/portal');
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300 dark:bg-black dark:text-gray-100">
+    <div className="min-h-screen bg-white text-gray-900 transition-colors duration-300">
       <div id="top" className="sr-only" tabIndex="-1" aria-label="Top of page">
         Top
       </div>

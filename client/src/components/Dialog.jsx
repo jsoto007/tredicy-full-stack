@@ -93,16 +93,16 @@ export default function Dialog({ open, onClose, title, children, footer, classNa
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl focus:outline-none dark:border-gray-800 dark:bg-gray-950 sm:p-8 md:max-h-[90vh] max-h-[92vh]"
+        className="w-full max-w-xl overflow-y-auto rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl focus:outline-none sm:p-8 md:max-h-[90vh] max-h-[92vh]"
       >
         <div className="flex items-start justify-between gap-4">
-          <h2 id={titleId} className="text-lg font-semibold uppercase tracking-[0.3em] text-gray-900 dark:text-gray-100">
+          <h2 id={titleId} className="text-lg font-semibold uppercase tracking-[0.3em] text-gray-900">
             {title}
           </h2>
           <button
             type="button"
             onClick={() => onCloseRef.current?.()}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-400 dark:hover:border-gray-300 dark:hover:text-gray-100 dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 text-gray-500 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             aria-label="Close dialog"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -110,7 +110,7 @@ export default function Dialog({ open, onClose, title, children, footer, classNa
             </svg>
           </button>
         </div>
-        <div className="mt-6 space-y-4 text-sm text-gray-700 dark:text-gray-300">{children}</div>
+        <div className="mt-6 space-y-4 text-sm text-gray-700">{children}</div>
         {footer ? <div className="mt-8 flex flex-wrap justify-end gap-3">{footer}</div> : null}
       </div>
     </div>

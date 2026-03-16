@@ -28,7 +28,7 @@ function AdminDashboardContent() {
 
   if (loading) {
     return (
-      <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+      <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-2 sm:px-2">
           <SectionTitle eyebrow="Admin" title="Studio control center" description="Loading secure tools..." />
         </div>
@@ -41,11 +41,11 @@ function AdminDashboardContent() {
   }
 
   return (
-    <main className="bg-gray-50 py-16 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <main className="bg-gray-50 py-16 text-gray-900">
       <FadeIn as="div" className="mx-auto max-w-6xl space-y-8 px-4 sm:px-6" childClassName="w-full">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col items-start gap-3 sm:items-end">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
               Signed in as {currentAdmin.name}
             </p>
           </div>
@@ -65,7 +65,7 @@ function AdminDashboardContent() {
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-600 dark:bg-red-950/50 dark:text-red-300">
+          <div className="rounded-2xl border border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         ) : null}

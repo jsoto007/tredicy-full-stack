@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Button from './Button.jsx';
 import { ADMIN_NAV_ITEMS, DEFAULT_NAV_ITEMS, USER_NAV_ITEMS } from '../data/navigation.js';
+import melodiLogo from '../assets/melodi/MNLogo.png';
 
 function IconCalendar(props) {
   return (
@@ -29,7 +30,7 @@ function IconCalendar(props) {
 
 function NavItem({ item, onNavigate }) {
   const shared =
-    'text-gray-600 transition-colors hover:text-black focus:outline-none focus-visible:underline dark:text-gray-300 dark:hover:text-gray-100';
+    'text-[#c8af8f] transition-colors hover:text-[#f3e7d9] focus:outline-none focus-visible:underline';
 
   if (item.type === 'link') {
     return (
@@ -107,19 +108,21 @@ export default function Header() {
 
   const shouldShowConsult = !isAuthenticated || isUser;
 
-  const secondaryButtonClass = 'hidden md:inline-flex';
-
-  const menuButtonClass =
-    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-300 dark:hover:text-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black md:hidden';
-
-  const calendarButtonClass =
-    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 text-gray-600 transition hover:border-gray-900 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-300 dark:hover:text-white dark:focus-visible:ring-gray-600 dark:focus-visible:ring-offset-black md:hidden';
+  const iconButtonClass =
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8af8f]/50 text-[#f3e7d9] transition hover:border-[#c8af8f] hover:bg-[#c8af8f]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c8af8f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3923] md:hidden';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur-sm dark:border-gray-800 dark:bg-black/70">
+    <header className="sticky top-0 z-40 border-b border-[#3a5030] bg-[#2a3923]">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="text-sm font-semibold uppercase tracking-[0.5em] text-gray-900 dark:text-gray-100">
-          BLACKWORKNYC
+        <Link to="/" className="flex items-center gap-3">
+          <img
+            src={melodiLogo}
+            alt="Melodi Nails logo"
+            className="h-12 w-auto object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
+          />
+          <span className="text-sm font-semibold uppercase tracking-[0.45em] text-[#f3e7d9]">
+            MELODI NAILS
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-xs font-semibold uppercase tracking-[0.3em] md:flex">
@@ -130,26 +133,33 @@ export default function Header() {
 
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <Button type="button" variant="secondary" onClick={handleSignOut} className={secondaryButtonClass}>
+            <Button
+              type="button"
+              variant="light"
+              onClick={handleSignOut}
+              className="hidden md:inline-flex"
+            >
               Sign Out
             </Button>
-          ) : (
-            <Button as={Link} to="/auth" variant="secondary" className={secondaryButtonClass}>
-              Sign In
-            </Button>
-          )}
+          ) : null}
 
           {shouldShowConsult ? (
-            <Button type="button" onClick={handleConsultNavigate} className="hidden md:inline-flex">
-              Book Consult
+            <Button
+              type="button"
+              variant="light"
+              onClick={handleConsultNavigate}
+              className="hidden md:inline-flex"
+            >
+              Book Now
             </Button>
           ) : null}
+
           {shouldShowConsult ? (
             <button
               type="button"
               onClick={handleConsultNavigate}
-              className={calendarButtonClass}
-              aria-label="Book consultation"
+              className={iconButtonClass}
+              aria-label="Book appointment"
             >
               <IconCalendar className="h-5 w-5" />
             </button>
@@ -158,7 +168,7 @@ export default function Header() {
           <button
             type="button"
             onClick={handleToggleMenu}
-            className={menuButtonClass}
+            className={iconButtonClass}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
@@ -180,10 +190,10 @@ export default function Header() {
       {menuOpen ? (
         <div
           id="mobile-navigation"
-          className="border-t border-gray-200 bg-white px-6 py-4 text-xs uppercase tracking-[0.3em] dark:border-gray-800 dark:bg-black md:hidden"
+          className="border-t border-[#3a5030] bg-[#243020] px-6 py-4 text-xs uppercase tracking-[0.3em] md:hidden"
           ref={menuPanelRef}
         >
-          <nav className="flex flex-col gap-3">
+          <nav className="flex flex-col gap-4">
             {navItems.map((item) => (
               <NavItem key={item.label} item={item} onNavigate={closeMenu} />
             ))}
@@ -191,23 +201,19 @@ export default function Header() {
               <button
                 type="button"
                 onClick={handleConsultNavigate}
-                className="text-gray-600 transition-colors hover:text-black focus:outline-none focus-visible:underline dark:text-gray-300 dark:hover:text-gray-100"
+                className="text-left text-[#c8af8f] transition-colors hover:text-[#f3e7d9] focus:outline-none focus-visible:underline"
               >
-                Book Consult
+                Book Now
               </button>
             ) : null}
           </nav>
-          <div className="mt-4 flex flex-col gap-2">
-            {isAuthenticated ? (
-              <Button type="button" variant="secondary" onClick={handleSignOut}>
+          {isAuthenticated ? (
+            <div className="mt-4">
+              <Button type="button" variant="light" onClick={handleSignOut}>
                 Sign Out
               </Button>
-            ) : (
-              <Button as={Link} to="/auth" variant="secondary" onClick={closeMenu}>
-                Sign In
-              </Button>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </header>

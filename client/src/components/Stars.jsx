@@ -8,7 +8,7 @@ export default function Stars({ rating = 5 }) {
       {Array.from({ length: MAX_RATING }, (_, index) => (
         <span
           key={index}
-          className={index < value ? 'text-black dark:text-gray-100' : 'text-gray-400 dark:text-gray-600'}
+          className={index < value ? 'text-black' : 'text-gray-400'}
           aria-hidden="true"
         >
           ★

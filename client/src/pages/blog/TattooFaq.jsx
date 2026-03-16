@@ -1,9 +1,9 @@
 export default function TattooFaq() {
   return (
-    <article className="space-y-10 text-base leading-relaxed text-gray-600 dark:text-gray-300">
+    <article className="space-y-10 text-base leading-relaxed text-gray-600">
       <header>
-        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">FAQ</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-50">
+        <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500">FAQ</p>
+        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
           Frequently Asked Questions
         </h1>
         <p className="mt-4 max-w-3xl">
@@ -34,7 +34,7 @@ export default function TattooFaq() {
       <footer>
         <p>
           Still curious about something? Email us at{' '}
-          <a className="font-medium text-black underline dark:text-gray-100" href="mailto:artem@blackworknyc.com">
+          <a className="font-medium text-black underline" href="mailto:artem@blackworknyc.com">
             artem@blackworknyc.com
           </a>{' '}
           and we will get back to you soon.
@@ -47,7 +47,7 @@ export default function TattooFaq() {
 function Question({ question, answer }) {
   return (
     <div className="space-y-2">
-      <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{question}</h2>
+      <h2 className="text-2xl font-semibold text-gray-900">{question}</h2>
       <p>{answer}</p>
     </div>
   );

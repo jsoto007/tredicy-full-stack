@@ -126,7 +126,7 @@ export default function ClientAppointmentsPage() {
         ? 'You don’t have any upcoming sessions yet.'
         : 'No past sessions yet. Once your first session is complete, it will appear here.';
       return (
-        <Card className="flex flex-col items-start gap-3 text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+        <Card className="flex flex-col items-start gap-3 text-xs uppercase tracking-[0.3em] text-gray-500">
           <p>{message}</p>
           <Button as={Link} to="/share-your-idea" variant="ghost">
             Book consult
@@ -140,25 +140,25 @@ export default function ClientAppointmentsPage() {
           return (
             <article
               key={appointment.id}
-              className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-950/70 dark:text-gray-200 sm:flex-row sm:items-center"
+              className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm sm:flex-row sm:items-center"
             >
               <div className="w-full sm:w-32">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500 dark:text-gray-400">{formatDate(appointment.scheduled_start)}</p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{formatTime(appointment.scheduled_start)}</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">{formatDate(appointment.scheduled_start)}</p>
+                <p className="text-lg font-semibold text-gray-900">{formatTime(appointment.scheduled_start)}</p>
               </div>
               <div className="flex-1 space-y-1">
-                <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+                <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500">
                   {getAppointmentTypeLabel(appointment)}
                 </p>
                 {appointment.assigned_admin ? (
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{appointment.assigned_admin.name}</p>
+                  <p className="text-sm font-semibold text-gray-900">{appointment.assigned_admin.name}</p>
                 ) : null}
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
                   <Badge className={getStatusBadgeClasses(appointment.status)}>
                     {formatStatusLabel(appointment.status)}
                   </Badge>
-                  {appointment.tattoo?.placement ? (
-                    <span className="text-gray-500 dark:text-gray-400">{appointment.tattoo.placement.replace(/_/g, ' ')}</span>
+                  {appointment.service?.name ? (
+                    <span className="text-gray-500">{appointment.service.name}</span>
                   ) : null}
                 </div>
               </div>
@@ -200,7 +200,7 @@ export default function ClientAppointmentsPage() {
     return (
       <main className="space-y-6">
         <SectionTitle eyebrow="Client portal" title="Appointments" description="We hit a snag." />
-        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600 dark:text-rose-300">{error}</Card>
+        <Card className="text-xs uppercase tracking-[0.3em] text-rose-600">{error}</Card>
         <Button as={Link} to="/auth" variant="secondary">
           Return to sign in
         </Button>
@@ -219,8 +219,8 @@ export default function ClientAppointmentsPage() {
       <Card className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">Appointments</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Manage your studio time with confidence.</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Appointments</p>
+            <p className="text-sm text-gray-500">Manage your studio time with confidence.</p>
           </div>
           <Button as={Link} to="/share-your-idea">
             Book consult
@@ -240,7 +240,7 @@ export default function ClientAppointmentsPage() {
         title={actionDialog ? formatDialogTitle(actionDialog.type) : 'Note'}
         footer={<Button onClick={() => setActionDialog(null)}>Close</Button>}
       >
-        <p className="text-sm text-gray-600 dark:text-gray-400">{buildActionMessage()}</p>
+        <p className="text-sm text-gray-600">{buildActionMessage()}</p>
       </Dialog>
 
       <Dialog
@@ -250,9 +250,9 @@ export default function ClientAppointmentsPage() {
         footer={<Button onClick={() => setSelectedAppointment(null)}>Close</Button>}
       >
         {selectedAppointment ? (
-          <div className="space-y-3 text-sm text-gray-700 dark:text-gray-200">
-            <p className="font-semibold text-gray-900 dark:text-gray-100">{formatDate(selectedAppointment.scheduled_start)} · {formatTime(selectedAppointment.scheduled_start)}</p>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-400">
+          <div className="space-y-3 text-sm text-gray-700">
+            <p className="font-semibold text-gray-900">{formatDate(selectedAppointment.scheduled_start)} · {formatTime(selectedAppointment.scheduled_start)}</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
               {getAppointmentTypeLabel(selectedAppointment)}
             </p>
             {selectedAppointment.assigned_admin ? (
@@ -264,7 +264,7 @@ export default function ClientAppointmentsPage() {
                         {formatStatusLabel(selectedAppointment.status)}
                       </span>
                     </p>
-            {selectedAppointment.tattoo?.notes ? <p>Notes: {selectedAppointment.tattoo.notes}</p> : null}
+            {selectedAppointment.service?.notes ? <p>Notes: {selectedAppointment.service.notes}</p> : null}
           </div>
         ) : null}
       </Dialog>

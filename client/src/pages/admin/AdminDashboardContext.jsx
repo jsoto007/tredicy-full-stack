@@ -360,12 +360,12 @@ export function AdminDashboardProvider({ children }) {
     async (payload) => {
       try {
         const response = await apiPost('/api/admin/pricing/session-options', payload);
-        showNotice({ tone: 'success', message: 'Session option created.' });
+        showNotice({ tone: 'success', message: 'Product created.' });
         markFetched('pricing');
         refreshHourlyRate().catch(() => {});
         return response;
       } catch (err) {
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to save session option.') });
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to save product.') });
         throw err;
       }
     },
@@ -376,12 +376,12 @@ export function AdminDashboardProvider({ children }) {
     async (sessionOptionId, payload) => {
       try {
         const response = await apiPatch(`/api/admin/pricing/session-options/${sessionOptionId}`, payload);
-        showNotice({ tone: 'success', message: 'Session option updated.' });
+        showNotice({ tone: 'success', message: 'Product updated.' });
         markFetched('pricing');
         refreshHourlyRate().catch(() => {});
         return response;
       } catch (err) {
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update session option.') });
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update product.') });
         throw err;
       }
     },
@@ -392,12 +392,12 @@ export function AdminDashboardProvider({ children }) {
     async (sessionOptionId) => {
       try {
         const response = await apiDelete(`/api/admin/pricing/session-options/${sessionOptionId}`);
-        showNotice({ tone: 'success', message: 'Session option removed.' });
+        showNotice({ tone: 'success', message: 'Product removed.' });
         markFetched('pricing');
         refreshHourlyRate().catch(() => {});
         return response;
       } catch (err) {
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to remove session option.') });
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to remove product.') });
         throw err;
       }
     },
