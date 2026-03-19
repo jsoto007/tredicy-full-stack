@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { apiGet } from '../lib/api.js';
 
 const WEEKDAY_ORDER = [
@@ -24,8 +25,6 @@ const TIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit'
 });
-
-const DEFAULT_DESCRIPTION = `Melodi Nails works by appointment so each manicure, pedicure, or acrylic service has enough time for proper prep, detail work, and a polished finish.`;
 
 function formatTimeValue(value) {
   if (!value) {
@@ -122,9 +121,35 @@ function buildSummary(hours) {
 }
 
 export default function StudioHours() {
+  const { isSpanish } = useLanguage();
   const [hours, setHours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const copy = isSpanish
+    ? {
+        eyebrow: 'Horario',
+        title: 'Disponibilidad de citas',
+        description:
+          'La disponibilidad se actualiza en tiempo real segun la duracion del servicio para que cada reserva tenga el tiempo correcto.',
+        cta: 'Reservar cita',
+        loading: 'Cargando horario del salon...',
+        fallback: 'Actualmente no aceptamos visitas sin cita.',
+        defaultDescription:
+          'Melodi Nails trabaja con cita previa para que cada manicure, pedicure o servicio de acrilico tenga el tiempo necesario para una buena preparacion, detalle y acabado pulido.',
+        error: 'No se pudo cargar el horario del salon en este momento.',
+      }
+    : {
+        eyebrow: 'Hours',
+        title: 'Appointment availability',
+        description:
+          'Availability updates in real-time based on service duration, so each booking has the right amount of time.',
+        cta: 'Book Appointment',
+        loading: 'Loading studio hours...',
+        fallback: 'Currently not accepting walk-ins.',
+        defaultDescription:
+          'Melodi Nails works by appointment so each manicure, pedicure, or acrylic service has enough time for proper prep, detail work, and a polished finish.',
+        error: 'Unable to load studio hours right now.',
+      };
 
   useEffect(() => {
     let isMounted = true;
@@ -143,7 +168,7 @@ export default function StudioHours() {
         if (!isMounted) {
           return;
         }
-        setError('Unable to load studio hours right now.');
+        setError(copy.error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -157,7 +182,7 @@ export default function StudioHours() {
       isMounted = false;
       controller.abort();
     };
-  }, []);
+  }, [copy.error]);
 
   const summaryRows = useMemo(() => buildSummary(hours), [hours]);
   const showFallback = !summaryRows.length && !loading && !error;
@@ -167,9 +192,9 @@ export default function StudioHours() {
       <FadeIn className="mx-auto flex w-full max-w-5xl justify-center px-6 py-16" delayStep={0.18}>
         <Card className="space-y-6 border border-[#dbc9b4]/60 bg-[#fffdf9]/95 px-8 py-10 shadow-[0_20px_60px_rgba(42,57,35,0.10)]">
           <SectionTitle
-            eyebrow="Hours"
-            title="Appointment availability"
-            description="Availability updates in real-time based on service duration, so each booking has the right amount of time."
+            eyebrow={copy.eyebrow}
+            title={copy.title}
+            description={copy.description}
             align="center"
           />
           <div className="flex justify-center">
@@ -177,20 +202,20 @@ export default function StudioHours() {
               to="/appointments/new"
               className="inline-flex items-center gap-2 rounded-full border border-[#2a3923] px-6 py-2 text-sm font-medium text-[#2a3923] transition hover:bg-[#f3e7d9]"
             >
-              Book Appointment <span className="text-lg">→</span>
+              {copy.cta} <span className="text-lg">→</span>
             </Link>
           </div>
           <div className="space-y-4 text-center">
             {loading ? (
-              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">Loading studio hours…</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">{copy.loading}</p>
             ) : error ? (
               <p className="text-sm uppercase tracking-[0.3em] text-rose-500">{error}</p>
             ) : showFallback ? (
-              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">Currently not accepting walk-ins.</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-[#6f7863]">{copy.fallback}</p>
             ) : null}
           </div>
           <p className="mx-auto mt-2 max-w-xl border-t border-[#dbc9b4]/60 pt-6 text-center text-sm leading-relaxed text-[#5e6755] md:text-base">
-            {DEFAULT_DESCRIPTION}
+            {copy.defaultDescription}
           </p>
         </Card>
       </FadeIn>

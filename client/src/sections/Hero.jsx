@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import Button from '../components/Button.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import melodiShowingNails from '../assets/melodi/melodiShowingNails.JPG';
 import greenNails from '../assets/melodi/greenNails.jpg';
 import whiteNails from '../assets/melodi/whiteNails.jpg';
@@ -35,6 +36,24 @@ const MOBILE_IMAGES = [
 
 export default function Hero() {
   const navigate = useNavigate();
+  const { isSpanish } = useLanguage();
+  const copy = isSpanish
+    ? {
+        eyebrow: 'Salon de unas en Bronx, Nueva York',
+        address: '1205 College Ave, Bronx, NY 10456',
+        description:
+          'Hola, soy Melodi Mejia. Bienvenida a un salon de unas en el Bronx enfocado en preparacion saludable, estructura limpia y acabados duraderos. Reserva tu manicure, pedicure, set de acrilico o nail art en linea en minutos.',
+        primaryCta: 'Reserva Ahora',
+        secondaryCta: 'Ver Servicios',
+      }
+    : {
+        eyebrow: 'Nail salon in Bronx, New York',
+        address: '1205 College Ave, Bronx, NY 10456',
+        description:
+          'Hi, I am Melodi Mejia. Welcome to a Bronx nail salon focused on healthy prep, clean structure, and long-lasting finishes. Book your manicure, pedicure, acrylic set, or custom nail art online in minutes.',
+        primaryCta: 'Book Now',
+        secondaryCta: 'View Menu',
+      };
 
   return (
     <section id="hero" className="relative isolate overflow-hidden bg-[#ECE7E2] py-16 text-[#23301d] sm:py-24">
@@ -82,22 +101,18 @@ export default function Hero() {
       >
         {/* Left: text + CTA */}
         <div className="max-w-xl space-y-7 lg:pt-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#6f7863]">Nail salon in Bronx, New York</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#6f7863]">{copy.eyebrow}</p>
           <h1 className="text-5xl leading-none text-[#2A3923] sm:text-6xl">Melodi Nails</h1>
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#6f7863]">
-            1205 College Ave, Bronx, NY 10456
+            {copy.address}
           </p>
-          <p className="max-w-lg text-base leading-8 text-[#5e6755]">
-            Hola, soy Melodi Mejia. Welcome to a Bronx nail salon focused on healthy prep, clean structure,
-            and long-lasting finishes. Book your manicure, pedicure, acrylic set, or custom nail art online
-            and secure your appointment in minutes.
-          </p>
+          <p className="max-w-lg text-base leading-8 text-[#5e6755]">{copy.description}</p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Button type="button" onClick={() => navigate('/appointments/new')}>
-              Reserva Ahora
+              {copy.primaryCta}
             </Button>
             <Button as="a" href="#services" variant="secondary">
-              View Menu
+              {copy.secondaryCta}
             </Button>
           </div>
         </div>

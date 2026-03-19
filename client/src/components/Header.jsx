@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import Button from './Button.jsx';
-import { ADMIN_NAV_ITEMS, DEFAULT_NAV_ITEMS, USER_NAV_ITEMS } from '../data/navigation.js';
 import melodiLogo from '../assets/melodi/MNLogo.png';
 
 function IconCalendar(props) {
@@ -49,20 +49,74 @@ function NavItem({ item, onNavigate }) {
 
 export default function Header() {
   const { isAuthenticated, isAdmin, isUser, logout } = useAuth();
+  const { isSpanish } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuPanelRef = useRef(null);
   const toggleButtonRef = useRef(null);
   const navigate = useNavigate();
 
   const navItems = useMemo(() => {
+    const labels = isSpanish
+      ? {
+          gallery: 'Galeria',
+          menu: 'Servicios',
+          about: 'Sobre Mi',
+          contact: 'Contacto',
+          dashboard: 'Panel',
+          appointments: 'Citas',
+          profile: 'Perfil',
+          settings: 'Ajustes',
+          calendar: 'Calendario',
+        }
+      : {
+          gallery: 'Gallery',
+          menu: 'Menu',
+          about: 'About',
+          contact: 'Contact',
+          dashboard: 'Dashboard',
+          appointments: 'Appointments',
+          profile: 'Profile',
+          settings: 'Settings',
+          calendar: 'Calendar',
+        };
+
     if (isAdmin) {
-      return ADMIN_NAV_ITEMS;
+      return [
+        { label: labels.settings, to: '/dashboard/admin/settings', type: 'link' },
+        { label: labels.calendar, to: '/dashboard/admin/calendar', type: 'link' },
+        { label: labels.gallery, to: '/dashboard/admin/gallery', type: 'link' },
+      ];
     }
     if (isUser) {
-      return USER_NAV_ITEMS;
+      return [
+        { label: labels.dashboard, to: '/portal/dashboard', type: 'link', end: true },
+        { label: labels.appointments, to: '/portal/appointments', type: 'link' },
+        { label: labels.profile, to: '/portal/profile', type: 'link' },
+      ];
     }
-    return DEFAULT_NAV_ITEMS;
-  }, [isAdmin, isUser]);
+    return [
+      { label: labels.gallery, to: '/#work', type: 'link' },
+      { label: labels.menu, to: '/#services', type: 'link' },
+      { label: labels.about, to: '/#about', type: 'link' },
+      { label: labels.contact, to: '/#contact', type: 'link' },
+    ];
+  }, [isAdmin, isSpanish, isUser]);
+
+  const copy = isSpanish
+    ? {
+        bookNow: 'Reservar',
+        signOut: 'Salir',
+        bookAppointment: 'Reservar cita',
+        closeMenu: 'Cerrar menu',
+        openMenu: 'Abrir menu',
+      }
+      : {
+        bookNow: 'Book Now',
+        signOut: 'Sign Out',
+        bookAppointment: 'Book appointment',
+        closeMenu: 'Close menu',
+        openMenu: 'Open menu',
+      };
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -140,7 +194,7 @@ export default function Header() {
               onClick={handleSignOut}
               className="hidden md:inline-flex"
             >
-              Sign Out
+              {copy.signOut}
             </Button>
           ) : null}
 
@@ -151,7 +205,7 @@ export default function Header() {
               onClick={handleConsultNavigate}
               className="hidden md:inline-flex"
             >
-              Book Now
+              {copy.bookNow}
             </Button>
           ) : null}
 
@@ -160,7 +214,7 @@ export default function Header() {
               type="button"
               onClick={handleConsultNavigate}
               className={iconButtonClass}
-              aria-label="Book appointment"
+              aria-label={copy.bookAppointment}
             >
               <IconCalendar className="h-5 w-5" />
             </button>
@@ -170,7 +224,7 @@ export default function Header() {
             type="button"
             onClick={handleToggleMenu}
             className={iconButtonClass}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-label={menuOpen ? copy.closeMenu : copy.openMenu}
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
             ref={toggleButtonRef}
@@ -204,14 +258,14 @@ export default function Header() {
                 onClick={handleConsultNavigate}
                 className="text-left text-[#c8af8f] transition-colors hover:text-[#f3e7d9] focus:outline-none focus-visible:underline"
               >
-                Book Now
+                {copy.bookNow}
               </button>
             ) : null}
           </nav>
           {isAuthenticated ? (
             <div className="mt-4">
               <Button type="button" variant="light" onClick={handleSignOut}>
-                Sign Out
+                {copy.signOut}
               </Button>
             </div>
           ) : null}

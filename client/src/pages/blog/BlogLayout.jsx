@@ -1,21 +1,29 @@
 import { NavLink, Outlet } from 'react-router-dom';
-
-const POSTS = [
-  { slug: 'aftercare', title: 'Nail Aftercare Guide' },
-  { slug: 'faq', title: 'Nail Salon FAQ' },
-  { slug: 'custom-fine-line', title: 'How a Signature Nail Set Comes Together' }
-];
+import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
 export default function BlogLayout() {
+  const { isSpanish } = useLanguage();
+  const posts = isSpanish
+    ? [
+        { slug: 'aftercare', title: 'Guia de Cuidado de Unas' },
+        { slug: 'faq', title: 'Preguntas Frecuentes' },
+        { slug: 'custom-fine-line', title: 'Como se crea un set exclusivo' },
+      ]
+    : [
+        { slug: 'aftercare', title: 'Nail Aftercare Guide' },
+        { slug: 'faq', title: 'Nail Salon FAQ' },
+        { slug: 'custom-fine-line', title: 'How a Signature Nail Set Comes Together' },
+      ];
+
   return (
     <main className="bg-gray-50 text-gray-900">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-12 px-6 py-16 lg:flex-row">
         <aside className="lg:w-72">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
-            Blog
+            {isSpanish ? 'Blog' : 'Blog'}
           </p>
           <nav className="mt-6 space-y-3">
-            {POSTS.map((post) => (
+            {posts.map((post) => (
               <NavLink
                 key={post.slug}
                 to={post.slug}

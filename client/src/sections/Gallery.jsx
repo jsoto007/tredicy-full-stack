@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import greenNails from '../assets/melodi/greenNails.jpg';
 import whiteNails from '../assets/melodi/whiteNails.jpg';
 import fullSet from '../assets/melodi/fullSet.jpg';
@@ -20,7 +21,7 @@ const galleryImages = [
   { src: gelPedicure, alt: 'Gel pedicure result' },
 ];
 
-function GalleryLightbox({ index, images, onClose }) {
+function GalleryLightbox({ index, images, onClose, copy }) {
   const [activeIndex, setActiveIndex] = useState(index);
   const swipeStart = useRef(null);
   const dialogRef = useRef(null);
@@ -82,7 +83,7 @@ function GalleryLightbox({ index, images, onClose }) {
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/80 transition hover:border-white/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          aria-label="Close"
+          aria-label={copy.close}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -104,14 +105,14 @@ function GalleryLightbox({ index, images, onClose }) {
             target="_blank"
             rel="noreferrer"
             aria-label="View more on Instagram"
-            className="flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-300 backdrop-blur transition hover:border-white/50 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+          className="flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-300 backdrop-blur transition hover:border-white/50 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="5" />
               <circle cx="12" cy="12" r="4" />
               <circle cx="17" cy="7" r="1.25" />
             </svg>
-            View more on Instagram
+            {copy.viewMore}
           </a>
         </div>
 
@@ -120,7 +121,7 @@ function GalleryLightbox({ index, images, onClose }) {
           type="button"
           onClick={prev}
           className="absolute left-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition hover:border-white/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          aria-label="Previous image"
+          aria-label={copy.previous}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -132,7 +133,7 @@ function GalleryLightbox({ index, images, onClose }) {
           type="button"
           onClick={next}
           className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition hover:border-white/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-          aria-label="Next image"
+          aria-label={copy.next}
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -144,15 +145,37 @@ function GalleryLightbox({ index, images, onClose }) {
 }
 
 export default function Gallery() {
+  const { isSpanish } = useLanguage();
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const copy = isSpanish
+    ? {
+        eyebrow: 'Galeria',
+        title: 'Una mirada mas cercana a Melodi Nails',
+        description: 'Imagenes detalladas del salon. Toca cualquier foto para ampliarla.',
+        viewMore: 'Ver mas en Instagram',
+        viewMorePhotos: 'Ver mas fotos de unas en Instagram',
+        close: 'Cerrar',
+        previous: 'Imagen anterior',
+        next: 'Imagen siguiente',
+      }
+    : {
+        eyebrow: 'Gallery',
+        title: 'A closer look at Melodi Nails',
+        description: 'Close-up nail imagery from the studio. Tap any photo to expand.',
+        viewMore: 'View more on Instagram',
+        viewMorePhotos: 'View more nail photos on Instagram',
+        close: 'Close',
+        previous: 'Previous image',
+        next: 'Next image',
+      };
 
   return (
     <section id="work" className="bg-[#fffaf5] py-16 text-[#23301d]">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
         <SectionTitle
-          eyebrow="Gallery"
-          title="A closer look at Melodi Nails"
-          description="Close-up nail imagery from the studio — tap any photo to expand."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.description}
         />
 
         {/* Mobile: 2-column staggered grid — matches hero style */}
@@ -201,7 +224,7 @@ export default function Gallery() {
             href={INSTAGRAM_URL}
             target="_blank"
             rel="noreferrer"
-            aria-label="View more nail photos on Instagram"
+            aria-label={copy.viewMorePhotos}
             className="inline-flex items-center gap-3 rounded-full border border-[#c8af8f] bg-transparent px-7 py-3 text-xs font-semibold uppercase tracking-[0.3em] text-[#6f7863] transition hover:bg-[#f3e7d9] hover:text-[#2a3923] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#6f7863] focus-visible:ring-offset-2"
           >
             <svg
@@ -217,7 +240,7 @@ export default function Gallery() {
               <circle cx="12" cy="12" r="4" />
               <circle cx="17" cy="7" r="1.25" />
             </svg>
-            View more on Instagram
+            {copy.viewMore}
           </a>
         </div>
       </div>
@@ -226,6 +249,7 @@ export default function Gallery() {
         <GalleryLightbox
           index={lightboxIndex}
           images={galleryImages}
+          copy={copy}
           onClose={() => setLightboxIndex(null)}
         />
       )}

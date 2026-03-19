@@ -3,10 +3,25 @@ import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import Stars from '../components/Stars.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import localTestimonials from '../data/testimonials.json';
 
 export default function Testimonials() {
+  const { isSpanish } = useLanguage();
   const entries = localTestimonials;
+  const copy = isSpanish
+    ? {
+        eyebrow: 'Testimonios',
+        title: 'Clientas felices',
+        description:
+          'Algunas notas breves de clientas que visitan Melodi Nails por sus acabados hermosos, reservas organizadas y una experiencia tranquila de principio a fin.',
+      }
+    : {
+        eyebrow: 'Testimonials',
+        title: 'Clients leave glowing',
+        description:
+          'A few quick notes from clients who come to Melodi Nails for beautiful finishes, organized booking, and an experience that feels calm from start to finish.',
+      };
 
   const filteredEntries = useMemo(
     () => entries.filter((entry) => Number(entry.rating) === 5),
@@ -37,9 +52,9 @@ export default function Testimonials() {
     <section id="testimonials" className="bg-[#fffaf5] py-16 text-[#23301d]">
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
         <SectionTitle
-          eyebrow="Testimonials"
-          title="Clients leave glowing"
-          description="A few quick notes from clients who come to Melodi Nails for beautiful finishes, organized booking, and an experience that feels calm from start to finish."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.description}
         />
         <FadeIn key={entriesKey} className="grid gap-8 md:grid-cols-3" childClassName="h-full" delayStep={0.12}>
           {displayedEntries.map((entry) => (

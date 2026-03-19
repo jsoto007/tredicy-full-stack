@@ -2,15 +2,34 @@ import FadeIn from '../components/FadeIn.jsx';
 import Badge from '../components/Badge.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import artistPhoto from '../assets/melodi/melodiShowingNails.JPG';
 
-const credentials = [
-  'Natural nail care focus',
-  'Detailed prep and structure',
-  'Guest-friendly online booking',
-];
-
 export default function About() {
+  const { isSpanish } = useLanguage();
+  const credentials = isSpanish
+    ? ['Enfoque en unas naturales', 'Preparacion y estructura detalladas', 'Reservas en linea sencillas']
+    : ['Natural nail care focus', 'Detailed prep and structure', 'Guest-friendly online booking'];
+  const copy = isSpanish
+    ? {
+        section: 'Sobre Mi',
+        title: 'El arte de tus unas',
+        description:
+          'Melodi Nails esta creado alrededor de acabados hermosos, preparacion saludable y una experiencia de cita acogedora. El objetivo es simple: que cada clienta salga con unas pulidas, intencionales y unicas.',
+        badgeOne: 'Belleza limpia',
+        badgeTwo: 'Servicio personalizado',
+        imageAlt: 'Melodi mostrando un set de unas terminado',
+      }
+    : {
+        section: 'About',
+        title: 'The art of your nails',
+        description:
+          'Melodi Nails is built around beautiful finishes, healthy prep, and a welcoming appointment experience. The goal is simple: help every client leave with nails that feel polished, intentional, and uniquely theirs.',
+        badgeOne: 'Clean beauty',
+        badgeTwo: 'Personalized service',
+        imageAlt: 'Melodi showing a finished nail set',
+      };
+
   return (
     <section
       id="about"
@@ -25,23 +44,23 @@ export default function About() {
           <div className="group inline-flex items-center gap-4">
             <span className="relative inline-flex items-center text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-500">
               <span className="absolute -left-14 h-[2px] w-0 rounded-full bg-[#8d755a] transition-all duration-500 group-hover:w-10" />
-              About
+              {copy.section}
             </span>
             <span className="h-[2px] w-10 rounded-full bg-[#8d755a]" />
           </div>
 
           <SectionTitle
             eyebrow={null}
-            title="El arte de tus unas"
-            description="Melodi Nails is built around beautiful finishes, healthy prep, and a welcoming appointment experience. The goal is simple: help every client leave with nails that feel polished, intentional, and uniquely theirs."
+            title={copy.title}
+            description={copy.description}
           />
 
           <div className="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700">
             <Badge className="bg-[#f3e7d9] text-[#2a3923] ring-1 ring-[#dbc9b4]">
-              Clean beauty
+              {copy.badgeOne}
             </Badge>
             <Badge className="bg-[#f3e7d9] text-[#2a3923] ring-1 ring-[#dbc9b4]">
-              Personalized service
+              {copy.badgeTwo}
             </Badge>
           </div>
         </div>
@@ -52,7 +71,7 @@ export default function About() {
             <div className="relative overflow-hidden rounded-xl shadow-lg">
               <img
                 src={artistPhoto}
-                alt="Melodi showing a finished nail set"
+                alt={copy.imageAlt}
                 loading="lazy"
                 className="h-full w-full rounded-xl object-cover transition duration-700 ease-out hover:scale-105"
               />

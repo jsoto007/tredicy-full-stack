@@ -3,6 +3,7 @@ import FadeIn from '../components/FadeIn.jsx';
 import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import staticServices from '../data/services.json';
+import { useLanguage } from '../contexts/LanguageContext.jsx';
 import { apiGet } from '../lib/api.js';
 
 const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
@@ -28,6 +29,7 @@ const DESCRIPTION_MAP = Object.fromEntries(
 );
 
 export default function Services() {
+  const { isSpanish } = useLanguage();
   const [sessionOptions, setSessionOptions] = useState([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -62,16 +64,85 @@ export default function Services() {
     });
   }, [loaded, sessionOptions]);
 
+  const localizedServices = useMemo(
+    () =>
+      displayServices.map((service) => {
+        if (!isSpanish) {
+          return service;
+        }
+        const translations = {
+          'Russian Manicure': {
+            title: 'Manicure Ruso',
+            tagline: 'Acabado limpio',
+            description:
+              'Manicure en seco enfocado en cuticula detallada, refinamiento de la piel, esmalte en gel y calcio gel para un acabado natural y pulido.',
+            duration: 'Aprox. 60-90 minutos',
+          },
+          'Gel Pedicure': {
+            title: 'Pedicure en Gel',
+            tagline: 'Cuidado suave',
+            description:
+              'Limpieza de unas y pies, exfoliacion, hidratacion y color en gel semipermanente de larga duracion en el tono que prefieras.',
+            duration: 'Aprox. 60 minutos',
+          },
+          'Color Acrylic Set': {
+            title: 'Set Acrilico de Color',
+            tagline: 'Color intenso',
+            description:
+              'Set completo de acrilico en el color de tu eleccion para unas duraderas y llamativas adaptadas al largo y forma que prefieras.',
+            duration: 'Aprox. 90-120 minutos',
+          },
+          'Baby Boomer': {
+            title: 'Baby Boomer',
+            tagline: 'Difuminado suave',
+            description:
+              'Difuminado en acrilico entre dos tonos para un look suave, elegante y siempre listo para foto.',
+            duration: 'Aprox. 90-120 minutos',
+          },
+          'Perfect French': {
+            title: 'Frances Perfecto',
+            tagline: 'Detalle distintivo',
+            description:
+              'Acabado frances preciso sobre una base acrilica estructurada, ideal para quien busca lineas limpias y un set atemporal.',
+            duration: 'Aprox. 90-120 minutos',
+          },
+          'Paraffin Treatment': {
+            title: 'Tratamiento de Parafina',
+            tagline: 'Hidratacion extra',
+            description:
+              'Tratamiento tibio de parafina para manos o pies que aporta hidratacion, comodidad y sensacion de alivio como complemento de tu visita.',
+            duration: 'Aprox. 15 minutos',
+          },
+        };
+        return { ...service, ...(translations[service.title] || {}) };
+      }),
+    [displayServices, isSpanish]
+  );
+
+  const copy = isSpanish
+    ? {
+        eyebrow: 'Servicios',
+        title: 'Servicios que ofrecemos',
+        description:
+          'Este menu destaca citas exclusivas enfocadas en estructura, detalle y belleza duradera.',
+      }
+    : {
+        eyebrow: 'Menu',
+        title: 'Services we offer',
+        description:
+          'This menu highlights signature appointments focused on structure, detail, and long-lasting beauty.',
+      };
+
   return (
     <section id="services" className="bg-[#ECE7E2] py-16 text-[#23301d]">
       <FadeIn className="mx-auto flex max-w-6xl flex-col gap-12 px-6" delayStep={0.16}>
         <SectionTitle
-          eyebrow="Menu"
-          title="Servicios que ofrecemos"
-          description="Inspired by the original Melodi Nails site, this menu highlights signature appointments focused on structure, detail, and long-lasting beauty."
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          description={copy.description}
         />
         <FadeIn className="grid gap-8 md:grid-cols-2 xl:grid-cols-3" childClassName="h-full" delayStep={0.12}>
-          {displayServices.map((service) => (
+          {localizedServices.map((service) => (
             <Card key={service.id} className="h-full space-y-4 bg-[#fffaf5]/95">
               <p className="text-xs uppercase tracking-[0.3em] text-[#6f7863]">{service.tagline}</p>
               <div className="flex items-start justify-between gap-3">
