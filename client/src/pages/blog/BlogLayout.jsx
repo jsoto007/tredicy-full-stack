@@ -1,9 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 
 const POSTS = [
-  { slug: 'aftercare', title: 'Tattoo Aftercare Guide' },
-  { slug: 'faq', title: 'Frequently Asked Questions' },
-  { slug: 'custom-fine-line', title: 'Behind the Needle: Custom Fine Line Tattoo' }
+  { slug: 'aftercare', title: 'Nail Aftercare Guide' },
+  { slug: 'faq', title: 'Nail Salon FAQ' },
+  { slug: 'custom-fine-line', title: 'How a Signature Nail Set Comes Together' }
 ];
 
 export default function BlogLayout() {

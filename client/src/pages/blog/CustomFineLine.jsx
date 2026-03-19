@@ -3,72 +3,72 @@ export default function CustomFineLine() {
     <article className="space-y-10 text-base leading-relaxed text-gray-600">
       <header>
         <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500">
-          Behind the needle
+          Behind the set
         </p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
-          Behind the Needle: How a Custom Fine Line Tattoo Comes to Life at BlackworkNYC
+          How a Signature Nail Set Comes to Life at Melodi Nails
         </h1>
         <p className="mt-4 text-base text-gray-600">
-          A custom fine line tattoo at BlackworkNYC is much more than just an appointment—it&rsquo;s a full-fledged
-          artistic process rooted in careful collaboration, technical mastery, and a deep respect for each client&rsquo;s
-          personal vision.
+          A signature nail set is more than polish and color. At Melodi Nails, the process is built around prep,
+          structure, shaping, and finish so the final look feels intentional, flattering, and wearable beyond the day
+          of the appointment.
         </p>
       </header>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900">Consultation and Creative Vision</h2>
         <p>
-          Every tattoo at BlackworkNYC begins with a personalized consultation. Clients are encouraged to share their
-          stories, inspirations, and reference images so that the artist can grasp the unique concept behind each
-          request. This open dialogue ensures that every design is genuinely meaningful and tailored to individual
-          preferences. Prospective clients can easily start their journey by contacting the studio through the provided
-          email, phone, or scheduling link, keeping the booking process simple and communications clear.
+          Every set starts with a conversation about shape, color, finish, length, and lifestyle. Some clients want a
+          clean everyday manicure, while others want something bolder, longer, or more design-driven. Inspiration
+          images help, but the goal is always to adapt the look to the client instead of copying blindly.
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900">Design Planning and Preparation</h2>
         <p>
-          Once the idea is solidified, the artist brings it to life through a bespoke design phase. This often includes
-          sketching several drafts and refining every detail for both aesthetics and practicality on the skin. Fine line
-          tattoos require especially careful planning; achieving crisp, delicate lines demands meticulous draftsmanship
-          and anatomical consideration to match the client&rsquo;s body and vision.
+          Strong results start with prep. That includes cuticle care, shaping, refining the nail surface, and selecting
+          the right service for the client&rsquo;s goal, whether that means a natural manicure, gel overlay, or full acrylic
+          structure. Good prep is what makes the finished nails look cleaner and wear better.
         </p>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">The Technical Process: Precision and Technique</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">Precision Application and Finishing</h2>
         <p>
-          The inking process at BlackworkNYC is a study in precision. Artists use specialized fine liners—often single
-          needles or micro groupings—to create ultra-clean lines and achieve the signature delicacy of the style. The
-          artist maintains a gentle touch and a steady hand, working slowly to ensure every line stays crisp and every
-          detail is flawlessly executed. Setup involves skin preparation, careful placement of the stencil, and a keen
-          focus throughout the session to produce impeccable results.
+          Once the base is ready, the application stage is about symmetry, structure, and clean finishing. Product is
+          placed with attention to balance and durability, then refined through filing, smoothing, and top-coat work so
+          the set looks polished from every angle.
+        </p>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold text-gray-900">Detail Work and Nail Art</h2>
+        <p>
+          If the set includes French tips, chrome, gems, line work, or custom nail art, those details come after the
+          structure is clean. The best designs still depend on a strong foundation. Nail art looks better when the base
+          shape, cuticle area, and finish are already precise.
         </p>
       </section>
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900">Aftercare and Longevity</h2>
         <p>
-          Proper aftercare is essential for maintaining the clarity and longevity of a fine line tattoo. BlackworkNYC
-          artists provide clients with thorough guidance on healing: the tattoo is covered for the first 24 hours,
-          gently washed in the following days, and meticulously moisturized to preserve detail and minimize fading. Clients
-          are advised to avoid sun, swimming, and excessive sweating during initial healing to ensure the best possible
-          outcome.
+          Longevity does not come from product alone. It also depends on aftercare, daily habits, and how consistently
+          maintenance is scheduled. Cuticle oil, gloves for chores, and timely fills can help keep the service looking
+          polished while reducing unnecessary lifting or breakage.
         </p>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">A Lasting Work of Art</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">A Personalized Salon Experience</h2>
         <p>
-          BlackworkNYC&rsquo;s approach is rooted in artistic integrity, technical excellence, and a genuine desire to create
-          tattoos that evolve into cherished, lifelong marks. The artist&rsquo;s background in microrealism and architectural
-          design shines through in every custom piece, turning each commission into a personalized piece of wearable art
-          that tells a unique story.
+          Melodi Nails is built around detail, care, and consistency. The goal is not just a beautiful result on the
+          day of the appointment, but a set that fits the client&rsquo;s style, routine, and maintenance preferences.
         </p>
         <p>
-          For anyone considering a custom fine line tattoo, BlackworkNYC offers not just a service, but a true
-          collaboration—one where vision, technique, and attentiveness seamlessly come together to bring ideas to life.
+          For clients looking for a nail salon in the Bronx, that means a service that feels personal, a process that
+          is never rushed, and finished nails that hold up beautifully between visits.
         </p>
       </section>
     </article>

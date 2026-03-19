@@ -4,38 +4,46 @@ export default function TattooFaq() {
       <header>
         <p className="tracking-[0.3em] text-xs font-semibold uppercase text-gray-500">FAQ</p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
-          Frequently Asked Questions
+          Nail Salon Frequently Asked Questions
         </h1>
         <p className="mt-4 max-w-3xl">
-          Thinking about your next tattoo or caring for a fresh piece? These are the questions we hear the most in the
-          studio. If you do not see your question answered here, send us a note&mdash;we are always happy to help.
+          These are some of the questions clients ask most often before booking with Melodi Nails. They cover timing,
+          prep, maintenance, and what to expect when visiting the studio.
         </p>
       </header>
 
       <section className="space-y-6">
         <Question
-          question="How long does a tattoo take to heal?"
-          answer="Every body heals at its own pace, but most tattoos look settled within 2–3 weeks. During that time the skin will go through stages of redness, tenderness, flaking, and light peeling. Keep the area clean, moisturized, and out of direct sunlight to support a smooth recovery."
+          question="How long will my nail service last?"
+          answer="That depends on the service and your lifestyle. Natural manicures, gel polish, and acrylic sets all wear differently, but many clients return within two to three weeks to keep everything looking clean and balanced."
         />
         <Question
-          question="When should I schedule a touch-up?"
-          answer="If you notice any patchy areas or fading spots once the tattoo has fully healed, reach out so we can evaluate it together. Touch-ups are usually scheduled after the 8-week mark to ensure your skin is ready for more ink."
+          question="When should I book a fill, refresh, or repair?"
+          answer="If you wear acrylics or structured sets, do not wait until multiple nails are lifting or breaking. Booking maintenance before the set becomes unstable usually gives you a cleaner result and helps protect the natural nail underneath."
         />
         <Question
-          question="What can I do to minimize pain or irritation?"
-          answer="Arrive well-rested, hydrated, and after a full meal. Avoid alcohol, aspirin, and blood thinners the day before and day of your appointment. During the session, focus on slow breathing and let us know if you need breaks—we will pace the session around you."
+          question="What should I do before my appointment?"
+          answer="Bring inspiration photos if you have a specific look in mind, and mention soak-off, removals, repairs, or detailed nail art when booking. That helps make sure enough time is reserved for your appointment."
         />
         <Question
-          question="How should I prepare before my tattoo appointment?"
-          answer="Moisturize the area for a few days beforehand and gently exfoliate 24 hours prior so the skin is soft and ready. Wear comfortable clothing that allows easy access to the placement. Bring reference images and any questions you may have—we love collaborating."
+          question="Do you work by appointment only?"
+          answer="Yes. Appointments allow enough time for proper prep, shaping, service selection, and finishing details without rushing the process. Booking ahead is also the best way to secure your preferred day and time."
+        />
+        <Question
+          question="Can I bring an inspiration photo?"
+          answer="Yes. Inspiration photos are helpful for color direction, shape, finish, and nail art ideas. The final set may be adjusted to suit your nail length, condition, and the service you booked, but reference images make collaboration much easier."
+        />
+        <Question
+          question="What if I need removal or a full soak-off?"
+          answer="It is best to mention that before your appointment starts. Removal takes extra time, and adding it in advance helps avoid rushing the prep work for your new set."
         />
       </section>
 
       <footer>
         <p>
           Still curious about something? Email us at{' '}
-          <a className="font-medium text-black underline" href="mailto:artem@blackworknyc.com">
-            artem@blackworknyc.com
+          <a className="font-medium text-black underline" href="mailto:nailsmelodi@gmail.com">
+            nailsmelodi@gmail.com
           </a>{' '}
           and we will get back to you soon.
         </p>

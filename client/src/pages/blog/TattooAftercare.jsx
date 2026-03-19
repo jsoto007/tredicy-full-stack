@@ -6,55 +6,56 @@ export default function TattooAftercare() {
           Aftercare
         </p>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight text-gray-900">
-          Tattoo Aftercare Guide
+          Nail Aftercare Guide
         </h1>
         <p className="mt-4 text-base text-gray-600">
-          When you&rsquo;ve just received your tattoo, proper care is essential for healing and maintaining the
-          artwork&rsquo;s quality. The first few weeks set the stage for how your tattoo will look for years to come,
-          so take these steps seriously and reach out if anything feels off.
+          Proper nail aftercare helps your manicure, gel service, or acrylic set stay polished, comfortable, and
+          long-lasting. A few simple habits after your appointment can make a noticeable difference in shine, retention,
+          and the overall health of your natural nails.
         </p>
       </header>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">Daily Care Instructions</h2>
-        <p>Follow these guidelines carefully during the initial healing stages:</p>
+        <h2 className="text-2xl font-semibold text-gray-900">Daily Nail Care Habits</h2>
+        <p>Follow these habits between appointments to keep your set looking clean and photo-ready:</p>
         <ol className="list-decimal space-y-3 pl-6">
           <li className="pl-1">
-            Avoid direct sunlight for the first few days. UV exposure can irritate fresh ink and slow healing.
+            Apply cuticle oil daily to keep the nail area hydrated and reduce the dry, rough look that can make even a
+            fresh set seem older than it is.
           </li>
           <li className="pl-1">
-            Keep the adhesive plastic bandage on for 3–4 days to protect the area from bacteria and friction.
+            Wear gloves for dishes, deep cleaning, and harsh products. Repeated exposure to water and chemicals can
+            weaken retention and dull the finish.
           </li>
           <li className="pl-1">
-            Remove the bandage during a shower and gently wash the tattoo using an unscented antibacterial soap. Use
-            lukewarm water and your fingertips&mdash;no washcloths or loofahs.
+            Avoid picking, biting, or peeling gel, acrylic, or lifting corners. Pulling product off at home can strip
+            layers from the natural nail.
           </li>
           <li className="pl-1">
-            Pat dry with a clean, soft towel. About five minutes after washing, apply a thin layer of Aquaphor,
-            Bepanthen, or Cetaphil to lock in moisture. A little goes a long way.
+            Use your fingertips instead of your nails when opening cans, unbuckling seat belts, peeling labels, or
+            pressing hard buttons.
           </li>
           <li className="pl-1">
-            Avoid soaking your tattoo in any body of water&mdash;no bathtubs, pools, saunas, or the ocean. Regular warm
-            showers are fine.
+            If one nail lifts, chips, or cracks, schedule a repair promptly. Small damage can turn into a full break if
+            it is ignored.
           </li>
           <li className="pl-1">
-            Keep the area clean and moisturized for the full healing period. Wash the area and apply a healing cream 3–4
-            times daily.
+            Rebook regularly if you wear acrylics or structured gel. Maintenance appointments help preserve shape,
+            structure, and balance as your natural nails grow out.
           </li>
         </ol>
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-gray-900">What to Expect While Healing</h2>
+        <h2 className="text-2xl font-semibold text-gray-900">What to Expect After Your Appointment</h2>
         <p>
-          The healing process typically takes 2–3 weeks. During this time, you may notice redness, slight swelling,
-          scabbing, and a bit of flaking&mdash;all normal signs that your skin is repairing itself. Do not pick or
-          scratch at any flakes or scabs; disrupting them can lead to color loss or scarring.
+          A fresh set should feel smooth, secure, and balanced when you leave the salon. Over the next one to three
+          weeks, your nails will naturally grow, and everyday wear will begin to show most around the cuticle area and
+          high-contact fingers.
         </p>
         <p>
-          Wear loose, breathable clothing over the tattoo, sleep on fresh sheets, and avoid intense workouts that cause
-          heavy sweating for the first few days. If you must be outdoors, keep the tattoo covered and wait until it is
-          fully healed before applying sunscreen.
+          Some wear is normal over time, but pain, unusual pressure, or fast lifting is not. If anything feels off soon
+          after your service, reach out early so it can be addressed before the nail is damaged.
         </p>
       </section>
 
@@ -62,22 +63,16 @@ export default function TattooAftercare() {
         <h2 className="text-2xl font-semibold text-gray-900">Recommended Products</h2>
         <ul className="space-y-3">
           <li className="flex flex-col gap-1">
-            <a href="https://a.co/d/at49ZEE" target="_blank" rel="noopener noreferrer">
-              Aquaphor Healing Ointment
-            </a>{' '}
-            &ndash; a lightweight ointment that keeps the skin protected without smothering it.
+            Cuticle oil
+            <span>&ndash; keeps the surrounding skin soft and supports a cleaner, healthier-looking manicure.</span>
           </li>
           <li className="flex flex-col gap-1">
-            <a href="https://a.co/d/2RS7d8U" target="_blank" rel="noopener noreferrer">
-              Bepanthen
-            </a>{' '}
-            &ndash; a soothing cream that hydrates freshly tattooed skin.
+            Hand cream
+            <span>&ndash; helps prevent dry hands and cuticles from distracting from an otherwise polished set.</span>
           </li>
           <li className="flex flex-col gap-1">
-            <a href="https://a.co/d/6sZaOqm" target="_blank" rel="noopener noreferrer">
-              Cetaphil Moisturizing Lotion
-            </a>{' '}
-            &ndash; an unscented option ideal for sensitive skin types.
+            Protective gloves
+            <span>&ndash; useful for chores and cleaning tasks that can shorten the life of your service.</span>
           </li>
         </ul>
       </section>
@@ -85,9 +80,10 @@ export default function TattooAftercare() {
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold text-gray-900">When to Reach Out</h2>
         <p>
-          If at any point the area becomes excessively swollen, hot to the touch, or produces unusual discharge, contact
-          your artist right away. We&rsquo;re here to help you through the full healing process. Email us any time at{' '}
-          <a href="mailto:artem@blackworknyc.com">artem@blackworknyc.com</a>.
+          Reach out if you need a repair, are unsure whether to book a removal or fill, or want help choosing the right
+          service for your next visit. Melodi Nails can be reached at{' '}
+          <a href="mailto:nailsmelodi@gmail.com">nailsmelodi@gmail.com</a>, and appointments are available for the
+          Bronx studio at 1205 College Ave.
         </p>
       </section>
     </article>

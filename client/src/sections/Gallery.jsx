@@ -168,6 +168,7 @@ export default function Gallery() {
               <img
                 src={image.src}
                 alt={image.alt}
+                loading="lazy"
                 className="w-full object-cover transition duration-500 group-hover:scale-105"
               />
             </button>
@@ -187,6 +188,7 @@ export default function Gallery() {
               <img
                 src={image.src}
                 alt={image.alt}
+                loading="lazy"
                 className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
               />
             </button>

@@ -53,6 +53,7 @@ export default function About() {
               <img
                 src={artistPhoto}
                 alt="Melodi showing a finished nail set"
+                loading="lazy"
                 className="h-full w-full rounded-xl object-cover transition duration-700 ease-out hover:scale-105"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/10" />

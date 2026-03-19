@@ -118,6 +118,7 @@ export default function Header() {
           <img
             src={melodiLogo}
             alt="Melodi Nails logo"
+            loading="lazy"
             className="h-12 w-auto object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
           />
           <span className="text-sm font-semibold uppercase tracking-[0.45em] text-[#f3e7d9]">

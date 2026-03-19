@@ -82,12 +82,15 @@ export default function Hero() {
       >
         {/* Left: text + CTA */}
         <div className="max-w-xl space-y-7 lg:pt-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#6f7863]">Bronx, New York</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-[#6f7863]">Nail salon in Bronx, New York</p>
           <h1 className="text-5xl leading-none text-[#2A3923] sm:text-6xl">Melodi Nails</h1>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#6f7863]">
+            1205 College Ave, Bronx, NY 10456
+          </p>
           <p className="max-w-lg text-base leading-8 text-[#5e6755]">
-            Hola, soy Melodi Mejia. Welcome to a nail studio focused on healthy prep, clean structure, and
-            beautiful finishes. Book your manicure, pedicure, or acrylic set online and choose to pay the
-            deposit or the full amount with Stripe.
+            Hola, soy Melodi Mejia. Welcome to a Bronx nail salon focused on healthy prep, clean structure,
+            and long-lasting finishes. Book your manicure, pedicure, acrylic set, or custom nail art online
+            and secure your appointment in minutes.
           </p>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Button type="button" onClick={() => navigate('/appointments/new')}>
@@ -108,7 +111,7 @@ export default function Hero() {
                   key={img.alt}
                   className="overflow-hidden rounded-[2rem] border border-white/60 shadow-[0_22px_50px_rgba(42,57,35,0.13)]"
                 >
-                  <img src={img.src} alt={img.alt} className="w-full object-cover" />
+                  <img src={img.src} alt={img.alt} loading="lazy" className="w-full object-cover" />
                 </div>
               ))}
             </div>
@@ -122,7 +125,7 @@ export default function Hero() {
               key={img.alt}
               className={`overflow-hidden rounded-[2rem] border border-white/60 shadow-[0_22px_50px_rgba(42,57,35,0.13)] ${img.offset ? 'mt-10' : ''}`}
             >
-              <img src={img.src} alt={img.alt} className="w-full object-cover" />
+              <img src={img.src} alt={img.alt} loading="lazy" className="w-full object-cover" />
             </div>
           ))}
         </div>

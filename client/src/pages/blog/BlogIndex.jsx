@@ -8,28 +8,27 @@ export default function BlogIndex() {
           Insights
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-gray-900">
-          Welcome to the Black Ink Blog
+          Melodi Nails Journal
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-gray-600">
-          We created this space to share detailed guidance, tips, and answers to the questions we hear most often in
-          the studio. Explore the posts below to learn how to care for your new tattoo and get ready for your next
-          session.
+          We use this space to answer common salon questions, share aftercare guidance, and help clients prepare for
+          their next manicure, pedicure, acrylic, or gel appointment in the Bronx.
         </p>
       </header>
       <div className="grid gap-6 md:grid-cols-2">
         <BlogPreview
-          title="Tattoo Aftercare Guide"
-          description="Step-by-step instructions to help your tattoo heal beautifully, plus our recommended products."
+          title="Nail Aftercare Guide"
+          description="Simple steps to help your gel, acrylic, or natural nail service stay clean, glossy, and long-lasting."
           to="aftercare"
         />
         <BlogPreview
-          title="Frequently Asked Questions"
-          description="Clear, friendly answers to the most common questions we receive from clients."
+          title="Nail Salon FAQ"
+          description="Clear answers about booking, prep, repairs, timing, and what to expect at Melodi Nails."
           to="faq"
         />
         <BlogPreview
-          title="Behind the Needle: How a Custom Fine Line Tattoo Comes to Life"
-          description="Learn how collaboration, precision, and post-care craftsmanship come together at BlackworkNYC."
+          title="How a Signature Nail Set Comes Together"
+          description="A look at Melodi Nails' prep, shaping, structure, and finishing process for polished, photo-ready results."
           to="custom-fine-line"
         />
       </div>
