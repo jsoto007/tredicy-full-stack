@@ -12,6 +12,7 @@ const variants = {
   light: 'bg-[#f3e7d9] text-[#2a3923] hover:bg-[#e8d9c8]',
 };
 
+
 export default function Button({ as: Component = 'button', variant = 'primary', className = '', children, ...props }) {
   const variantClasses = variants[variant] || variants.primary;
 
