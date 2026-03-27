@@ -736,6 +736,20 @@ from zoneinfo import ZoneInfo
 
 NYC_TZ = ZoneInfo("America/New_York")
 
+
+def _nyc_now_naive() -> datetime:
+    """Return the current New York local time as a naive datetime."""
+    return datetime.now(NYC_TZ).replace(tzinfo=None)
+
+
+def _normalize_schedule_datetime(value: datetime | None) -> datetime | None:
+    """Normalize schedule datetimes to the naive NYC format stored in the DB."""
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        return value.astimezone(NYC_TZ).replace(tzinfo=None)
+    return value
+
 def _format_status_schedule_label(dt):
     if not dt:
         return None
@@ -1500,15 +1514,15 @@ def parse_iso_datetime(value):
     if not value:
         return None
     if isinstance(value, datetime):
-        return value
+        return _normalize_schedule_datetime(value)
     if not isinstance(value, str):
         return None
     try:
-        return datetime.fromisoformat(value)
+        return _normalize_schedule_datetime(datetime.fromisoformat(value))
     except ValueError:
         if value.endswith("Z"):
             try:
-                return datetime.fromisoformat(f"{value[:-1]}+00:00")
+                return _normalize_schedule_datetime(datetime.fromisoformat(f"{value[:-1]}+00:00"))
             except ValueError:
                 return None
         return None
@@ -1757,7 +1771,7 @@ def build_available_slots(
     slot_duration = timedelta(minutes=requested_duration_minutes)
 
     blocked_intervals = collect_blocked_intervals(day_start, day_end, ignore_appointment_id=ignore_appointment_id)
-    now = datetime.utcnow()
+    now = _nyc_now_naive()
 
     slots = []
     cursor = day_start
@@ -4056,7 +4070,7 @@ def create_appointment():
         errors.append({"field": "scheduled_start", "message": "Please choose a session date and start time."})
     elif scheduled_start.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or scheduled_start.second or scheduled_start.microsecond:
         errors.append({"field": "scheduled_start", "message": "Start time must align with the hour."})
-    elif scheduled_start < datetime.utcnow():
+    elif scheduled_start < _nyc_now_naive():
         errors.append({"field": "scheduled_start", "message": "Select a future time slot."})
 
     booking_hours_map = None
@@ -4563,9 +4577,6 @@ def admin_update_appointment(appointment_id):
             parsed = parse_iso_datetime(scheduled_start_raw)
             if not parsed:
                 return jsonify({"error": "Invalid datetime format (use ISO 8601)."}), 400
-            # Convert to NYC local time (DB stores naive NYC datetimes)
-            if parsed.tzinfo is not None:
-                parsed = parsed.astimezone(NYC_TZ).replace(tzinfo=None)
             if parsed.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or parsed.second or parsed.microsecond:
                 return jsonify({"error": "Start time must align with the hour."}), 400
             new_start = parsed
