@@ -4158,6 +4158,7 @@ def create_appointment():
             duration_minutes,
             minimum_duration_minutes=duration_minutes if session_option else booking_minimum_duration,
             hours_map=booking_hours_map,
+            allow_shorter_than_weekday_minimum=True,
         )
         slot_available = any(
             abs(int((slot["start"] - scheduled_start).total_seconds())) < 60 for slot in available_slots
