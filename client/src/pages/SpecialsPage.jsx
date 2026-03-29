@@ -2,70 +2,57 @@ import FadeIn from '../components/FadeIn.jsx';
 
 const SPECIALS = [
   {
-    course: 'Starters',
+    course: 'Appetizers',
     items: [
       {
-        name: 'Burrata & Prosciutto',
-        description: 'Hand-pulled burrata, San Daniele prosciutto, heirloom tomatoes, basil oil, aged balsamic',
+        name: 'French Onion Soup',
+        description:
+          'Caramelized onions in beef and brandy broth, with brick oven bread and finished with toasted Gruyère cheese',
       },
       {
-        name: 'Grilled Octopus',
-        description: 'Spanish octopus, Calabrian chili, white bean purée, pickled celery, smoked paprika oil',
+        name: 'Tuna Tartare',
+        description:
+          'Diced sushi grade ahi tuna mixed with soy sauce, avocado, sour cream, jalapeño and mustard seeds, served over crispy rice with black sesame seeds, lemon-lime aioli, topped with micro cilantro and wasabi oil',
       },
       {
-        name: 'Beef Carpaccio',
-        description: 'Thinly sliced prime beef tenderloin, arugula, capers, lemon, truffle oil, aged pecorino',
+        name: 'Steamed Mussels',
+        description:
+          'PEI mussels steamed with tomato, white wine, roasted garlic, extra virgin olive oil and crumbled hot sausage, served with toasted Tuscan flatbread',
+      },
+      {
+        name: 'Fried Calamari Agro Dolce',
+        description:
+          'Crispy fried calamari topped with homemade sweet and sour sauce, shaved scallion and black sesame seeds',
       },
     ],
   },
   {
-    course: 'Pasta',
+    course: 'Entrees',
     items: [
       {
-        name: 'Tagliatelle Bolognese',
-        description: 'Fresh egg tagliatelle, slow-braised Wagyu beef and pork, Parmigiano-Reggiano',
+        name: 'Spicy Chicken Parm',
+        description:
+          'Organic chicken breast, pounded thin, panko breaded and fried, topped with San Marzano crushed plum tomato sauce, a touch of cream, shot of vodka and shaved Calabrian chillis, with toasted mozzarella served over rigatoni',
       },
       {
-        name: 'Cacio e Pepe',
-        description: 'Tonnarelli pasta, Pecorino Romano, Parmigiano-Reggiano, house-cracked black pepper',
+        name: 'Orata',
+        description:
+          'Grilled filet of Mediterranean white fish served over roasted sweet creamed corn with lima beans, charred brussels sprouts and cauliflower, finished with lemon chive oil and micro cilantro',
       },
       {
-        name: 'Spaghetti with Clams',
-        description: 'Littleneck clams, white wine, garlic, Calabrian chili, parsley, toasted breadcrumbs',
-      },
-    ],
-  },
-  {
-    course: 'Mains',
-    items: [
-      {
-        name: 'Roasted Sea Bass',
-        description: 'Pan-roasted Mediterranean sea bass, olive tapenade, cherry tomato confit, caperberries',
+        name: 'Long Island Duck',
+        description:
+          'Pan seared Long Island duck breast over wild mushroom risotto with caramelized onions and porcini crema, finished with frizzled shallots',
       },
       {
-        name: 'Dry-Aged Ribeye',
-        description: '28-day dry-aged bone-in ribeye, rosemary-garlic butter, natural jus',
+        name: 'Pasutice',
+        description:
+          'Hand cut diamond shaped pasta with steamed Maine lobster, cherry tomatoes, green and yellow zucchini, roasted garlic and scallion with a touch of cream',
       },
       {
-        name: 'Herb-Crusted Lamb',
-        description: 'Rack of lamb, Sardinian fregola, spring pea purée, mint gremolata',
-      },
-    ],
-  },
-  {
-    course: 'Desserts',
-    items: [
-      {
-        name: 'Tiramisu',
-        description: 'Espresso-soaked ladyfingers, mascarpone cream, Valrhona cocoa — our house classic',
-      },
-      {
-        name: 'Chocolate Torte',
-        description: 'Flourless dark chocolate cake, espresso anglaise, fleur de sel',
-      },
-      {
-        name: 'Italian Cheese Board',
-        description: 'Three seasonal Italian cheeses, honeycomb, Marcona almonds, fruit preserves',
+        name: 'Braised Short Rib',
+        description:
+          'Bone in short rib braised with Chianti, aromatics and natural reduction, served with oven roasted Yukon gold potatoes and broccoli rabe, finished with frizzled shallots',
       },
     ],
   },
@@ -81,10 +68,10 @@ export default function SpecialsPage() {
             Tredici Social · Bronxville, NY
           </p>
           <h1 className="font-heading text-5xl font-medium text-white sm:text-6xl">
-            Today&apos;s Specials
+            Specials of the Day
           </h1>
           <p className="text-lg leading-relaxed text-ts-light-text/70">
-            Fresh from the kitchen — crafted daily around the best ingredients available.
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
         </FadeIn>
       </div>

@@ -6,9 +6,9 @@ const CONTACT_POINTS = [
   {
     id: 'location',
     heading: 'Location',
-    value: '13 Pondfield Rd, Bronxville, NY 10708',
+    value: '104 Kraft Ave, Bronxville, NY 10708',
     body: 'Located in the heart of Bronxville village. Metered street parking available; Metro-North accessible (Bronxville station, 5 min walk).',
-    href: 'https://maps.google.com/?q=13+Pondfield+Rd+Bronxville+NY+10708',
+    href: 'https://maps.google.com/?q=104+Kraft+Ave+Bronxville+NY+10708',
     hrefLabel: 'Get directions in Google Maps',
     linkText: 'Get directions',
   },
@@ -67,20 +67,30 @@ export default function Visit() {
           ))}
         </FadeIn>
 
-        {/* Embedded map placeholder — replace iframe src with your real embed */}
-        <div className="overflow-hidden rounded-2xl border border-ts-stone bg-ts-linen shadow-card">
-          <iframe
-            title="Tredici Social on Google Maps"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3011.563894032452!2d-73.83443!3d40.93825!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c2f3b4af1b7c29%3A0x0!2sBronxville%2C+NY+10708!5e0!3m2!1sen!2sus!4v1700000000000"
-            width="100%"
-            height="360"
-            style={{ border: 0 }}
-            allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            aria-label="Map showing Tredici Social location in Bronxville, NY"
-          />
-        </div>
+        {/* Directions card */}
+        <a
+          href="https://maps.google.com/?q=104+Kraft+Ave,+Bronxville,+NY+10708"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Get directions to Tredici Social — opens in your maps app"
+          className="group flex items-center justify-between gap-6 rounded-2xl border border-ts-stone bg-white px-8 py-7 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-ts-crimson hover:shadow-card-hover"
+        >
+          <div className="flex items-center gap-5">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ts-crimson/10 text-ts-crimson transition group-hover:bg-ts-crimson group-hover:text-white">
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+            </span>
+            <div>
+              <p className="font-heading text-xl font-medium text-ts-charcoal">Get Directions</p>
+              <p className="mt-0.5 text-sm text-ts-muted">104 Kraft Ave, Bronxville, NY 10708</p>
+            </div>
+          </div>
+          <svg className="h-5 w-5 shrink-0 text-ts-stone transition group-hover:translate-x-1 group-hover:text-ts-crimson" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </a>
       </FadeIn>
     </section>
   );

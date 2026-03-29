@@ -24,7 +24,7 @@ export default function Footer() {
               </p>
             </div>
             <address className="space-y-1 text-sm not-italic leading-relaxed text-ts-light-text/70">
-              <p>13 Pondfield Rd</p>
+              <p>104 Kraft Ave</p>
               <p>Bronxville, NY 10708</p>
             </address>
             <div className="space-y-1 text-sm text-ts-light-text/70">
@@ -104,7 +104,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-5 text-[11px] text-ts-muted md:flex-row md:items-center md:justify-between">
         <span className="font-semibold uppercase tracking-[0.3em]">© {year} Tredici Social</span>
-        <span>13 Pondfield Rd · Bronxville, NY 10708</span>
+        <span>104 Kraft Ave · Bronxville, NY 10708</span>
       </div>
     </footer>
   );
