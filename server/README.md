@@ -24,7 +24,7 @@ Build the React client (`npm run build --prefix client`) so Flask can serve the 
 | Name | Description |
 | --- | --- |
 | `FLASK_ENV` | Flask environment name |
-| `DATABASE_URI` | Database connection string (fallback is `sqlite:///blackink_dev.db` when empty) |
+| `DATABASE_URI` | Database connection string. Must target the `/tredicy_db` database; there is no fallback URI. |
 | `SECRET_KEY` | Secret key for session security and signing |
 | `SESSION_COOKIE_SAMESITE` | Optional override for the session cookie's `SameSite` attribute (defaults to `Strict` in production and `Lax` in development). Use `None` only when the API and frontend are separated hosts *and* the service is served over HTTPS. |
 
@@ -38,6 +38,6 @@ Build the React client (`npm run build --prefix client`) so Flask can serve the 
 ### PostgreSQL 17
 
 - Install PostgreSQL 17 (for example, `brew install postgresql@17`) and start the service.
-- Create a development database (`createdb blackink_dev`) and point `DATABASE_URI` in `.env` to `postgresql+psycopg2://<user>:<password>@127.0.0.1:5432/blackink_dev`.
+- Create a development database named `tredicy_db` and point `DATABASE_URI` in `.env` to `postgresql+psycopg2://<user>:<password>@127.0.0.1:5432/tredicy_db`.
 - Pytest automatically rewires `DATABASE_URI` to an in-memory SQLite database to avoid touching shared data.
 - Run `pipenv run flask db upgrade` (or rely on `db.create_all()`), then execute `pipenv run python seed.py` to populate demo data.

@@ -3,7 +3,7 @@ function classNames(...classes) {
 }
 
 const baseClasses =
-  'rounded-[2rem] border border-[#d9cbbc] bg-[#fffdf9]/92 p-6 shadow-[0_18px_50px_rgba(42,57,35,0.08)] backdrop-blur-sm transition sm:p-8';
+  'rounded-2xl border border-ts-stone bg-white p-6 shadow-card transition-shadow duration-300 hover:shadow-card-hover sm:p-8';
 
 export default function Card({ className = '', children, ...props }) {
   return (

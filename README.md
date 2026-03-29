@@ -29,8 +29,8 @@ The Flask server now serves the built Vite bundle from `client/dist`. Run `npm r
 #### PostgreSQL 17 setup
 
 1. Install PostgreSQL 17 (macOS Homebrew: `brew install postgresql@17`) and ensure the service is running (`brew services start postgresql@17`).
-2. Create the development database: `createdb blackink_dev`.
-3. Copy `.env.example` to `.env` inside `server/` and adjust `DATABASE_URI` if your credentials differ. The example points to `postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/blackink_dev`.
+2. Create the development database: `createdb tredicy_db`.
+3. Copy `.env.example` to `.env` inside `server/` and adjust `DATABASE_URI` if your credentials differ. The example points to `postgresql+psycopg2://postgres:postgres@127.0.0.1:5432/tredicy_db`.
 4. Apply migrations (or allow `db.create_all()` on first boot): `pipenv run flask db upgrade`.
 5. Seed demo data: `pipenv run python seed.py`.
 
@@ -58,7 +58,7 @@ The dev server proxies `/api/*` to `http://127.0.0.1:5000`, keeping credentialed
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `client/.env` | Base URL for the Flask API (default blank so relative paths hit the hosting origin – override this when the API lives on another host) |
 | `FLASK_ENV` | `server/.env` | Flask environment (`development`, `production`, etc.) |
-| `DATABASE_URI` | `server/.env` | Database connection string; fallback is a local SQLite file (`server/blackink_dev.db`) |
+| `DATABASE_URI` | `server/.env` | Database connection string; must target the `tredicy_db` database |
 | `SECRET_KEY` | `server/.env` | Secret key for Flask session security |
 | `UPLOADS_S3_BUCKET` | `server/.env` | Optional. When set, gallery uploads are stored in this AWS S3 bucket. |
 | `UPLOADS_S3_REGION` | `server/.env` | AWS region for the uploads bucket. |
@@ -95,7 +95,7 @@ The dev server proxies `/api/*` to `http://127.0.0.1:5000`, keeping credentialed
 ## Deployment notes
 
 - Frontend: deploy `client/` build output to Netlify or Vercel with `VITE_API_BASE_URL` pointing to the live API.
-- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URI` and ensure `npm run build --prefix client` runs before Gunicorn boots so the SPA bundle is available.
+- Backend: deploy `server/` to Render, Fly.io, or Heroku; provision a persistent database via `DATABASE_URI` that ends in `/tredicy_db` and ensure `npm run build --prefix client` runs before Gunicorn boots so the SPA bundle is available.
 - Automated tests force `DATABASE_URI` to an in-memory SQLite instance so test runs stay isolated from shared databases.
 - Update CORS origins in `app/__init__.py` if production hosts differ from local defaults.
 # black-work-tattoo

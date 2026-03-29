@@ -1,0 +1,230 @@
+[
+  {
+    "category": "Antipasti",
+    "items": [
+      {
+        "id": "a1",
+        "name": "Burrata con Prosciutto",
+        "description": "Hand-pulled burrata, San Daniele prosciutto, heirloom tomatoes, basil oil, aged balsamic",
+        "price": 18,
+        "tags": ["gf"]
+      },
+      {
+        "id": "a2",
+        "name": "Polpo alla Griglia",
+        "description": "Grilled Spanish octopus, Calabrian chili, white bean purée, pickled celery, smoked paprika oil",
+        "price": 22,
+        "tags": ["gf"]
+      },
+      {
+        "id": "a3",
+        "name": "Carciofi Fritti",
+        "description": "Crispy Roman artichokes, lemon aioli, shaved Parmigiano-Reggiano, fresh herbs",
+        "price": 16,
+        "tags": ["v"]
+      },
+      {
+        "id": "a4",
+        "name": "Carpaccio di Manzo",
+        "description": "Thinly sliced prime beef tenderloin, arugula, capers, lemon, truffle oil, aged pecorino",
+        "price": 20,
+        "tags": ["gf"]
+      },
+      {
+        "id": "a5",
+        "name": "Baccalà Mantecato",
+        "description": "Whipped salt cod, grilled crostini, Taggiasca olives, pickled red onion",
+        "price": 17
+      }
+    ]
+  },
+  {
+    "category": "Pasta",
+    "items": [
+      {
+        "id": "p1",
+        "name": "Cacio e Pepe",
+        "description": "Tonnarelli, Pecorino Romano, Parmigiano-Reggiano, house-cracked black pepper",
+        "price": 26,
+        "tags": ["v", "signature"]
+      },
+      {
+        "id": "p2",
+        "name": "Tagliatelle al Ragù",
+        "description": "Fresh egg tagliatelle, slow-braised Wagyu beef and pork ragù, Parmigiano-Reggiano",
+        "price": 30,
+        "tags": ["signature"]
+      },
+      {
+        "id": "p3",
+        "name": "Rigatoni all'Amatriciana",
+        "description": "Guanciale, San Marzano tomatoes, Pecorino Romano, Calabrian chili",
+        "price": 28
+      },
+      {
+        "id": "p4",
+        "name": "Pappardelle ai Funghi",
+        "description": "Wild mushroom ragù, truffle butter, thyme, crispy shallots, Grana Padano",
+        "price": 29,
+        "tags": ["v"]
+      },
+      {
+        "id": "p5",
+        "name": "Ravioli di Ricotta",
+        "description": "House-made ricotta and lemon ravioli, brown butter, sage, toasted pine nuts, lemon zest",
+        "price": 27,
+        "tags": ["v"]
+      },
+      {
+        "id": "p6",
+        "name": "Spaghetti alle Vongole",
+        "description": "Littleneck clams, white wine, garlic, Calabrian chili, parsley, breadcrumbs",
+        "price": 32
+      }
+    ]
+  },
+  {
+    "category": "Secondi",
+    "items": [
+      {
+        "id": "s1",
+        "name": "Branzino in Umido",
+        "description": "Pan-roasted Mediterranean sea bass, Castelvetrano olive tapenade, cherry tomato confit, caperberries, basil",
+        "price": 42,
+        "tags": ["gf"]
+      },
+      {
+        "id": "s2",
+        "name": "Costata di Manzo",
+        "description": "28-day dry-aged bone-in ribeye (16 oz), rosemary-garlic compound butter, natural jus",
+        "price": 68,
+        "tags": ["gf", "signature"]
+      },
+      {
+        "id": "s3",
+        "name": "Pollo al Mattone",
+        "description": "Brick-pressed Amish chicken, lemon-rosemary jus, wilted escarole, roasted garlic",
+        "price": 38,
+        "tags": ["gf"]
+      },
+      {
+        "id": "s4",
+        "name": "Agnello in Crosta",
+        "description": "Herb-crusted lamb rack, Sardinian fregola, spring pea purée, mint gremolata",
+        "price": 52
+      }
+    ]
+  },
+  {
+    "category": "Contorni",
+    "items": [
+      {
+        "id": "c1",
+        "name": "Broccolini Aglio e Olio",
+        "description": "Sautéed broccolini, garlic, chili flakes, lemon",
+        "price": 11,
+        "tags": ["v", "gf"]
+      },
+      {
+        "id": "c2",
+        "name": "Patate Arrosto",
+        "description": "Crispy roasted fingerling potatoes, rosemary, sea salt, garlic aioli",
+        "price": 10,
+        "tags": ["v", "gf"]
+      },
+      {
+        "id": "c3",
+        "name": "Insalata di Stagione",
+        "description": "Seasonal greens, shaved fennel, radish, citrus vinaigrette",
+        "price": 13,
+        "tags": ["v", "gf"]
+      }
+    ]
+  },
+  {
+    "category": "Dolci",
+    "items": [
+      {
+        "id": "d1",
+        "name": "Tiramisù della Casa",
+        "description": "Classic house tiramisù, espresso-soaked ladyfingers, mascarpone, Valrhona cocoa",
+        "price": 14,
+        "tags": ["v", "signature"]
+      },
+      {
+        "id": "d2",
+        "name": "Panna Cotta",
+        "description": "Vanilla bean panna cotta, seasonal fruit compote, candied pistachios",
+        "price": 13,
+        "tags": ["v", "gf"]
+      },
+      {
+        "id": "d3",
+        "name": "Torta al Cioccolato",
+        "description": "Flourless chocolate torte, espresso anglaise, fleur de sel",
+        "price": 15,
+        "tags": ["v", "gf"]
+      },
+      {
+        "id": "d4",
+        "name": "Selezione di Formaggi",
+        "description": "Three Italian cheeses, honeycomb, Marcona almonds, seasonal preserves",
+        "price": 22,
+        "tags": ["v", "gf"]
+      }
+    ]
+  },
+  {
+    "category": "Cocktails",
+    "items": [
+      {
+        "id": "co1",
+        "name": "Tredici Negroni",
+        "description": "Gin, Campari, sweet vermouth, charred orange — our house twist on the classic",
+        "price": 16,
+        "tags": ["signature"]
+      },
+      {
+        "id": "co2",
+        "name": "Aperol Spritz",
+        "description": "Aperol, Prosecco, soda water, orange",
+        "price": 14
+      },
+      {
+        "id": "co3",
+        "name": "Amalfi Sour",
+        "description": "Limoncello, vodka, lemon, egg white, Prosecco float",
+        "price": 16
+      },
+      {
+        "id": "co4",
+        "name": "Blood Orange Paloma",
+        "description": "Tequila, blood orange juice, grapefruit, agave, salt rim",
+        "price": 15
+      }
+    ]
+  },
+  {
+    "category": "Wine & Spirits",
+    "items": [
+      {
+        "id": "w1",
+        "name": "Wine by the Glass",
+        "description": "A rotating selection of Italian and European wines — ask your server for the current pour list",
+        "price": null
+      },
+      {
+        "id": "w2",
+        "name": "Curated Bottle List",
+        "description": "Our cellar features Barolo, Brunello, Super Tuscans, and estate Prosecco — ask for the full list",
+        "price": null
+      },
+      {
+        "id": "w3",
+        "name": "Amari & Digestivi",
+        "description": "Fernet-Branca, Amaro Montenegro, Averna, Cynar — a proper Italian send-off",
+        "price": null
+      }
+    ]
+  }
+]

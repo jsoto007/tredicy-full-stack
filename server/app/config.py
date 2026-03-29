@@ -1,12 +1,12 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 from typing import Any, Dict
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-_DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "melodi_nails_dev.db"
 _DEFAULT_POOL_RECYCLE_SECONDS = 600
 
 db = SQLAlchemy()
@@ -48,20 +48,24 @@ def _engine_defaults(app: Flask) -> Dict[str, Any]:
 
 
 def _resolve_database_uri(app: Flask) -> str:
-    """Determine the database URI, preferring DATABASE_URI and warning on legacy vars."""
+    """Determine the database URI and require the tredicy_db database."""
     uri = os.getenv("DATABASE_URI")
-    if uri:
-        return uri
+    if not uri:
+        raise RuntimeError("DATABASE_URI must be set and point to the /tredicy_db database.")
 
-    legacy_uri = os.getenv("DATABASE_URL")
-    if legacy_uri:
-        app.logger.warning(
-            "DATABASE_URL is deprecated; rename this variable to DATABASE_URI."
+    parsed = urlparse(uri)
+    if parsed.scheme.startswith("sqlite"):
+        if os.getenv("PYTEST_CURRENT_TEST"):
+            return uri
+        raise RuntimeError("SQLite DATABASE_URI is only allowed during automated tests.")
+
+    database_name = unquote(parsed.path.lstrip("/"))
+    if database_name != "tredicy_db":
+        raise RuntimeError(
+            f"DATABASE_URI must target the /tredicy_db database, got /{database_name or '<missing>'}."
         )
-        return legacy_uri
 
-    # Default to the known Render database to prevent accidental data wipes from ephemeral SQLite on redeploy
-    return "postgresql://melody_nails_db_user:dorBBpHD9Q8FTbzoE4OZ8qqvYHjsFPWD@dpg-d6u43rn5gffc739gs80g-a.ohio-postgres.render.com/melody_nails_db"
+    return uri
 
 
 def configure_app(app: Flask) -> SQLAlchemy:

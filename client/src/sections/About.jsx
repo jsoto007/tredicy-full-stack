@@ -1,98 +1,125 @@
 import FadeIn from '../components/FadeIn.jsx';
-import Badge from '../components/Badge.jsx';
-import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
-import { useLanguage } from '../contexts/LanguageContext.jsx';
-import artistPhoto from '../assets/melodi/melodiShowingNails.JPG';
+
+const HIGHLIGHTS = [
+  'Inventive Italian cuisine rooted in regional tradition',
+  'Thoughtfully sourced ingredients, seasonal menus',
+  'Warm, neighborhood atmosphere — social by design',
+];
 
 export default function About() {
-  const { isSpanish } = useLanguage();
-  const credentials = isSpanish
-    ? ['Enfoque en unas naturales', 'Preparacion y estructura detalladas', 'Reservas en linea sencillas']
-    : ['Natural nail care focus', 'Detailed prep and structure', 'Guest-friendly online booking'];
-  const copy = isSpanish
-    ? {
-        section: 'Sobre Mi',
-        title: 'El arte de tus unas',
-        description:
-          'Melodi Nails esta creado alrededor de acabados hermosos, preparacion saludable y una experiencia de cita acogedora. El objetivo es simple: que cada clienta salga con unas pulidas, intencionales y unicas.',
-        badgeOne: 'Belleza limpia',
-        badgeTwo: 'Servicio personalizado',
-        imageAlt: 'Melodi mostrando un set de unas terminado',
-      }
-    : {
-        section: 'About',
-        title: 'The art of your nails',
-        description:
-          'Melodi Nails is built around beautiful finishes, healthy prep, and a welcoming appointment experience. The goal is simple: help every client leave with nails that feel polished, intentional, and uniquely theirs.',
-        badgeOne: 'Clean beauty',
-        badgeTwo: 'Personalized service',
-        imageAlt: 'Melodi showing a finished nail set',
-      };
-
   return (
-    <section
-      id="about"
-      className="relative overflow-hidden bg-gradient-to-br from-[#fffaf5] via-[#f6efe7] to-[#ece7e2] py-20 text-[#23301d]"
-    >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(200,175,143,0.16),transparent_25%),radial-gradient(circle_at_80%_0%,rgba(111,120,99,0.14),transparent_22%)]" />
+    <section id="about" className="bg-ts-cream py-20">
       <FadeIn
-        className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 lg:grid-cols-[1.15fr_1fr]"
+        className="mx-auto grid max-w-7xl items-center gap-14 px-6 lg:grid-cols-2"
         delayStep={0.18}
       >
-        <div className="space-y-6">
-          <div className="group inline-flex items-center gap-4">
-            <span className="relative inline-flex items-center text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-500">
-              <span className="absolute -left-14 h-[2px] w-0 rounded-full bg-[#8d755a] transition-all duration-500 group-hover:w-10" />
-              {copy.section}
-            </span>
-            <span className="h-[2px] w-10 rounded-full bg-[#8d755a]" />
-          </div>
-
+        {/* Text side */}
+        <div className="space-y-8">
           <SectionTitle
-            eyebrow={null}
-            title={copy.title}
-            description={copy.description}
+            eyebrow="Our Story"
+            title="Where Italian tradition meets Bronxville's table"
+            description="Tredici Social was born from a simple belief: that exceptional Italian food should feel both elevated and welcoming. We draw from the deep well of regional Italian cooking — pasta made by hand, sauces built slowly, proteins chosen with care — and present it in a way that invites conversation, lingering, and returning."
           />
 
-          <div className="flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-gray-700">
-            <Badge className="bg-[#f3e7d9] text-[#2a3923] ring-1 ring-[#dbc9b4]">
-              {copy.badgeOne}
-            </Badge>
-            <Badge className="bg-[#f3e7d9] text-[#2a3923] ring-1 ring-[#dbc9b4]">
-              {copy.badgeTwo}
-            </Badge>
+          <ul className="space-y-3">
+            {HIGHLIGHTS.map((item) => (
+              <li
+                key={item}
+                className="flex items-start gap-3 text-sm text-ts-dark-text"
+              >
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ts-crimson/10 text-ts-crimson">
+                  <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <a
+              href="https://www.opentable.com/r/tredici-social-bronxville"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-ts-crimson px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-white shadow-crimson transition hover:bg-ts-garnet"
+            >
+              Reserve a Table
+            </a>
+            <a
+              href="/private-events"
+              className="inline-flex items-center justify-center rounded-full border border-ts-stone px-7 py-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-ts-dark-text transition hover:border-ts-crimson hover:text-ts-crimson"
+            >
+              Private Events
+            </a>
           </div>
         </div>
 
-        <Card className="relative overflow-hidden border-none bg-white/90 p-0 shadow-2xl ring-1 ring-[#d9cbbc]/70 transition duration-500 hover:-translate-y-1 hover:shadow-[0_25px_80px_rgba(42,57,35,0.16)]">
-          <div className="absolute inset-x-0 top-0 h-1 bg-[#c8af8f]" />
-          <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8">
-            <div className="relative overflow-hidden rounded-xl shadow-lg">
-              <img
-                src={artistPhoto}
-                alt={copy.imageAlt}
-                loading="lazy"
-                className="h-full w-full rounded-xl object-cover transition duration-700 ease-out hover:scale-105"
-              />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-black/10" />
+        {/* Visual side — atmospheric panels */}
+        {/* Replace the gradient tiles below with real restaurant photos */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{
+                aspectRatio: '3/4',
+                background: 'linear-gradient(160deg, #2E1F18 0%, #3a2218 100%)',
+              }}
+              aria-label="Restaurant interior photo — replace with real image"
+            >
+              <div className="flex h-full items-end p-5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-gold/60">
+                  The Room
+                </span>
+              </div>
             </div>
-
-            <ul className="mt-6 space-y-3">
-              {credentials.map((item) => (
-                <li
-                  key={item}
-                  className="flex items-center gap-4 rounded-xl border border-[#efe2d3] bg-gradient-to-br from-[#fffdf9] to-[#f3ebe1] px-4 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#32412a] shadow-sm transition hover:translate-x-1 hover:shadow-md"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2a3923] text-[11px] font-bold text-white shadow-md">
-                    ✓
-                  </span>
-                  <span className="leading-relaxed">{item}</span>
-                </li>
-              ))}
-            </ul>
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{
+                aspectRatio: '1/1',
+                background: 'linear-gradient(160deg, #6B1528 0%, #9B2335 100%)',
+              }}
+              aria-label="Food photo — replace with real image"
+            >
+              <div className="flex h-full items-end p-5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/60">
+                  The Plate
+                </span>
+              </div>
+            </div>
           </div>
-        </Card>
+          <div className="space-y-4 pt-8">
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{
+                aspectRatio: '1/1',
+                background: 'linear-gradient(160deg, #BFA882 0%, #8A6E4A 100%)',
+              }}
+              aria-label="Bar photo — replace with real image"
+            >
+              <div className="flex h-full items-end p-5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-charcoal/60">
+                  The Bar
+                </span>
+              </div>
+            </div>
+            <div
+              className="overflow-hidden rounded-2xl"
+              style={{
+                aspectRatio: '3/4',
+                background: 'linear-gradient(160deg, #1C1410 0%, #2E1F18 100%)',
+              }}
+              aria-label="Pasta photo — replace with real image"
+            >
+              <div className="flex h-full items-end p-5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-gold/60">
+                  The Pasta
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </FadeIn>
     </section>
   );

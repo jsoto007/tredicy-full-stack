@@ -1,25 +1,21 @@
 import Hero from '../sections/Hero.jsx';
-import Gallery from '../sections/Gallery.jsx';
-import Services from '../sections/Services.jsx';
+import QuickLinks from '../sections/QuickLinks.jsx';
 import About from '../sections/About.jsx';
-import StudioHours from '../sections/StudioHours.jsx';
-import Testimonials from '../sections/Testimonials.jsx';
-import Booking from '../sections/Booking.jsx';
-import FAQ from '../sections/FAQ.jsx';
-import Contact from '../sections/Contact.jsx';
+import MenuHighlights from '../sections/Services.jsx';
+import Gallery from '../sections/Gallery.jsx';
+import ReservationsBand from '../sections/Booking.jsx';
+import Visit from '../sections/Contact.jsx';
 
 export default function Landing() {
   return (
-    <main className="space-y-24">
+    <main>
       <Hero />
-      <Gallery />
-      <Services />
+      <QuickLinks />
       <About />
-      <StudioHours />
-      <Testimonials />
-      <Booking />
-      <FAQ />
-      <Contact />
+      <MenuHighlights />
+      <Gallery />
+      <ReservationsBand />
+      <Visit />
     </main>
   );
 }

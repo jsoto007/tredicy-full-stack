@@ -1,276 +1,185 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import { useLanguage } from '../contexts/LanguageContext.jsx';
-import Button from './Button.jsx';
-import melodiLogo from '../assets/melodi/MNLogo.png';
+import { useEffect, useRef, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
-function IconCalendar(props) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      {...props}
-    >
-      <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
-      <path d="M8 2.5v4" />
-      <path d="M16 2.5v4" />
-      <path d="M3.5 9.5h17" />
-      <path d="M8 13.5h3" />
-      <path d="M13 13.5h3" />
-      <path d="M8 17.5h3" />
-    </svg>
-  );
-}
+const NAV_ITEMS = [
+  { label: 'Menu', to: '/menu' },
+  { label: 'Specials', to: '/specials' },
+  { label: 'Reservations', href: '#reservations' },
+  { label: 'Private Events', to: '/private-events' },
+  { label: 'Gallery', to: '/gallery' },
+  { label: 'About', href: '#about' },
+];
 
-function NavItem({ item, onNavigate }) {
-  const shared =
-    'text-[#c8af8f] transition-colors hover:text-[#f3e7d9] focus:outline-none focus-visible:underline';
+// On the home page, "Reservations" and "About" scroll to sections;
+// on other pages they navigate to home first.
+function NavItem({ item, onNavigate, location }) {
+  const isHome = location.pathname === '/';
+  const linkClass =
+    'text-[#BFA882] transition-colors hover:text-white focus:outline-none focus-visible:underline text-[11px] font-semibold uppercase tracking-[0.3em]';
 
-  if (item.type === 'link') {
+  if (item.href) {
+    const href = isHome ? item.href : `/${item.href}`;
     return (
-      <Link to={item.to} onClick={onNavigate} className={shared}>
+      <a href={href} onClick={onNavigate} className={linkClass}>
         {item.label}
-      </Link>
+      </a>
     );
   }
 
   return (
-    <a href={item.href} onClick={onNavigate} className={shared}>
+    <NavLink
+      to={item.to}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        `${linkClass}${isActive ? ' text-white underline underline-offset-4' : ''}`
+      }
+    >
       {item.label}
-    </a>
+    </NavLink>
   );
 }
 
 export default function Header() {
-  const { isAuthenticated, isAdmin, isUser, logout } = useAuth();
-  const { isSpanish } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const menuPanelRef = useRef(null);
   const toggleButtonRef = useRef(null);
-  const navigate = useNavigate();
+  const location = useLocation();
 
-  const navItems = useMemo(() => {
-    const labels = isSpanish
-      ? {
-          gallery: 'Galeria',
-          menu: 'Servicios',
-          about: 'Sobre Mi',
-          contact: 'Contacto',
-          dashboard: 'Panel',
-          appointments: 'Citas',
-          profile: 'Perfil',
-          settings: 'Ajustes',
-          calendar: 'Calendario',
-        }
-      : {
-          gallery: 'Gallery',
-          menu: 'Menu',
-          about: 'About',
-          contact: 'Contact',
-          dashboard: 'Dashboard',
-          appointments: 'Appointments',
-          profile: 'Profile',
-          settings: 'Settings',
-          calendar: 'Calendar',
-        };
+  // Compact header on scroll
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    if (isAdmin) {
-      return [
-        { label: labels.settings, to: '/dashboard/admin/settings', type: 'link' },
-        { label: labels.calendar, to: '/dashboard/admin/calendar', type: 'link' },
-        { label: labels.gallery, to: '/dashboard/admin/gallery', type: 'link' },
-      ];
-    }
-    if (isUser) {
-      return [
-        { label: labels.dashboard, to: '/portal/dashboard', type: 'link', end: true },
-        { label: labels.appointments, to: '/portal/appointments', type: 'link' },
-        { label: labels.profile, to: '/portal/profile', type: 'link' },
-      ];
-    }
-    return [
-      { label: labels.gallery, to: '/#work', type: 'link' },
-      { label: labels.menu, to: '/#services', type: 'link' },
-      { label: labels.about, to: '/#about', type: 'link' },
-      { label: labels.contact, to: '/#contact', type: 'link' },
-    ];
-  }, [isAdmin, isSpanish, isUser]);
-
-  const copy = isSpanish
-    ? {
-        bookNow: 'Reservar',
-        signOut: 'Salir',
-        bookAppointment: 'Reservar cita',
-        closeMenu: 'Cerrar menu',
-        openMenu: 'Abrir menu',
-      }
-      : {
-        bookNow: 'Book Now',
-        signOut: 'Sign Out',
-        bookAppointment: 'Book appointment',
-        closeMenu: 'Close menu',
-        openMenu: 'Open menu',
-      };
-
-  const closeMenu = () => setMenuOpen(false);
-
-  const handleToggleMenu = () => {
-    setMenuOpen((open) => !open);
-  };
-
-  const handleSignOut = async () => {
-    await logout();
-    closeMenu();
-  };
-
-  const handleConsultNavigate = () => {
-    navigate('/appointments/new');
-    closeMenu();
-  };
-
+  // Close on route change
   useEffect(() => {
     setMenuOpen(false);
-  }, [isAuthenticated, isAdmin, isUser]);
+  }, [location.pathname]);
 
+  // Close on outside click
   useEffect(() => {
-    if (!menuOpen) {
-      return;
-    }
-    const handlePointerDown = (event) => {
+    if (!menuOpen) return;
+    const handlePointerDown = (e) => {
       if (
         menuPanelRef.current &&
-        !menuPanelRef.current.contains(event.target) &&
+        !menuPanelRef.current.contains(e.target) &&
         toggleButtonRef.current &&
-        !toggleButtonRef.current.contains(event.target)
+        !toggleButtonRef.current.contains(e.target)
       ) {
         setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown, { passive: true });
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
     };
   }, [menuOpen]);
 
-  const shouldShowConsult = !isAuthenticated || isUser;
+  const closeMenu = () => setMenuOpen(false);
 
-  const iconButtonClass =
-    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8af8f]/50 text-[#f3e7d9] transition hover:border-[#c8af8f] hover:bg-[#c8af8f]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#c8af8f] focus-visible:ring-offset-2 focus-visible:ring-offset-[#2a3923] md:hidden';
+  const iconBtnClass =
+    'inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#BFA882]/40 text-[#BFA882] transition hover:border-[#BFA882] hover:bg-[#BFA882]/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#BFA882] md:hidden';
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[#3a5030] bg-[#2a3923]">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-3">
-          <img
-            src={melodiLogo}
-            alt="Melodi Nails logo"
-            loading="lazy"
-            className="h-12 w-auto object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)]"
-          />
-          <span className="text-sm font-semibold uppercase tracking-[0.45em] text-[#f3e7d9]">
-            MELODI NAILS
+    <header
+      className={`sticky top-0 z-40 border-b border-white/10 bg-ts-charcoal transition-all duration-300 ${
+        scrolled ? 'py-0 shadow-[0_4px_24px_rgba(0,0,0,0.4)]' : ''
+      }`}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        {/* Logo / wordmark */}
+        <Link to="/" className="flex flex-col leading-none focus:outline-none focus-visible:underline" aria-label="Tredici Social — home">
+          <span className="font-heading text-xl font-medium tracking-[0.12em] text-white">
+            Tredici Social
+          </span>
+          <span className="text-[9px] font-semibold uppercase tracking-[0.5em] text-ts-gold">
+            Bronxville · New York
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-8 text-xs font-semibold uppercase tracking-[0.3em] md:flex">
-          {navItems.map((item) => (
-            <NavItem key={item.label} item={item} onNavigate={closeMenu} />
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-8 md:flex" aria-label="Main navigation">
+          {NAV_ITEMS.map((item) => (
+            <NavItem key={item.label} item={item} onNavigate={closeMenu} location={location} />
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          {isAuthenticated ? (
-            <Button
-              type="button"
-              variant="light"
-              onClick={handleSignOut}
-              className="hidden md:inline-flex"
-            >
-              {copy.signOut}
-            </Button>
-          ) : null}
+        {/* Desktop CTA */}
+        <a
+          href="https://www.opentable.com/r/tredici-social-bronxville"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden rounded-full border border-ts-crimson bg-ts-crimson px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-ts-garnet md:inline-flex"
+          aria-label="Reserve a table on OpenTable"
+        >
+          Reserve
+        </a>
 
-          {shouldShowConsult ? (
-            <Button
-              type="button"
-              variant="light"
-              onClick={handleConsultNavigate}
-              className="hidden md:inline-flex"
-            >
-              {copy.bookNow}
-            </Button>
-          ) : null}
-
-          {shouldShowConsult ? (
-            <button
-              type="button"
-              onClick={handleConsultNavigate}
-              className={iconButtonClass}
-              aria-label={copy.bookAppointment}
-            >
-              <IconCalendar className="h-5 w-5" />
-            </button>
-          ) : null}
+        {/* Mobile icon group */}
+        <div className="flex items-center gap-2 md:hidden">
+          <a
+            href="https://www.opentable.com/r/tredici-social-bronxville"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={iconBtnClass.replace('md:hidden', '')}
+            aria-label="Reserve a table on OpenTable"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="17" height="16" rx="2" />
+              <path d="M8 2.5v4M16 2.5v4M3.5 9.5h17" />
+              <circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+          </a>
 
           <button
             type="button"
-            onClick={handleToggleMenu}
-            className={iconButtonClass}
-            aria-label={menuOpen ? copy.closeMenu : copy.openMenu}
+            ref={toggleButtonRef}
+            onClick={() => setMenuOpen((o) => !o)}
+            className={iconBtnClass.replace('md:hidden', '')}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation"
-            ref={toggleButtonRef}
           >
-            {menuOpen ? (
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            )}
+          {menuOpen ? (
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
           </button>
-        </div>
+        </div>{/* end mobile icon group */}
       </div>
 
-      {menuOpen ? (
+      {/* Mobile nav panel */}
+      {menuOpen && (
         <div
           id="mobile-navigation"
-          className="border-t border-[#3a5030] bg-[#243020] px-6 py-4 text-xs uppercase tracking-[0.3em] md:hidden"
           ref={menuPanelRef}
+          className="border-t border-white/10 bg-[#2E1F18] px-6 py-5 md:hidden"
         >
-          <nav className="flex flex-col gap-4">
-            {navItems.map((item) => (
-              <NavItem key={item.label} item={item} onNavigate={closeMenu} />
+          <nav className="flex flex-col gap-5" aria-label="Mobile navigation">
+            {NAV_ITEMS.map((item) => (
+              <NavItem key={item.label} item={item} onNavigate={closeMenu} location={location} />
             ))}
-            {shouldShowConsult ? (
-              <button
-                type="button"
-                onClick={handleConsultNavigate}
-                className="text-left text-[#c8af8f] transition-colors hover:text-[#f3e7d9] focus:outline-none focus-visible:underline"
-              >
-                {copy.bookNow}
-              </button>
-            ) : null}
           </nav>
-          {isAuthenticated ? (
-            <div className="mt-4">
-              <Button type="button" variant="light" onClick={handleSignOut}>
-                {copy.signOut}
-              </Button>
-            </div>
-          ) : null}
+          <a
+            href="https://www.opentable.com/r/tredici-social-bronxville"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 block w-full rounded-full bg-ts-crimson py-3 text-center text-[11px] font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-ts-garnet"
+            onClick={closeMenu}
+          >
+            Reserve on OpenTable
+          </a>
         </div>
-      ) : null}
+      )}
     </header>
   );
 }

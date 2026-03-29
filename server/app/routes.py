@@ -5234,3 +5234,49 @@ def admin_delete_appointment_asset(appointment_id, asset_id):
         return jsonify({"error": "Unable to delete asset."}), 500
 
     return jsonify({"status": "deleted"})
+
+
+# ---------------------------------------------------------------------------
+# Tredici Social — public contact endpoints
+# ---------------------------------------------------------------------------
+
+
+@api_bp.route("/api/contact/private-events", methods=["POST"])
+@limiter.limit("5 per hour")
+def contact_private_events():
+    """Accept a private events inquiry and forward it via Mailgun to the restaurant."""
+    from .emails.base import mailgun_send
+
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    if not name or not email:
+        return jsonify({"error": "Name and email are required."}), 422
+
+    phone = (data.get("phone") or "Not provided").strip()
+    date = (data.get("date") or "Not provided").strip()
+    time_ = (data.get("time") or "Not provided").strip()
+    party_size = str(data.get("party_size") or "Not provided").strip()
+    event_type = (data.get("event_type") or "Not specified").strip()
+    message = (data.get("message") or "").strip()
+
+    subject = f"Private Event Inquiry — {event_type} — {name}"
+    separator = "=" * 40
+    text_body = (
+        f"Private Events Inquiry\n"
+        f"{separator}\n"
+        f"Name:        {name}\n"
+        f"Email:       {email}\n"
+        f"Phone:       {phone}\n"
+        f"Date:        {date}\n"
+        f"Time:        {time_}\n"
+        f"Party Size:  {party_size}\n"
+        f"Event Type:  {event_type}\n\n"
+        f"Message:\n{message or '(none)'}\n"
+    )
+
+    admin_email = current_app.config.get("ADMIN_EMAIL") or current_app.config.get("MAILGUN_FROM")
+    if admin_email:
+        mailgun_send(to=admin_email, subject=subject, text=text_body, tags=("private-events",))
+
+    return jsonify({"status": "received"}), 200

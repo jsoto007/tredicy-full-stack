@@ -1,148 +1,98 @@
-import { useEffect, useMemo, useState } from 'react';
+// MenuHighlights — featured dishes on the landing page.
+// This replaces the nail salon "Services" section.
+import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
-import Card from '../components/Card.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
-import staticServices from '../data/services.json';
-import { useLanguage } from '../contexts/LanguageContext.jsx';
-import { apiGet } from '../lib/api.js';
 
-const PRICE_FORMATTER = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
+const FEATURED = [
+  {
+    id: 'f1',
+    category: 'Antipasto',
+    name: 'Polpo alla Griglia',
+    description: 'Grilled Spanish octopus, Calabrian chili, white bean purée, pickled celery, smoked paprika oil',
+    accent: '#6B1528',
+  },
+  {
+    id: 'f2',
+    category: 'Pasta',
+    name: 'Tagliatelle al Ragù',
+    description: 'Fresh egg tagliatelle, slow-braised Wagyu beef and pork ragù, Parmigiano-Reggiano',
+    accent: '#9B2335',
+    badge: 'House Signature',
+  },
+  {
+    id: 'f3',
+    category: 'Secondi',
+    name: 'Costata di Manzo',
+    description: '28-day dry-aged bone-in ribeye, rosemary-garlic compound butter, natural jus',
+    accent: '#BFA882',
+    badge: 'For the Table',
+  },
+  {
+    id: 'f4',
+    category: 'Dolci',
+    name: 'Tiramisù della Casa',
+    description: 'Classic house tiramisù, espresso-soaked ladyfingers, mascarpone, Valrhona cocoa',
+    accent: '#2E1F18',
+    badge: 'House Signature',
+  },
+];
 
-function formatPrice(cents) {
-  if (cents == null) return null;
-  if (cents === 0) return 'Gratis';
-  return PRICE_FORMATTER.format(cents / 100);
-}
-
-function formatDuration(minutes) {
-  if (!minutes) return null;
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  const parts = [];
-  if (hours) parts.push(`${hours}h`);
-  if (remainder) parts.push(`${remainder}m`);
-  return parts.join(' ') || null;
-}
-
-// Normalize API option → display shape (DB fields take priority, fallback to static)
-function toDisplayService(option) {
-  return {
-    id: String(option.id),
-    name: option.name || 'Servicio',
-    tagline: option.tagline || '',
-    description: option.description || '',
-    category: option.category || 'Otros',
-    duration: formatDuration(option.duration_minutes),
-    price_cents: option.price_cents,
-  };
-}
-
-// Group an array of services by their category, preserving insertion order.
-function groupByCategory(services) {
-  const map = new Map();
-  for (const svc of services) {
-    const cat = svc.category || 'Otros';
-    if (!map.has(cat)) map.set(cat, []);
-    map.get(cat).push(svc);
-  }
-  return map;
-}
-
-export default function Services() {
-  const { isSpanish } = useLanguage();
-  const [sessionOptions, setSessionOptions] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    apiGet('/api/pricing/session-options', { signal: controller.signal })
-      .then((data) => {
-        if (Array.isArray(data)) setSessionOptions(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-    return () => controller.abort();
-  }, []);
-
-  // Use API data when available; fall back to static JSON (no prices).
-  const displayServices = useMemo(() => {
-    if (!loaded || !sessionOptions.length) {
-      return staticServices.map((s) => ({ ...s, id: s.id }));
-    }
-    return sessionOptions.map(toDisplayService);
-  }, [loaded, sessionOptions]);
-
-  const groupedServices = useMemo(() => groupByCategory(displayServices), [displayServices]);
-
-  const copy = isSpanish
-    ? {
-        eyebrow: 'Servicios',
-        title: 'Servicios que ofrecemos',
-        description:
-          'Este menú destaca citas exclusivas enfocadas en estructura, detalle y belleza duradera.',
-      }
-    : {
-        eyebrow: 'Menu',
-        title: 'Services we offer',
-        description:
-          'This menu highlights signature appointments focused on structure, detail, and long-lasting beauty.',
-      };
-
+export default function MenuHighlights() {
   return (
-    <section id="services" className="bg-[#ECE7E2] py-16 text-[#23301d]">
-      <FadeIn className="mx-auto flex max-w-6xl flex-col gap-14 px-6" delayStep={0.12}>
-        <SectionTitle
-          eyebrow={copy.eyebrow}
-          title={copy.title}
-          description={copy.description}
-        />
+    <section id="menu-highlights" className="bg-ts-charcoal py-20 text-white">
+      <FadeIn className="mx-auto flex max-w-7xl flex-col gap-12 px-6" delayStep={0.12}>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <SectionTitle
+            eyebrow="From Our Kitchen"
+            title="Dishes worth the drive"
+            description="A few of the plates that define Tredici Social — rooted in Italian craft, made with obsessive care."
+            light
+          />
+          <Link
+            to="/menu"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-ts-gold/50 px-6 py-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-ts-gold transition hover:border-ts-gold hover:bg-ts-gold/10"
+          >
+            Full Menu
+            <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </Link>
+        </div>
 
-        {Array.from(groupedServices.entries()).map(([category, services]) => (
-          <div key={category} className="space-y-6">
-            <div className="flex items-center gap-4">
-              <p className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.35em] text-[#6f7863]">
-                {category}
-              </p>
-              <div className="h-px flex-1 bg-[#d3c9bc]" />
-            </div>
-
-            <FadeIn
-              className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
-              childClassName="h-full"
-              delayStep={0.1}
+        <FadeIn
+          className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"
+          childClassName="h-full"
+          delayStep={0.1}
+        >
+          {FEATURED.map((dish) => (
+            <div
+              key={dish.id}
+              className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#2E1F18] transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-card-hover"
             >
-              {services.map((service) => (
-                <Card key={service.id} className="h-full space-y-4 bg-[#fffaf5]/95">
-                  {service.tagline ? (
-                    <p className="text-xs uppercase tracking-[0.3em] text-[#6f7863]">
-                      {service.tagline}
-                    </p>
-                  ) : null}
-                  <div className="flex items-start justify-between gap-3">
-                    <h3 className="text-xl font-semibold text-slate-900">{service.name}</h3>
-                    {service.price_cents != null && (
-                      <span className="mt-0.5 shrink-0 rounded-full bg-[#2a3923] px-3 py-1 text-xs font-semibold text-[#f3e7d9]">
-                        {formatPrice(service.price_cents)}
-                      </span>
-                    )}
-                  </div>
-                  {service.description ? (
-                    <p className="text-sm leading-relaxed text-slate-700">{service.description}</p>
-                  ) : null}
-                  {service.duration ? (
-                    <p className="text-xs uppercase tracking-[0.3em] text-[#8d755a]">
-                      Aprox. {service.duration}
-                    </p>
-                  ) : null}
-                </Card>
-              ))}
-            </FadeIn>
-          </div>
-        ))}
+              {/* Color accent bar */}
+              <div
+                className="h-1 w-full"
+                style={{ background: dish.accent }}
+                aria-hidden="true"
+              />
+              <div className="flex flex-1 flex-col gap-3 p-6">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-gold">
+                    {dish.category}
+                  </span>
+                  {dish.badge && (
+                    <span className="rounded-full bg-ts-crimson/20 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.3em] text-ts-gold">
+                      {dish.badge}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-heading text-xl font-medium text-white">{dish.name}</h3>
+                <p className="flex-1 text-sm leading-relaxed text-ts-light-text/65">{dish.description}</p>
+              </div>
+            </div>
+          ))}
+        </FadeIn>
       </FadeIn>
     </section>
   );
