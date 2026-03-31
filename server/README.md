@@ -24,8 +24,8 @@ Build the React client (`npm run build --prefix client`) so Flask can serve the 
 | Name | Description |
 | --- | --- |
 | `FLASK_ENV` | Flask environment name |
-| `DATABASE_URL` | Database connection string. Must target the `/tredicy_db` database. |
-| `DATABASE_URI` | Optional fallback database connection string for local/dev setups. |
+| `DATABASE_URL` | Preferred database connection string in production. Must target the `/tredicy_db` database. |
+| `DATABASE_URI` | Optional fallback database connection string for local/dev setups. Also must target the `/tredicy_db` database. |
 | `SECRET_KEY` | Secret key for session security and signing |
 | `ADMIN_BOOTSTRAP_EMAIL` | Optional admin email to create or update on deploy |
 | `ADMIN_BOOTSTRAP_PASSWORD` | Optional admin password to set on deploy |

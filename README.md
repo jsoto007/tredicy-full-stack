@@ -58,7 +58,8 @@ The dev server proxies `/api/*` to `http://127.0.0.1:5000`, keeping credentialed
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | `client/.env` | Base URL for the Flask API (default blank so relative paths hit the hosting origin – override this when the API lives on another host) |
 | `FLASK_ENV` | `server/.env` | Flask environment (`development`, `production`, etc.) |
-| `DATABASE_URI` | `server/.env` | Database connection string; must target the `tredicy_db` database |
+| `DATABASE_URL` | `server/.env` | Preferred database connection string in production; must target the `tredicy_db` database |
+| `DATABASE_URI` | `server/.env` | Optional local fallback connection string; also must target the `tredicy_db` database |
 | `SECRET_KEY` | `server/.env` | Secret key for Flask session security |
 | `UPLOADS_S3_BUCKET` | `server/.env` | Optional. When set, gallery uploads are stored in this AWS S3 bucket. |
 | `UPLOADS_S3_REGION` | `server/.env` | AWS region for the uploads bucket. |

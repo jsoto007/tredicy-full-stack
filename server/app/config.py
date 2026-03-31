@@ -49,7 +49,10 @@ def _engine_defaults(app: Flask) -> Dict[str, Any]:
 
 def _resolve_database_uri(app: Flask) -> str:
     """Determine the database URI and require the tredicy_db database."""
-    uri = os.getenv("DATABASE_URI") or os.getenv("DATABASE_URL")
+    # Prefer the platform-provided URL when both are present.
+    # This avoids a stale DATABASE_URI loaded from a checked-in .env from
+    # overriding the current deployment connection string.
+    uri = os.getenv("DATABASE_URL") or os.getenv("DATABASE_URI")
     if not uri:
         raise RuntimeError("DATABASE_URL or DATABASE_URI must be set and point to the /tredicy_db database.")
 

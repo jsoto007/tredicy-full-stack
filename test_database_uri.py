@@ -17,6 +17,19 @@ def test_resolve_database_uri_accepts_tredicy_db(monkeypatch):
     assert _resolve_database_uri(Flask(__name__)) == "postgresql+psycopg2://user:pass@127.0.0.1:5432/tredicy_db"
 
 
+def test_resolve_database_uri_prefers_database_url(monkeypatch):
+    monkeypatch.setenv(
+        "DATABASE_URI",
+        "postgresql+psycopg2://user:pass@127.0.0.1:5432/stale_db",
+    )
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg2://user:pass@127.0.0.1:5432/tredicy_db",
+    )
+
+    assert _resolve_database_uri(Flask(__name__)) == "postgresql+psycopg2://user:pass@127.0.0.1:5432/tredicy_db"
+
+
 def test_resolve_database_uri_rejects_other_database(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URI",
