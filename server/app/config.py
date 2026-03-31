@@ -49,20 +49,20 @@ def _engine_defaults(app: Flask) -> Dict[str, Any]:
 
 def _resolve_database_uri(app: Flask) -> str:
     """Determine the database URI and require the tredicy_db database."""
-    uri = os.getenv("DATABASE_URI")
+    uri = os.getenv("DATABASE_URI") or os.getenv("DATABASE_URL")
     if not uri:
-        raise RuntimeError("DATABASE_URI must be set and point to the /tredicy_db database.")
+        raise RuntimeError("DATABASE_URL or DATABASE_URI must be set and point to the /tredicy_db database.")
 
     parsed = urlparse(uri)
     if parsed.scheme.startswith("sqlite"):
         if os.getenv("PYTEST_CURRENT_TEST"):
             return uri
-        raise RuntimeError("SQLite DATABASE_URI is only allowed during automated tests.")
+        raise RuntimeError("SQLite DATABASE_URL/DATABASE_URI is only allowed during automated tests.")
 
     database_name = unquote(parsed.path.lstrip("/"))
     if database_name != "tredicy_db":
         raise RuntimeError(
-            f"DATABASE_URI must target the /tredicy_db database, got /{database_name or '<missing>'}."
+            f"DATABASE_URL/DATABASE_URI must target the /tredicy_db database, got /{database_name or '<missing>'}."
         )
 
     return uri
