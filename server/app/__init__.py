@@ -6,6 +6,7 @@ from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from flask_migrate import Migrate
 from dotenv import load_dotenv
+from sqlalchemy import func
 
 from .config import configure_app, db
 from .extensions import limiter
@@ -141,6 +142,34 @@ def create_app():
             db.session.add(admin)
             db.session.commit()
             click.echo(f"Admin account created: {email}")
+
+    @app.cli.command("ensure-bootstrap-admin")
+    def ensure_bootstrap_admin():
+        """Create or update a bootstrap admin from ADMIN_BOOTSTRAP_* env vars."""
+        from .models import AdminAccount
+
+        name = (os.getenv("ADMIN_BOOTSTRAP_NAME") or "").strip()
+        email = (os.getenv("ADMIN_BOOTSTRAP_EMAIL") or "").strip().lower()
+        password = os.getenv("ADMIN_BOOTSTRAP_PASSWORD") or ""
+
+        if not email or not password:
+            click.echo("Skipping bootstrap admin: ADMIN_BOOTSTRAP_EMAIL and ADMIN_BOOTSTRAP_PASSWORD are required.")
+            return
+
+        existing = AdminAccount.query.filter(func.lower(AdminAccount.email) == email).first()
+        if existing:
+            if name:
+                existing.name = name
+            existing.set_password(password)
+            db.session.commit()
+            click.echo(f"Bootstrap admin updated: {email}")
+            return
+
+        admin = AdminAccount(name=name or email.split("@", 1)[0].title(), email=email)
+        admin.set_password(password)
+        db.session.add(admin)
+        db.session.commit()
+        click.echo(f"Bootstrap admin created: {email}")
 
     @app.cli.command("optimize-uploads")
     @click.option("--max-edge", default=1600, show_default=True, type=int, help="Maximum image edge (px) when optimizing.")
