@@ -1620,7 +1620,10 @@ def handle_rate_limit(exc: RateLimitExceeded):
 
 
 def load_json_setting(key: str, default):
-    setting = SystemSetting.query.filter_by(key=key).first()
+    try:
+        setting = SystemSetting.query.filter_by(key=key).first()
+    except SQLAlchemyError:
+        return default
     if not setting or setting.value is None:
         return default
     try:
@@ -2480,12 +2483,17 @@ def auth_login():
         except SQLAlchemyError:
             db.session.rollback()
             return jsonify({"error": "Unable to establish session."}), 500
+        try:
+            profile = serialize_user_profile(client)
+        except Exception:
+            current_app.logger.exception("User login succeeded but profile serialization failed for user %s.", client.id)
+            profile = {"id": client.id, "email": client.email, "role": client.role}
         csrf_token = get_csrf_token()
         return jsonify(
             {
                 "role": "user",
                 "redirect_to": "/portal/dashboard",
-                "profile": serialize_user_profile(client),
+                "profile": profile,
                 "csrf_token": csrf_token,
             }
         )
