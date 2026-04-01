@@ -4,6 +4,8 @@ from html import escape
 from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
+import os
+
 from flask import current_app
 
 from .base import brand_name, client_base_url, email_logo_url, mailgun_send
@@ -17,7 +19,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def _default_currency() -> str:
-    return (current_app.config.get("STRIPE_CURRENCY") or "USD").upper()
+    return (os.getenv("PAYMENT_CURRENCY") or "USD").upper()
 
 
 def _format_currency(amount_cents: int | float | None, currency: str | None = None) -> str:

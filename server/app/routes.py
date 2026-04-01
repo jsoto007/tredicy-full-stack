@@ -14,7 +14,6 @@ from uuid import uuid4
 from urllib.parse import urlsplit
 
 import boto3
-import stripe
 from botocore.exceptions import BotoCoreError, ClientError
 from PIL import Image, UnidentifiedImageError
 from flask import Blueprint, current_app, g, jsonify, request, send_file, send_from_directory, session
@@ -45,7 +44,6 @@ from .models import (
     AdminActivityLog,
     AppointmentAsset,
     AppointmentPayment,
-    BookingDraft,
     ClientAccount,
     AccountActivationToken,
     EmailVerificationToken,
@@ -163,8 +161,8 @@ DEFAULT_SLOT_INTERVAL_MINUTES = 60
 MINIMUM_APPOINTMENT_DURATION_MINUTES = 60
 
 ACTIVATION_TOKEN_TTL = timedelta(hours=24)
-EMAIL_VERIFICATION_TTL = timedelta(minutes=30)
-PASSWORD_RESET_TTL = timedelta(minutes=30)
+EMAIL_VERIFICATION_TTL = timedelta(hours=24)
+PASSWORD_RESET_TTL = timedelta(hours=2)
 VERIFICATION_CODE_LENGTH = 6
 PASSWORD_MIN_LENGTH = 8
 
@@ -189,7 +187,6 @@ CSRF_EXEMPT_ENDPOINTS = {
     "api.auth_login",
     "api.auth_register",
     "api.auth_csrf",
-    "api.stripe_webhook",
 }
 
 SIZE_MULTIPLIERS = {
@@ -201,26 +198,6 @@ SIZE_MULTIPLIERS = {
 
 class MediaStorageError(Exception):
     pass
-
-
-class StripePaymentError(Exception):
-    pass
-
-
-class StripePaymentPendingError(StripePaymentError):
-    pass
-
-
-class StripePaymentTerminalError(StripePaymentError):
-    pass
-
-
-def _stripe_get(value, key, default=None):
-    if value is None:
-        return default
-    if isinstance(value, dict):
-        return value.get(key, default)
-    return getattr(value, key, default)
 
 
 def _use_s3_uploads() -> bool:
@@ -479,28 +456,12 @@ def decrypt_identity_value(value: str | None) -> str | None:
         return None
 
 
-def _stripe_payments_active() -> bool:
-    return bool(current_app.config.get("STRIPE_SECRET_KEY"))
-
-
-def _stripe_public_enabled() -> bool:
-    return bool(current_app.config.get("STRIPE_PUBLISHABLE_KEY"))
-
-
 def _payment_currency() -> str:
-    return (current_app.config.get("STRIPE_CURRENCY") or "USD").upper()
+    return (os.getenv("PAYMENT_CURRENCY") or "USD").upper()
 
 
 def _payment_country_code() -> str:
-    return (current_app.config.get("STRIPE_COUNTRY_CODE") or "US").upper()
-
-
-def _stripe_client():
-    api_key = current_app.config.get("STRIPE_SECRET_KEY")
-    if not api_key:
-        raise StripePaymentError("Stripe payments are not configured.")
-    stripe.api_key = api_key
-    return stripe
+    return (os.getenv("PAYMENT_COUNTRY_CODE") or "US").upper()
 
 
 def _public_client_base_url() -> str:
@@ -508,160 +469,6 @@ def _public_client_base_url() -> str:
     if configured:
         return configured
     return request.host_url.rstrip("/")
-
-
-def _create_stripe_checkout_for_draft(draft: BookingDraft, contact_email: str | None) -> dict:
-    """Create a Stripe embedded checkout session for a BookingDraft.
-
-    The appointment is NOT created yet — it is created only after payment succeeds.
-    The draft ID is stored in session metadata so it can be retrieved on fulfillment.
-    """
-    base_url = _public_client_base_url()
-    checkout = _stripe_client().checkout.Session.create(
-        mode="payment",
-        ui_mode="embedded",
-        return_url=f"{base_url}/booking/confirmation?session_id={{CHECKOUT_SESSION_ID}}",
-        customer_email=contact_email or None,
-        metadata={"booking_draft_id": str(draft.id)},
-        line_items=[
-            {
-                "quantity": 1,
-                "price_data": {
-                    "currency": draft.currency.lower(),
-                    "unit_amount": draft.amount_cents,
-                    "product_data": {
-                        "name": draft.payment_note or "Nail appointment",
-                        "description": draft.session_option.name if draft.session_option else "Nail appointment",
-                    },
-                },
-            }
-        ],
-    )
-    return checkout
-
-
-def _fulfill_booking_draft(
-    draft: BookingDraft,
-    stripe_session: dict,
-) -> tuple[TattooAppointment, AppointmentPayment]:
-    """Create a TattooAppointment and AppointmentPayment from a fulfilled BookingDraft.
-
-    Idempotent: if the draft already has a fulfilled_appointment_id the existing
-    appointment is returned without creating a duplicate.
-    """
-    if draft.fulfilled_appointment_id:
-        appointment = TattooAppointment.query.options(
-            joinedload(TattooAppointment.client),
-            joinedload(TattooAppointment.payments),
-        ).get(draft.fulfilled_appointment_id)
-        payment = next(
-            (p for p in (appointment.payments or []) if p.provider == "stripe"),
-            None,
-        )
-        return appointment, payment
-
-    email = (draft.email or "").strip().lower()
-    existing_client = ClientAccount.query.filter(func.lower(ClientAccount.email) == email).first()
-    if existing_client:
-        client_account = existing_client
-        if draft.first_name and not client_account.first_name:
-            client_account.first_name = draft.first_name
-        if draft.last_name and not client_account.last_name:
-            client_account.last_name = draft.last_name
-        if draft.phone and not client_account.phone:
-            client_account.phone = draft.phone
-    else:
-        client_account = ClientAccount(
-            first_name=draft.first_name,
-            last_name=draft.last_name,
-            email=email,
-            phone=draft.phone,
-            is_guest=True,
-            role="user",
-        )
-        db.session.add(client_account)
-        db.session.flush()
-
-    session_option = SessionOption.query.get(draft.session_option_id)
-    contact_name = f"{draft.first_name} {draft.last_name}".strip()
-
-    appointment = TattooAppointment(
-        reference_code=generate_reference_code(),
-        client=client_account,
-        client_description=draft.notes or None,
-        scheduled_start=draft.scheduled_start,
-        duration_minutes=session_option.duration_minutes if session_option else None,
-        suggested_duration_minutes=session_option.duration_minutes if session_option else None,
-        status="pending",
-        placement_notes=draft.notes or None,
-        session_option=session_option,
-    )
-    appointment.contact_name = contact_name
-    appointment.contact_email = draft.email
-    appointment.contact_phone = draft.phone
-    if client_account.is_guest:
-        appointment.guest_name = contact_name
-        appointment.guest_email = draft.email
-        appointment.guest_phone = draft.phone
-
-    db.session.add(appointment)
-    db.session.flush()
-
-    assets = []
-    if draft.inspiration_data:
-        try:
-            urls = json.loads(draft.inspiration_data)
-            for url in urls:
-                if url and isinstance(url, str):
-                    assets.append(AppointmentAsset(
-                        appointment=appointment,
-                        kind="inspiration_image",
-                        file_url=url,
-                        is_visible_to_client=True,
-                    ))
-        except (json.JSONDecodeError, TypeError, ValueError):
-            pass
-
-    if draft.notes:
-        assets.append(AppointmentAsset(
-            appointment=appointment,
-            kind="description",
-            note_text=draft.notes,
-            is_visible_to_client=True,
-        ))
-
-    if assets:
-        db.session.add_all(assets)
-
-    amount_total = int(stripe_session.get("amount_total") or draft.amount_cents)
-    receipt_url = None
-    payment_intent_id = stripe_session.get("payment_intent")
-    if payment_intent_id:
-        try:
-            payment_intent = _stripe_client().PaymentIntent.retrieve(payment_intent_id)
-            charges_container = _stripe_get(payment_intent, "charges")
-            charges = _stripe_get(charges_container, "data", []) or []
-            if charges:
-                receipt_url = _stripe_get(charges[0], "receipt_url")
-        except Exception:
-            pass
-
-    checkout_session_id = stripe_session.get("id", "")
-    payment = AppointmentPayment(
-        appointment=appointment,
-        provider="stripe",
-        provider_payment_id=checkout_session_id,
-        status="paid",
-        amount_cents=amount_total,
-        currency=(stripe_session.get("currency") or draft.currency or "usd").upper(),
-        receipt_url=receipt_url,
-        note=draft.payment_note or "Stripe Checkout payment",
-    )
-    db.session.add(payment)
-
-    draft.fulfilled_appointment_id = appointment.id
-
-    return appointment, payment
 
 
 def _latest_identity_assets_for_client(client: ClientAccount):
@@ -1010,121 +817,6 @@ def _appointment_blocks_availability(
         probe.updated_at = appointment_updated_at
         return _is_payment_hold_active(probe, now=now)
     return True
-
-
-def sync_checkout_payment_for_appointment(
-    appointment: TattooAppointment,
-    checkout_session_id: str | None,
-    *,
-    checkout_session: dict | None = None,
-):
-    if not appointment or not checkout_session_id:
-        raise StripePaymentError("Stripe session is required.")
-
-    existing_payment = next(
-        (
-            payment
-            for payment in (appointment.payments or [])
-            if payment.provider == "stripe" and payment.provider_payment_id == checkout_session_id
-        ),
-        None,
-    )
-
-    if existing_payment and existing_payment.status == "paid":
-        if appointment.status == "awaiting_payment":
-            appointment.status = "pending"
-        return existing_payment
-
-    checkout = checkout_session or _stripe_client().checkout.Session.retrieve(checkout_session_id)
-    if str(checkout.get("client_reference_id") or "") != str(appointment.id):
-        raise StripePaymentError("Stripe session does not match this appointment.")
-
-    payment_intent_id = checkout.get("payment_intent")
-    payment_intent = _stripe_client().PaymentIntent.retrieve(payment_intent_id) if payment_intent_id else None
-    payment_intent_status = _stripe_get(payment_intent, "status") if payment_intent else None
-    checkout_payment_status = (checkout.get("payment_status") or "").lower()
-    checkout_status = (checkout.get("status") or "").lower()
-
-    if checkout_payment_status != "paid" and payment_intent_status != "succeeded":
-        if checkout_status == "expired" or payment_intent_status in {"canceled", "requires_payment_method"}:
-            if existing_payment:
-                existing_payment.status = "failed"
-            if appointment.status == "awaiting_payment":
-                appointment.status = "payment_expired" if checkout_status == "expired" else "payment_failed"
-            raise StripePaymentTerminalError("Stripe payment was not completed.")
-        raise StripePaymentPendingError("Stripe payment is still processing.")
-
-    amount_total = int(checkout.get("amount_total") or 0)
-    receipt_url = None
-    charges_container = _stripe_get(payment_intent, "charges")
-    charges = _stripe_get(charges_container, "data", []) or []
-    if charges:
-        first_charge = charges[0]
-        receipt_url = _stripe_get(first_charge, "receipt_url")
-
-    if not existing_payment:
-        existing_payment = AppointmentPayment(
-            appointment=appointment,
-            provider="stripe",
-            provider_payment_id=checkout_session_id,
-            status="paid",
-            amount_cents=amount_total,
-            currency=(checkout.get("currency") or _payment_currency()).upper(),
-            receipt_url=receipt_url,
-            note="Stripe Checkout payment",
-        )
-        db.session.add(existing_payment)
-    else:
-        existing_payment.status = "paid"
-        existing_payment.amount_cents = amount_total or existing_payment.amount_cents
-        existing_payment.currency = (checkout.get("currency") or existing_payment.currency or _payment_currency()).upper()
-        existing_payment.receipt_url = receipt_url or existing_payment.receipt_url
-        existing_payment.note = existing_payment.note or "Stripe Checkout payment"
-
-    if appointment.status == "awaiting_payment":
-        appointment.status = "pending"
-
-    return existing_payment
-
-
-def _load_appointment_for_payment(appointment_id: int | str | None):
-    if appointment_id in {None, ""}:
-        return None
-    try:
-        normalized_id = int(appointment_id)
-    except (TypeError, ValueError):
-        return None
-    return TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.assigned_admin),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-        joinedload(TattooAppointment.payments),
-        joinedload(TattooAppointment.session_option),
-    ).get(normalized_id)
-
-
-def _notify_for_paid_appointment(appointment: TattooAppointment, payment: AppointmentPayment):
-    booking_fee_percent = load_booking_fee_percent()
-    session_price_cents = appointment.session_option.price_cents if appointment.session_option else calculate_session_price_cents(appointment.duration_minutes)
-    charge_amount = payment.amount_cents
-    pay_full_amount = charge_amount >= session_price_cents if session_price_cents else False
-    send_booking_confirmation_email(
-        appointment,
-        charge_amount_cents=charge_amount,
-        session_price_cents=session_price_cents,
-        booking_fee_percent=booking_fee_percent,
-        pay_full_amount=pay_full_amount,
-        receipt_url=payment.receipt_url,
-    )
-    send_internal_booking_notification(
-        appointment,
-        charge_amount_cents=charge_amount,
-        session_price_cents=session_price_cents,
-        booking_fee_percent=booking_fee_percent,
-        pay_full_amount=pay_full_amount,
-        receipt_url=payment.receipt_url,
-    )
 
 
 def _hash_activation_token(token: str) -> str:
@@ -1491,7 +1183,7 @@ def enforce_csrf_protection():
     token = session.get("csrf_token")
     header_token = request.headers.get("X-CSRF-Token")
     if not token or not header_token or not hmac.compare_digest(token, header_token):
-        return jsonify({"error": "Invalid or missing CSRF token."}), 400
+        return jsonify({"error": "Invalid or missing CSRF token."}), 403
 
 
 def allowed_file(filename: str, *, allowed_extensions: set[str] | None = None) -> bool:
@@ -2710,29 +2402,21 @@ def admin_upload_media():
 
 @api_bp.route("/api/payments/config", methods=["GET"])
 def payment_configuration():
-    enabled = _stripe_public_enabled()
     return jsonify(
         {
-            "stripe": {
-                "enabled": enabled,
-                "requires_payment": _stripe_payments_active(),
-                "publishable_key": current_app.config.get("STRIPE_PUBLISHABLE_KEY") if enabled else None,
-                "booking_fee_percent": load_booking_fee_percent(),
-                "minimum_booking_fee_percent": MINIMUM_BOOKING_FEE_PERCENT,
-                "supports_full_payment": True,
-                "currency": _payment_currency(),
-                "country_code": _payment_country_code(),
-            }
+            "enabled": False,
+            "currency": _payment_currency(),
+            "country_code": _payment_country_code(),
+            "booking_fee_percent": load_booking_fee_percent(),
+            "minimum_booking_fee_percent": MINIMUM_BOOKING_FEE_PERCENT,
         }
     )
 
 
 @api_bp.route("/api/payments/health", methods=["GET"])
 def payment_health():
-    """Expose non-secret payment readiness diagnostics for deployment debugging."""
+    """Expose payment readiness diagnostics for deployment debugging."""
     diagnostics = {
-        "stripe_secret_configured": _stripe_payments_active(),
-        "stripe_publishable_configured": _stripe_public_enabled(),
         "currency": _payment_currency(),
         "country_code": _payment_country_code(),
         "client_base_url_configured": bool((current_app.config.get("CLIENT_BASE_URL") or "").strip()),
@@ -2746,20 +2430,13 @@ def payment_health():
         diagnostics["alembic_error"] = str(getattr(exc, "orig", exc))
 
     try:
-        db.session.execute(select(BookingDraft.id).limit(1)).scalar()
-        diagnostics["booking_drafts_accessible"] = True
-    except Exception as exc:
-        diagnostics["booking_drafts_accessible"] = False
-        diagnostics["booking_drafts_error"] = str(getattr(exc, "orig", exc))
-
-    try:
         db.session.execute(select(SessionOption.id).limit(1)).scalar()
         diagnostics["session_options_accessible"] = True
     except Exception as exc:
         diagnostics["session_options_accessible"] = False
         diagnostics["session_options_error"] = str(getattr(exc, "orig", exc))
 
-    status_code = 200 if diagnostics["stripe_secret_configured"] and diagnostics["booking_drafts_accessible"] else 503
+    status_code = 200 if diagnostics.get("session_options_accessible") else 503
     return jsonify(diagnostics), status_code
 
 
@@ -4211,8 +3888,6 @@ def create_appointment():
     errors = []
     signup_verification_code = None
 
-    payments_active = _stripe_payments_active()
-
     client_account_id = payload.get("client_account_id")
     create_account = parse_bool(payload.get("create_account"), default=False)
     password = payload.get("password")
@@ -4380,11 +4055,6 @@ def create_appointment():
     pay_full_amount = parse_bool(payload.get("pay_full_amount"), default=False)
     charge_amount = session_price_cents if pay_full_amount else calculate_booking_fee_amount(session_price_cents, booking_fee_percent)
 
-    requires_payment = charge_amount > 0
-    if requires_payment:
-        if not payments_active:
-            return jsonify({"error": "Payments are currently unavailable. Please try again soon."}), 503
-
     if errors:
         return jsonify({"errors": errors}), 400
 
@@ -4393,9 +4063,6 @@ def create_appointment():
         if pay_full_amount
         else f"{session_option.name or 'Nail appointment'} - {booking_fee_percent}% deposit"
     )
-
-    if requires_payment:
-        return jsonify({"error": "Use /api/payments/stripe/initiate to book paid appointments."}), 400
 
     appointment = TattooAppointment(
         reference_code=generate_reference_code(),
@@ -4485,276 +4152,6 @@ def create_appointment():
             "appointment": serialize_appointment(appointment),
         }
     ), 201
-
-
-@api_bp.route("/api/payments/stripe/initiate", methods=["POST"])
-def initiate_stripe_booking():
-    """Validate booking data, store a BookingDraft, and create a Stripe embedded
-    checkout session.  The appointment is NOT created here — it is created only
-    after Stripe confirms payment via /verify-session or the webhook.
-    """
-    if not _stripe_payments_active():
-        return jsonify({"error": "Payments are currently unavailable. Please try again soon."}), 503
-
-    payload = request.get_json(silent=True) or {}
-    errors = []
-
-    first_name = (payload.get("first_name") or "").strip()
-    last_name = (payload.get("last_name") or "").strip()
-    email = (payload.get("email") or "").strip().lower()
-    phone = (payload.get("phone") or "").strip() or None
-    description = (payload.get("notes") or payload.get("description") or "").strip()
-
-    inspiration_urls = payload.get("inspiration_urls") or []
-    if inspiration_urls and not isinstance(inspiration_urls, list):
-        errors.append({"field": "inspiration_urls", "message": "Inspiration URLs must be a list."})
-    else:
-        inspiration_urls = [u for u in inspiration_urls if isinstance(u, str) and u.strip()]
-
-    if not first_name:
-        errors.append({"field": "first_name", "message": "First name is required."})
-    if not last_name:
-        errors.append({"field": "last_name", "message": "Last name is required."})
-    if not email:
-        errors.append({"field": "email", "message": "Email is required."})
-    if not phone:
-        errors.append({"field": "phone", "message": "Phone number is required."})
-
-    scheduled_start_raw = payload.get("scheduled_start")
-    scheduled_start = parse_iso_datetime(scheduled_start_raw)
-    booking_hours_map = None
-    if not scheduled_start:
-        errors.append({"field": "scheduled_start", "message": "Please choose a session date and start time."})
-    elif scheduled_start.minute % DEFAULT_SLOT_INTERVAL_MINUTES != 0 or scheduled_start.second or scheduled_start.microsecond:
-        errors.append({"field": "scheduled_start", "message": "Start time must align with the hour."})
-    elif scheduled_start < _nyc_now_naive():
-        errors.append({"field": "scheduled_start", "message": "Select a future time slot."})
-    else:
-        booking_hours_map = fetch_working_hours_map()
-
-    session_option = None
-    session_option_id = payload.get("session_option_id")
-    if session_option_id is not None:
-        try:
-            session_option_id = int(session_option_id)
-        except (TypeError, ValueError):
-            errors.append({"field": "session_option_id", "message": "Session option must be a whole number."})
-        else:
-            option = SessionOption.query.get(session_option_id)
-            if not option or not option.is_active:
-                errors.append({"field": "session_option_id", "message": "Session option not found."})
-            else:
-                session_option = option
-    if not session_option:
-        errors.append({"field": "session_option_id", "message": "Please choose a nail service."})
-
-    if errors:
-        return jsonify({"errors": errors}), 400
-
-    duration_minutes = session_option.duration_minutes
-    available_slots, _ = build_available_slots(
-        scheduled_start.date(),
-        duration_minutes,
-        minimum_duration_minutes=duration_minutes,
-        hours_map=booking_hours_map,
-        allow_shorter_than_weekday_minimum=True,
-    )
-    slot_available = any(
-        abs(int((slot["start"] - scheduled_start).total_seconds())) < 60
-        for slot in available_slots
-    )
-    if not slot_available:
-        return jsonify({"errors": [{"field": "scheduled_start", "message": "The selected time is no longer available. Please choose another slot."}]}), 400
-
-    booking_fee_percent = load_booking_fee_percent()
-    session_price_cents = session_option.price_cents
-    pay_full_amount = parse_bool(payload.get("pay_full_amount"), default=False)
-    charge_amount = session_price_cents if pay_full_amount else calculate_booking_fee_amount(session_price_cents, booking_fee_percent)
-
-    if charge_amount <= 0:
-        return jsonify({"error": "Payment amount is invalid."}), 400
-
-    payment_note = (
-        f"{session_option.name} - full payment"
-        if pay_full_amount
-        else f"{session_option.name} - {booking_fee_percent}% deposit"
-    )
-
-    draft = BookingDraft(
-        first_name=first_name,
-        last_name=last_name,
-        email=email,
-        phone=phone,
-        session_option_id=session_option.id,
-        scheduled_start=scheduled_start,
-        notes=description or None,
-        inspiration_data=json.dumps(inspiration_urls) if inspiration_urls else None,
-        pay_full_amount=pay_full_amount,
-        amount_cents=charge_amount,
-        currency=_payment_currency(),
-        payment_note=payment_note,
-        expires_at=datetime.utcnow() + timedelta(hours=2),
-    )
-    db.session.add(draft)
-    try:
-        db.session.flush()
-    except SQLAlchemyError as exc:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Unable to persist booking draft before Stripe checkout creation. "
-            "SQLAlchemy error=%s, original error=%s",
-            exc,
-            getattr(exc, "orig", exc),
-        )
-        return jsonify({"error": "Unable to start booking right now. Please try again soon."}), 503
-
-    try:
-        checkout = _create_stripe_checkout_for_draft(draft, email)
-    except stripe.error.StripeError as exc:
-        db.session.rollback()
-        current_app.logger.warning("Stripe checkout creation failed: %s", exc)
-        return jsonify({"error": str(exc)}), 503
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception("Unexpected error while creating Stripe checkout session.")
-        return jsonify({"error": "Unable to start checkout right now. Please try again soon."}), 503
-
-    draft.stripe_session_id = checkout.get("id")
-
-    try:
-        db.session.commit()
-    except SQLAlchemyError as exc:
-        db.session.rollback()
-        current_app.logger.exception(
-            "Unable to save Stripe checkout session %s for booking draft %s. "
-            "SQLAlchemy error=%s, original error=%s",
-            draft.stripe_session_id,
-            draft.id,
-            exc,
-            getattr(exc, "orig", exc),
-        )
-        return jsonify({"error": "Unable to initiate booking. Please try again."}), 500
-
-    return jsonify({"checkout_client_secret": checkout.get("client_secret")}), 200
-
-
-@api_bp.route("/api/payments/stripe/verify-session", methods=["POST"])
-def verify_stripe_checkout_session():
-    """Verify a Stripe checkout session and create the appointment if payment succeeded.
-
-    Called by the confirmation page after Stripe redirects back from embedded checkout.
-    Creates the appointment from the BookingDraft stored in the session metadata.
-    """
-    payload = request.get_json(silent=True) or {}
-    checkout_session_id = (payload.get("session_id") or "").strip()
-
-    if not checkout_session_id:
-        return jsonify({"error": "session_id is required."}), 400
-
-    try:
-        stripe_session = _stripe_client().checkout.Session.retrieve(checkout_session_id)
-    except stripe.error.StripeError as exc:
-        return jsonify({"error": str(exc)}), 400
-
-    booking_draft_id = (stripe_session.get("metadata") or {}).get("booking_draft_id")
-    if not booking_draft_id:
-        return jsonify({"error": "Booking session not found."}), 400
-
-    draft = BookingDraft.query.get(booking_draft_id)
-    if not draft:
-        return jsonify({"error": "Booking session not found or expired."}), 404
-
-    checkout_payment_status = (stripe_session.get("payment_status") or "").lower()
-    if checkout_payment_status != "paid":
-        checkout_status = (stripe_session.get("status") or "").lower()
-        if checkout_status == "expired":
-            return jsonify({"error": "Payment session expired. Please start a new booking.", "payment_status": "expired"}), 400
-        return jsonify({"payment_status": "processing", "message": "Payment is still processing."}), 202
-
-    try:
-        appointment, payment = _fulfill_booking_draft(draft, stripe_session)
-        db.session.commit()
-    except SQLAlchemyError:
-        db.session.rollback()
-        return jsonify({"error": "Unable to confirm booking. Please contact us."}), 500
-
-    appointment = TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.assigned_admin),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-        joinedload(TattooAppointment.payments),
-    ).get(appointment.id)
-
-    if payment and not draft.fulfilled_appointment_id:
-        _notify_for_paid_appointment(appointment, payment)
-
-    return jsonify(serialize_appointment(appointment)), 200
-
-
-@api_bp.route("/api/payments/stripe/webhook", methods=["POST"])
-def stripe_webhook():
-    """Stripe webhook — fallback fulfillment path for async or missed redirects.
-
-    If the user closed the browser before the return URL was hit, this ensures
-    the appointment is still created once Stripe fires the completed event.
-    """
-    payload = request.get_data(cache=False, as_text=False)
-    signature = request.headers.get("Stripe-Signature", "")
-    webhook_secret = (current_app.config.get("STRIPE_WEBHOOK_SECRET") or "").strip()
-
-    try:
-        if webhook_secret:
-            event = stripe.Webhook.construct_event(payload, signature, webhook_secret)
-        else:
-            current_app.logger.warning("STRIPE_WEBHOOK_SECRET is not configured; skipping signature check.")
-            event = json.loads(payload.decode("utf-8") or "{}")
-    except ValueError:
-        return jsonify({"error": "Invalid Stripe webhook payload."}), 400
-    except stripe.error.SignatureVerificationError:
-        return jsonify({"error": "Invalid Stripe webhook signature."}), 400
-
-    event_type = event.get("type") or ""
-    event_object = ((event.get("data") or {}).get("object")) or {}
-
-    if event_type not in {"checkout.session.completed", "checkout.session.async_payment_succeeded"}:
-        return jsonify({"received": True}), 200
-
-    checkout_session_id = (event_object.get("id") or "").strip()
-    if not checkout_session_id:
-        current_app.logger.warning("Stripe webhook missing checkout session id.")
-        return jsonify({"received": True}), 200
-
-    booking_draft_id = (event_object.get("metadata") or {}).get("booking_draft_id")
-    if not booking_draft_id:
-        current_app.logger.warning("Stripe webhook session %s has no booking_draft_id metadata.", checkout_session_id)
-        return jsonify({"received": True}), 200
-
-    draft = BookingDraft.query.get(booking_draft_id)
-    if not draft:
-        current_app.logger.warning("Stripe webhook referenced missing or expired draft %s.", booking_draft_id)
-        return jsonify({"received": True}), 200
-
-    checkout_payment_status = (event_object.get("payment_status") or "").lower()
-    if checkout_payment_status != "paid":
-        return jsonify({"received": True, "status": "processing"}), 200
-
-    try:
-        appointment, payment = _fulfill_booking_draft(draft, event_object)
-        db.session.commit()
-    except SQLAlchemyError as exc:
-        db.session.rollback()
-        current_app.logger.exception("Unable to fulfill booking draft %s from webhook: %s", booking_draft_id, exc)
-        return jsonify({"error": "Unable to process Stripe webhook."}), 500
-
-    appointment = TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.payments),
-    ).get(appointment.id)
-    if payment:
-        _notify_for_paid_appointment(appointment, payment)
-
-    return jsonify({"received": True}), 200
 
 
 @api_bp.route("/api/admin/appointments", methods=["GET"])

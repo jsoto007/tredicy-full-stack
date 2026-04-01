@@ -82,12 +82,14 @@ def configure_app(app: Flask) -> SQLAlchemy:
     app.config["FLASK_ENV"] = os.getenv("FLASK_ENV", "development")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
     app.config["IDENTITY_ENCRYPTION_KEY"] = os.getenv("IDENTITY_ENCRYPTION_KEY")
+    if not app.config["IDENTITY_ENCRYPTION_KEY"] and app.config.get("FLASK_ENV") == "production":
+        raise RuntimeError("IDENTITY_ENCRYPTION_KEY must be set in production.")
     app.secret_key = app.config["SECRET_KEY"]
 
     if app.config["FLASK_ENV"] == "production" and app.config["SECRET_KEY"] == "dev-secret-key":
         raise RuntimeError("SECRET_KEY must be configured in production environments.")
 
-    app.config.setdefault("SESSION_COOKIE_HTTPONLY", True)
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
     secure_env = os.getenv("SESSION_COOKIE_SECURE")
     if secure_env is None:
         secure_cookie = app.config["FLASK_ENV"] == "production"
@@ -133,20 +135,6 @@ def configure_app(app: Flask) -> SQLAlchemy:
     app.config["UPLOADS_S3_ACL"] = os.getenv("UPLOADS_S3_ACL", "")
     # Presigned URL TTL in seconds (used for admin download links to private objects)
     app.config["UPLOADS_SIGNED_URL_TTL"] = _int_from_env("R2_SIGNED_URL_TTL_SECONDS", 900)
-
-    app.config["STRIPE_SECRET_KEY"] = os.getenv("STRIPE_SECRET_KEY")
-    app.config["STRIPE_PUBLISHABLE_KEY"] = os.getenv("STRIPE_PUBLISHABLE_KEY")
-    app.config["STRIPE_WEBHOOK_SECRET"] = os.getenv("STRIPE_WEBHOOK_SECRET")
-    app.config["STRIPE_CURRENCY"] = (os.getenv("STRIPE_CURRENCY") or "USD").upper()
-    app.config["STRIPE_COUNTRY_CODE"] = (os.getenv("STRIPE_COUNTRY_CODE") or "US").upper()
-    if app.config["FLASK_ENV"] == "production":
-        app.config["STRIPE_FAKE_PAYMENTS"] = False
-    else:
-        fake_flag = os.getenv("STRIPE_FAKE_PAYMENTS")
-        if fake_flag is None:
-            app.config["STRIPE_FAKE_PAYMENTS"] = True
-        else:
-            app.config["STRIPE_FAKE_PAYMENTS"] = fake_flag.strip().lower() in {"1", "true", "yes", "y"}
 
     app.config["MAILGUN_DOMAIN"] = os.getenv("MAILGUN_DOMAIN")
     app.config["MAILGUN_API_KEY"] = os.getenv("MAILGUN_API_KEY")

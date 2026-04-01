@@ -32,7 +32,6 @@ SQLAlchemy-serializer==1.4.12
 typing_extensions==4.13.2
 Werkzeug==3.0.6
 zipp==3.20.2
-stripe==9.7.0
 openpyxl>=3.1
 pyotp==2.9.0
 boto3==1.35.15
