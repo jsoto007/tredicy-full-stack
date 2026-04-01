@@ -39,16 +39,11 @@ def create_app():
 
     from .routes import api_bp
 
+    _cors_origins_raw = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+    _cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
     CORS(
         app,
-        resources={
-            r"/api/*": {
-                "origins": [
-                    "http://127.0.0.1:5173",
-                    "http://localhost:5173",
-                ]
-            }
-        },
+        resources={r"/api/*": {"origins": _cors_origins}},
         supports_credentials=True,
     )
 
@@ -57,6 +52,17 @@ def create_app():
             db.create_all()
 
     app.register_blueprint(api_bp)
+
+    @app.after_request
+    def set_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("X-XSS-Protection", "1; mode=block")
+        if app.config.get("FLASK_ENV") == "production":
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response
 
     def _serve_client_asset(path: str):
         static_dir = app.static_folder

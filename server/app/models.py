@@ -67,7 +67,7 @@ class ClientAccount(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(120))
     last_name = db.Column(db.String(120))
-    email = db.Column(db.String(255), unique=True)
+    email = db.Column(db.String(255), unique=True, index=True)
     phone = db.Column(db.String(40))
     password_hash = db.Column(db.String(255))
     is_guest = db.Column(db.Boolean, default=False, nullable=False)
@@ -325,6 +325,8 @@ class TattooAppointment(TimestampMixin, db.Model):
     __table_args__ = (
         db.Index("ix_tattoo_appointments_scheduled_start", "scheduled_start"),
         db.Index("ix_tattoo_appointments_status", "status"),
+        db.Index("ix_tattoo_appointments_client_id", "client_id"),
+        db.Index("ix_tattoo_appointments_assigned_admin_id", "assigned_admin_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -463,7 +465,7 @@ class AppointmentPayment(TimestampMixin, db.Model):
         db.ForeignKey("tattoo_appointments.id"),
         nullable=False,
     )
-    provider = db.Column(db.String(40), nullable=False, default="stripe")
+    provider = db.Column(db.String(40), nullable=False, default="manual")
     provider_payment_id = db.Column(db.String(120), nullable=False)
     status = db.Column(db.String(40), nullable=False)
     amount_cents = db.Column(db.Integer, nullable=False)
@@ -545,45 +547,6 @@ class StudioWorkingHour(TimestampMixin, db.Model):
     opens_at = db.Column(db.Time, nullable=False)
     closes_at = db.Column(db.Time, nullable=False)
     minimum_duration_minutes = db.Column(db.Integer, default=60, nullable=False)
-
-
-class BookingDraft(db.Model):
-    """Temporary storage for booking data while the user completes Stripe payment.
-
-    A draft is created when the user initiates checkout and is fulfilled
-    (converted into a real TattooAppointment) once Stripe confirms payment.
-    Drafts expire after 2 hours if never fulfilled.
-    """
-
-    __tablename__ = "booking_drafts"
-
-    id = db.Column(db.String(64), primary_key=True, default=lambda: str(uuid4()))
-    stripe_session_id = db.Column(db.String(255), unique=True, nullable=True, index=True)
-    first_name = db.Column(db.String(120), nullable=False)
-    last_name = db.Column(db.String(120), nullable=False)
-    email = db.Column(db.String(255), nullable=False)
-    phone = db.Column(db.String(40), nullable=False)
-    session_option_id = db.Column(db.Integer, db.ForeignKey("session_options.id"), nullable=False)
-    scheduled_start = db.Column(db.DateTime, nullable=False)
-    notes = db.Column(db.Text)
-    inspiration_data = db.Column(db.Text)  # JSON array of base64 data URLs
-    pay_full_amount = db.Column(db.Boolean, default=False, nullable=False)
-    amount_cents = db.Column(db.Integer, nullable=False)
-    currency = db.Column(db.String(3), default="USD", nullable=False)
-    payment_note = db.Column(db.String(255))
-    expires_at = db.Column(db.DateTime, nullable=False)
-    fulfilled_appointment_id = db.Column(
-        db.Integer,
-        db.ForeignKey("tattoo_appointments.id"),
-        nullable=True,
-    )
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    session_option = db.relationship("SessionOption")
-    fulfilled_appointment = db.relationship(
-        "TattooAppointment",
-        foreign_keys=[fulfilled_appointment_id],
-    )
 
 
 class MenuCategory(TimestampMixin, db.Model):
