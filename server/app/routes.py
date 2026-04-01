@@ -2450,12 +2450,17 @@ def auth_login():
     if admin and admin.check_password(password):
         admin.last_login_at = datetime.utcnow()
         set_session("admin", admin.id)
-        log_admin_activity(admin, "login", details="Administrator authenticated.", ip_address=request.remote_addr)
         try:
             db.session.commit()
         except SQLAlchemyError:
             db.session.rollback()
             return jsonify({"error": "Unable to establish session."}), 500
+        try:
+            log_admin_activity(admin, "login", details="Administrator authenticated.", ip_address=request.remote_addr)
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            current_app.logger.exception("Admin login succeeded but audit log could not be saved.")
         csrf_token = get_csrf_token()
         return jsonify(
             {
