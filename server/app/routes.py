@@ -30,7 +30,7 @@ from .emails import (
     send_activation_email,
     send_booking_confirmation_email,
     send_internal_booking_notification,
-    send_appointment_status_update_email,
+    send_reservation_status_update_email,
     send_email_verification_email,
     send_password_changed_email,
     send_password_reset_email,
@@ -42,8 +42,8 @@ from .extensions import limiter
 from .models import (
     AdminAccount,
     AdminActivityLog,
-    AppointmentAsset,
-    AppointmentPayment,
+    ReservationAsset,
+    ReservationPayment,
     ClientAccount,
     AccountActivationToken,
     EmailVerificationToken,
@@ -58,8 +58,8 @@ from .models import (
     StudioAvailabilityBlock,
     StudioClosure,
     StudioWorkingHour,
-    TattooAppointment,
-    TattooCategory,
+    RestaurantReservation,
+    GalleryCategory,
     Testimonial,
     UserNotification,
     SessionOption,
@@ -472,16 +472,16 @@ def _public_client_base_url() -> str:
 
 
 def _latest_identity_assets_for_client(client: ClientAccount):
-    if not client or not hasattr(client, "appointment_assets"):
+    if not client or not hasattr(client, "reservation_assets"):
         return {}
-    query = client.appointment_assets
+    query = client.reservation_assets
     if hasattr(query, "filter"):
         candidates = (
             query.filter(
-                AppointmentAsset.kind.in_(["id_front", "id_back"]),
-                AppointmentAsset.file_url.isnot(None),
+                ReservationAsset.kind.in_(["id_front", "id_back"]),
+                ReservationAsset.file_url.isnot(None),
             )
-            .order_by(AppointmentAsset.created_at.desc())
+            .order_by(ReservationAsset.created_at.desc())
             .all()
         )
     else:
@@ -512,7 +512,7 @@ def generate_reference_code():
     prefix = datetime.utcnow().strftime("APT%Y%m%d")
     for _ in range(5):
         candidate = f"{prefix}-{secrets.token_hex(2).upper()}"
-        if not TattooAppointment.query.filter_by(reference_code=candidate).first():
+        if not RestaurantReservation.query.filter_by(reference_code=candidate).first():
             return candidate
     return f"{prefix}-{int(datetime.utcnow().timestamp())}"
 
@@ -783,38 +783,38 @@ def load_booking_fee_percent() -> int:
     return max(value, MINIMUM_BOOKING_FEE_PERCENT)
 
 
-def _payment_hold_expires_at(appointment: TattooAppointment | None) -> datetime | None:
-    if not appointment or appointment.status != "awaiting_payment":
+def _payment_hold_expires_at(reservation: RestaurantReservation | None) -> datetime | None:
+    if not reservation or reservation.status != "awaiting_payment":
         return None
-    created_at = appointment.created_at or appointment.updated_at
+    created_at = reservation.created_at or reservation.updated_at
     if not created_at:
         return None
     return created_at + PAYMENT_HOLD_TTL
 
 
-def _is_payment_hold_active(appointment: TattooAppointment | None, *, now: datetime | None = None) -> bool:
-    expires_at = _payment_hold_expires_at(appointment)
+def _is_payment_hold_active(reservation: RestaurantReservation | None, *, now: datetime | None = None) -> bool:
+    expires_at = _payment_hold_expires_at(reservation)
     if not expires_at:
         return False
     current_time = now or datetime.utcnow()
     return current_time < expires_at
 
 
-def _appointment_blocks_availability(
-    appointment_status: str | None,
+def _reservation_blocks_availability(
+    reservation_status: str | None,
     *,
-    appointment_created_at: datetime | None = None,
-    appointment_updated_at: datetime | None = None,
+    reservation_created_at: datetime | None = None,
+    reservation_updated_at: datetime | None = None,
     now: datetime | None = None,
 ) -> bool:
-    normalized_status = (appointment_status or "").strip().lower()
+    normalized_status = (reservation_status or "").strip().lower()
     if normalized_status in NON_BLOCKING_APPOINTMENT_STATUSES:
         if normalized_status != "awaiting_payment":
             return False
         probe = type("PaymentHold", (), {})()
         probe.status = normalized_status
-        probe.created_at = appointment_created_at
-        probe.updated_at = appointment_updated_at
+        probe.created_at = reservation_created_at
+        probe.updated_at = reservation_updated_at
         return _is_payment_hold_active(probe, now=now)
     return True
 
@@ -975,9 +975,9 @@ def calculate_session_price_cents(duration_minutes: int | None) -> int:
     return max(0, total)
 
 
-def _serialize_asset_file_url(asset: AppointmentAsset):
+def _serialize_asset_file_url(asset: ReservationAsset):
     raw_url = decrypt_identity_value(asset.file_url) if asset.kind in {"id_front", "id_back"} else asset.file_url
-    owner_id = asset.uploaded_by_client_id or (asset.appointment.client_id if asset.appointment else None)
+    owner_id = asset.uploaded_by_client_id or (asset.reservation.client_id if asset.reservation else None)
     if owner_id:
         url = _normalize_private_upload_url(raw_url)
         if url and not url.startswith("data:"):
@@ -986,18 +986,18 @@ def _serialize_asset_file_url(asset: AppointmentAsset):
     return raw_url
 
 
-def serialize_appointment(appointment, *, include_assets=True):
-    client = appointment.client
-    assigned_admin = appointment.assigned_admin
-    session_option_data = serialize_session_option(appointment.session_option) if appointment.session_option else None
+def serialize_reservation(reservation, *, include_assets=True):
+    client = reservation.client
+    assigned_admin = reservation.assigned_admin
+    session_option_data = serialize_session_option(reservation.session_option) if reservation.session_option else None
     pricing_duration_minutes = (
-        appointment.session_option.duration_minutes
-        if appointment.session_option
-        else (appointment.suggested_duration_minutes or appointment.duration_minutes)
+        reservation.session_option.duration_minutes
+        if reservation.session_option
+        else (reservation.suggested_duration_minutes or reservation.duration_minutes)
     )
     session_price_cents = (
-        appointment.session_option.price_cents
-        if appointment.session_option
+        reservation.session_option.price_cents
+        if reservation.session_option
         else calculate_session_price_cents(pricing_duration_minutes)
     )
     assets = []
@@ -1019,39 +1019,39 @@ def serialize_appointment(appointment, *, include_assets=True):
                 if asset.client_uploader
                 else None,
             }
-            for asset in appointment.assets
+            for asset in reservation.assets
         ]
     return {
-        "id": appointment.id,
-        "reference_code": appointment.reference_code,
-        "status": appointment.status,
-        "created_at": appointment.created_at.isoformat() if appointment.created_at else None,
-        "updated_at": appointment.updated_at.isoformat() if appointment.updated_at else None,
-        "scheduled_start": appointment.scheduled_start.isoformat() if appointment.scheduled_start else None,
-        "scheduled_end": appointment.scheduled_end.isoformat() if appointment.scheduled_end else None,
-        "duration_minutes": appointment.duration_minutes,
-        "suggested_duration_minutes": appointment.suggested_duration_minutes,
-        "client_description": appointment.client_description,
-        "contact_name": appointment.contact_name,
-        "contact_email": appointment.contact_email,
-        "contact_phone": appointment.contact_phone,
-        "tattoo_placement": appointment.tattoo_placement,
-        "tattoo_size": appointment.tattoo_size,
-        "placement_notes": appointment.placement_notes,
-        "terms_agreed_at": appointment.terms_agreed_at.isoformat() if appointment.terms_agreed_at else None,
+        "id": reservation.id,
+        "reference_code": reservation.reference_code,
+        "status": reservation.status,
+        "created_at": reservation.created_at.isoformat() if reservation.created_at else None,
+        "updated_at": reservation.updated_at.isoformat() if reservation.updated_at else None,
+        "scheduled_start": reservation.scheduled_start.isoformat() if reservation.scheduled_start else None,
+        "scheduled_end": reservation.scheduled_end.isoformat() if reservation.scheduled_end else None,
+        "duration_minutes": reservation.duration_minutes,
+        "suggested_duration_minutes": reservation.suggested_duration_minutes,
+        "client_description": reservation.client_description,
+        "contact_name": reservation.contact_name,
+        "contact_email": reservation.contact_email,
+        "contact_phone": reservation.contact_phone,
+        "seating_preference": reservation.seating_preference,
+        "party_size": reservation.party_size,
+        "special_requests": reservation.special_requests,
+        "terms_agreed_at": reservation.terms_agreed_at.isoformat() if reservation.terms_agreed_at else None,
         "contact": {
-            "name": appointment.display_contact_name,
-            "email": appointment.display_contact_email,
-            "phone": appointment.display_contact_phone,
+            "name": reservation.display_contact_name,
+            "email": reservation.display_contact_email,
+            "phone": reservation.display_contact_phone,
         },
-        "tattoo": {
-            "placement": appointment.tattoo_placement,
-            "size": appointment.tattoo_size,
-            "notes": appointment.placement_notes,
+        "restaurant": {
+            "placement": reservation.seating_preference,
+            "size": reservation.party_size,
+            "notes": reservation.special_requests,
         },
         "service": {
             "name": session_option_data["name"] if session_option_data else None,
-            "notes": appointment.client_description,
+            "notes": reservation.client_description,
         },
         "product": session_option_data,
         "session_option": session_option_data,
@@ -1066,9 +1066,9 @@ def serialize_appointment(appointment, *, include_assets=True):
         }
         if client
         else {
-            "display_name": appointment.guest_name,
-            "email": appointment.guest_email,
-            "phone": appointment.guest_phone,
+            "display_name": reservation.guest_name,
+            "email": reservation.guest_email,
+            "phone": reservation.guest_phone,
             "is_guest": True,
         },
         "assigned_admin": serialize_admin(assigned_admin) if assigned_admin else None,
@@ -1079,7 +1079,7 @@ def serialize_appointment(appointment, *, include_assets=True):
             "currency": _payment_currency(),
             "booking_fee_percent": load_booking_fee_percent(),
         },
-        "has_identity_documents": appointment.has_identity_documents(),
+        "has_identity_documents": reservation.has_identity_documents(),
         "payments": [
             {
                 "id": payment.id,
@@ -1091,7 +1091,7 @@ def serialize_appointment(appointment, *, include_assets=True):
                 "note": payment.note,
                 "created_at": payment.created_at.isoformat() if payment.created_at else None,
             }
-            for payment in appointment.payments
+            for payment in reservation.payments
         ],
     }
 
@@ -1128,8 +1128,8 @@ def serialize_client_document(document: ClientDocument):
     }
 
 
-def serialize_visible_asset(asset: AppointmentAsset):
-    appointment_ref = asset.appointment.reference_code or f"#{asset.appointment.id}" if asset.appointment else None
+def serialize_visible_asset(asset: ReservationAsset):
+    reservation_ref = asset.reservation.reference_code or f"#{asset.reservation.id}" if asset.reservation else None
     file_url = _serialize_asset_file_url(asset)
     return {
         "id": f"asset-{asset.id}",
@@ -1139,7 +1139,7 @@ def serialize_visible_asset(asset: AppointmentAsset):
         "notes": asset.note_text,
         "created_at": asset.created_at.isoformat() if asset.created_at else None,
         "source": "studio",
-        "appointment_reference": appointment_ref,
+        "reservation_reference": reservation_ref,
         "uploaded_by_admin": serialize_admin(asset.admin_uploader) if asset.admin_uploader else None,
     }
 
@@ -1147,17 +1147,17 @@ def serialize_visible_asset(asset: AppointmentAsset):
 def _documents_for_user(user: ClientAccount):
     client_documents = user.documents.order_by(ClientDocument.created_at.desc()).all()
     shared_assets = (
-        AppointmentAsset.query.options(
-            joinedload(AppointmentAsset.admin_uploader),
-            joinedload(AppointmentAsset.appointment),
+        ReservationAsset.query.options(
+            joinedload(ReservationAsset.admin_uploader),
+            joinedload(ReservationAsset.reservation),
         )
-        .join(TattooAppointment)
+        .join(RestaurantReservation)
         .filter(
-            TattooAppointment.client_id == user.id,
-            AppointmentAsset.is_visible_to_client.is_(True),
-            AppointmentAsset.file_url.isnot(None),
+            RestaurantReservation.client_id == user.id,
+            ReservationAsset.is_visible_to_client.is_(True),
+            ReservationAsset.file_url.isnot(None),
         )
-        .order_by(AppointmentAsset.created_at.desc())
+        .order_by(ReservationAsset.created_at.desc())
         .all()
     )
     return (
@@ -1278,22 +1278,22 @@ def _resolve_upload_access_control(filename: str | None) -> dict | None:
     asset_id = request.args.get("asset", type=int) if request else None
 
     if asset_id:
-        asset = AppointmentAsset.query.options(joinedload(AppointmentAsset.appointment)).get(asset_id)
+        asset = ReservationAsset.query.options(joinedload(ReservationAsset.reservation)).get(asset_id)
     else:
         asset = (
-            AppointmentAsset.query.options(joinedload(AppointmentAsset.appointment))
+            ReservationAsset.query.options(joinedload(ReservationAsset.reservation))
             .filter(
                 or_(
-                    AppointmentAsset.file_url.in_(path_variants),
-                    AppointmentAsset.file_url.like(like_pattern),
+                    ReservationAsset.file_url.in_(path_variants),
+                    ReservationAsset.file_url.like(like_pattern),
                 )
             )
             .first()
         )
 
     if asset:
-        # Use the correct column name from the AppointmentAsset model.
-        owner_id = asset.uploaded_by_client_id or (asset.appointment.client_id if asset.appointment else None)
+        # Use the correct column name from the ReservationAsset model.
+        owner_id = asset.uploaded_by_client_id or (asset.reservation.client_id if asset.reservation else None)
         if owner_id:
             return {"client_id": owner_id}
         return {"admin_only": True}
@@ -1487,7 +1487,7 @@ def sync_closure_setting():
     upsert_json_setting(
         "studio_days_off",
         closure_dates,
-        description="Dates when the studio does not accept appointments."
+        description="Dates when the studio does not accept reservations."
     )
 
 
@@ -1510,38 +1510,38 @@ def _slot_overlaps(start: datetime, end: datetime, intervals):
     return False
 
 
-def collect_blocked_intervals(day_start: datetime, day_end: datetime, *, ignore_appointment_id: int | None = None):
+def collect_blocked_intervals(day_start: datetime, day_end: datetime, *, ignore_reservation_id: int | None = None):
     intervals = []
 
-    appointment_query = TattooAppointment.query.with_entities(
-        TattooAppointment.id,
-        TattooAppointment.scheduled_start,
-        TattooAppointment.duration_minutes,
-        TattooAppointment.status,
-        TattooAppointment.created_at,
-        TattooAppointment.updated_at,
+    reservation_query = RestaurantReservation.query.with_entities(
+        RestaurantReservation.id,
+        RestaurantReservation.scheduled_start,
+        RestaurantReservation.duration_minutes,
+        RestaurantReservation.status,
+        RestaurantReservation.created_at,
+        RestaurantReservation.updated_at,
     ).filter(
-        TattooAppointment.scheduled_start.isnot(None),
-        TattooAppointment.duration_minutes.isnot(None),
-        TattooAppointment.scheduled_start < day_end,
+        RestaurantReservation.scheduled_start.isnot(None),
+        RestaurantReservation.duration_minutes.isnot(None),
+        RestaurantReservation.scheduled_start < day_end,
     )
 
-    if ignore_appointment_id is not None:
-        appointment_query = appointment_query.filter(TattooAppointment.id != ignore_appointment_id)
+    if ignore_reservation_id is not None:
+        reservation_query = reservation_query.filter(RestaurantReservation.id != ignore_reservation_id)
 
     lookback_start = day_start - timedelta(hours=12)
-    appointment_query = appointment_query.filter(TattooAppointment.scheduled_start >= lookback_start)
+    reservation_query = reservation_query.filter(RestaurantReservation.scheduled_start >= lookback_start)
     now = datetime.utcnow()
 
-    for _, start, duration_minutes, status, created_at, updated_at in appointment_query:
+    for _, start, duration_minutes, status, created_at, updated_at in reservation_query:
         if not start or duration_minutes is None:
             continue
         if duration_minutes <= 0:
             continue
-        if not _appointment_blocks_availability(
+        if not _reservation_blocks_availability(
             status,
-            appointment_created_at=created_at,
-            appointment_updated_at=updated_at,
+            reservation_created_at=created_at,
+            reservation_updated_at=updated_at,
             now=now,
         ):
             continue
@@ -1566,7 +1566,7 @@ def build_available_slots(
     target_date: date,
     duration_minutes: int | None,
     *,
-    ignore_appointment_id: int | None = None,
+    ignore_reservation_id: int | None = None,
     minimum_duration_minutes: int | None = None,
     allow_shorter_than_weekday_minimum: bool = False,
     hours_map=None,
@@ -1602,7 +1602,7 @@ def build_available_slots(
         ) * DEFAULT_SLOT_INTERVAL_MINUTES
     slot_duration = timedelta(minutes=requested_duration_minutes)
 
-    blocked_intervals = collect_blocked_intervals(day_start, day_end, ignore_appointment_id=ignore_appointment_id)
+    blocked_intervals = collect_blocked_intervals(day_start, day_end, ignore_reservation_id=ignore_reservation_id)
     now = _nyc_now_naive()
 
     slots = []
@@ -1632,7 +1632,7 @@ def build_available_slots(
 @api_bp.route("/api/gallery/categories", methods=["GET"])
 def list_gallery_categories():
     include_inactive = parse_bool(request.args.get("include_inactive"), default=False)
-    query = TattooCategory.query.order_by(TattooCategory.name.asc())
+    query = GalleryCategory.query.order_by(GalleryCategory.name.asc())
     if not include_inactive:
         query = query.filter_by(is_active=True)
     categories = query.all()
@@ -1663,7 +1663,7 @@ def list_gallery():
     elif category_name:
         category_name = category_name.strip()
         if category_name:
-            base_query = base_query.join(GalleryItem.category).filter(func.lower(TattooCategory.name) == category_name.lower())
+            base_query = base_query.join(GalleryItem.category).filter(func.lower(GalleryCategory.name) == category_name.lower())
 
     page, per_page = _parse_pagination()
     total = base_query.count()
@@ -1824,7 +1824,7 @@ def public_availability_slots():
     )
 
 
-@api_bp.route("/api/appointments/suggest-duration", methods=["GET"])
+@api_bp.route("/api/reservations/suggest-duration", methods=["GET"])
 def suggest_duration():
     placement = request.args.get("placement")
     size = request.args.get("size")
@@ -2525,13 +2525,13 @@ def user_dashboard():
         else []
     )
 
-    appointments = (
-        user.appointments.options(
-            joinedload(TattooAppointment.assigned_admin),
-            joinedload(TattooAppointment.assets),
-            joinedload(TattooAppointment.payments),
+    reservations = (
+        user.reservations.options(
+            joinedload(RestaurantReservation.assigned_admin),
+            joinedload(RestaurantReservation.assets),
+            joinedload(RestaurantReservation.payments),
         )
-        .order_by(TattooAppointment.created_at.desc())
+        .order_by(RestaurantReservation.created_at.desc())
         .limit(10)
         .all()
     )
@@ -2546,7 +2546,7 @@ def user_dashboard():
                 "items": [serialize_notification(note) for note in notifications],
                 "unread_count": unread_count,
             },
-            "appointments": [serialize_appointment(appointment) for appointment in appointments],
+            "reservations": [serialize_reservation(reservation) for reservation in reservations],
             "documents": documents,
             "shared_documents": shared_documents,
             "recent_actions": [
@@ -2609,10 +2609,10 @@ def delete_account():
     user = g.current_user
 
     try:
-        AppointmentAsset.query.filter_by(uploaded_by_client_id=user.id).update(
+        ReservationAsset.query.filter_by(uploaded_by_client_id=user.id).update(
             {"uploaded_by_client_id": None}, synchronize_session=False
         )
-        TattooAppointment.query.filter_by(client_id=user.id).update(
+        RestaurantReservation.query.filter_by(client_id=user.id).update(
             {"client_id": None}, synchronize_session=False
         )
         UserNotification.query.filter_by(user_id=user.id).delete(synchronize_session=False)
@@ -2746,17 +2746,17 @@ def admin_dashboard():
 
     total_admins = int(db.session.execute(select(func.count(AdminAccount.id))).scalar_one() or 0)
 
-    appointment_totals = db.session.execute(
+    reservation_totals = db.session.execute(
         select(
-            func.count(TattooAppointment.id),
+            func.count(RestaurantReservation.id),
             func.coalesce(
-                func.sum(case((TattooAppointment.status == "pending", 1), else_=0)),
+                func.sum(case((RestaurantReservation.status == "pending", 1), else_=0)),
                 0,
             ),
         )
     ).one()
-    total_appointments = int(appointment_totals[0] or 0)
-    pending_appointments = int(appointment_totals[1] or 0)
+    total_reservations = int(reservation_totals[0] or 0)
+    pending_reservations = int(reservation_totals[1] or 0)
 
     published_gallery = int(
         db.session.execute(select(func.count(GalleryItem.id)).where(GalleryItem.is_published.is_(True))).scalar_one() or 0
@@ -2775,14 +2775,14 @@ def admin_dashboard():
 
     settings = SystemSetting.query.order_by(SystemSetting.key.asc()).all()
 
-    appointment_status_rows = db.session.execute(
-        select(TattooAppointment.status, func.count(TattooAppointment.id)).group_by(TattooAppointment.status)
+    reservation_status_rows = db.session.execute(
+        select(RestaurantReservation.status, func.count(RestaurantReservation.id)).group_by(RestaurantReservation.status)
     ).all()
 
     gallery_by_category_rows = db.session.execute(
-        select(TattooCategory.name, func.count(GalleryItem.id))
-        .join(GalleryItem, GalleryItem.category_id == TattooCategory.id, isouter=True)
-        .group_by(TattooCategory.id)
+        select(GalleryCategory.name, func.count(GalleryItem.id))
+        .join(GalleryItem, GalleryItem.category_id == GalleryCategory.id, isouter=True)
+        .group_by(GalleryCategory.id)
     ).all()
 
     gallery_preview = (
@@ -2799,8 +2799,8 @@ def admin_dashboard():
                 "total_users": total_users,
                 "total_guests": total_guests,
                 "total_admins": total_admins,
-                "total_appointments": total_appointments,
-                "pending_appointments": pending_appointments,
+                "total_reservations": total_reservations,
+                "pending_reservations": pending_reservations,
                 "published_gallery_items": published_gallery,
             },
             "user_management": {
@@ -2809,13 +2809,13 @@ def admin_dashboard():
             },
             "activity_tracking": [serialize_activity(entry) for entry in recent_activity],
             "analytics": {
-                "appointments_by_status": {status or "unspecified": int(count or 0) for status, count in appointment_status_rows},
+                "reservations_by_status": {status or "unspecified": int(count or 0) for status, count in reservation_status_rows},
                 "gallery_items_by_category": {
                     name or "Uncategorized": int(count or 0) for name, count in gallery_by_category_rows
                 },
             },
             "content_control": {
-                "categories": [serialize_category(category) for category in TattooCategory.query.all()],
+                "categories": [serialize_category(category) for category in GalleryCategory.query.all()],
                 "gallery_items": [serialize_gallery_item(item) for item in gallery_preview],
             },
             "system_settings": [serialize_setting(setting) for setting in settings],
@@ -2951,7 +2951,7 @@ def admin_update_schedule():
     upsert_json_setting(
         "studio_days_off",
         normalised_days_off,
-        description="Dates when the studio does not accept appointments.",
+        description="Dates when the studio does not accept reservations.",
     )
 
     admin: AdminAccount = g.current_admin
@@ -3446,8 +3446,8 @@ def admin_list_admins():
 @admin_required
 def admin_list_categories():
     categories = (
-        TattooCategory.query.options(joinedload(TattooCategory.gallery_items))
-        .order_by(TattooCategory.created_at.desc())
+        GalleryCategory.query.options(joinedload(GalleryCategory.gallery_items))
+        .order_by(GalleryCategory.created_at.desc())
         .all()
     )
     return jsonify(
@@ -3472,11 +3472,11 @@ def admin_create_category():
     if not name:
         return jsonify({"error": "Name is required."}), 400
 
-    existing = TattooCategory.query.filter(func.lower(TattooCategory.name) == name.lower()).first()
+    existing = GalleryCategory.query.filter(func.lower(GalleryCategory.name) == name.lower()).first()
     if existing:
         return jsonify({"error": "Category name already exists."}), 400
 
-    category = TattooCategory(name=name, description=description, is_active=is_active)
+    category = GalleryCategory(name=name, description=description, is_active=is_active)
     db.session.add(category)
 
     admin: AdminAccount = g.current_admin
@@ -3499,7 +3499,7 @@ def admin_create_category():
 @api_bp.route("/api/admin/categories/<int:category_id>", methods=["PATCH"])
 @admin_required
 def admin_update_category(category_id):
-    category = TattooCategory.query.get_or_404(category_id)
+    category = GalleryCategory.query.get_or_404(category_id)
     payload = request.get_json(silent=True) or {}
 
     if "name" in payload:
@@ -3507,8 +3507,8 @@ def admin_update_category(category_id):
         if not name:
             return jsonify({"error": "Name cannot be empty."}), 400
         duplicate = (
-            TattooCategory.query.filter(
-                func.lower(TattooCategory.name) == name.lower(), TattooCategory.id != category.id
+            GalleryCategory.query.filter(
+                func.lower(GalleryCategory.name) == name.lower(), GalleryCategory.id != category.id
             ).first()
         )
         if duplicate:
@@ -3541,7 +3541,7 @@ def admin_update_category(category_id):
 @api_bp.route("/api/admin/categories/<int:category_id>", methods=["DELETE"])
 @admin_required
 def admin_delete_category(category_id):
-    category = TattooCategory.query.get_or_404(category_id)
+    category = GalleryCategory.query.get_or_404(category_id)
 
     db.session.delete(category)
     admin: AdminAccount = g.current_admin
@@ -3575,7 +3575,7 @@ def admin_create_gallery_item():
     if not category_id or not image_url or not alt or not admin_id:
         return jsonify({"error": "Category, uploader, image URL, and alt text are required."}), 400
 
-    category = TattooCategory.query.get(category_id)
+    category = GalleryCategory.query.get(category_id)
     if not category:
         return jsonify({"error": "Category not found."}), 404
 
@@ -3619,7 +3619,7 @@ def admin_update_gallery_item(item_id):
     payload = request.get_json(silent=True) or {}
 
     if "category_id" in payload:
-        category = TattooCategory.query.get(payload.get("category_id"))
+        category = GalleryCategory.query.get(payload.get("category_id"))
         if not category:
             return jsonify({"error": "Category not found."}), 404
         item.category = category
@@ -3688,9 +3688,9 @@ def admin_delete_gallery_item(item_id):
     return jsonify({"status": "deleted"})
 
 
-@api_bp.route("/api/admin/appointments", methods=["POST"])
+@api_bp.route("/api/admin/reservations", methods=["POST"])
 @admin_required
-def admin_create_appointment():
+def admin_create_reservation():
     payload = request.get_json(silent=True) or {}
 
     client_id = payload.get("client_id")
@@ -3702,9 +3702,9 @@ def admin_create_appointment():
     contact_phone = (payload.get("contact_phone") or "").strip() or None
     client_description = (payload.get("client_description") or "").strip() or None
     status = (payload.get("status") or "pending").strip() or "pending"
-    tattoo_placement = (payload.get("tattoo_placement") or "").strip()
-    tattoo_size = (payload.get("tattoo_size") or "").strip()
-    placement_notes = (payload.get("placement_notes") or "").strip()
+    seating_preference = (payload.get("seating_preference") or "").strip()
+    party_size = (payload.get("party_size") or "").strip()
+    special_requests = (payload.get("special_requests") or "").strip()
 
     scheduled_start_raw = payload.get("scheduled_start")
     scheduled_start = parse_iso_datetime(scheduled_start_raw)
@@ -3729,7 +3729,7 @@ def admin_create_appointment():
         except (TypeError, ValueError):
             return jsonify({"error": "duration_minutes must be an integer."}), 400
 
-    suggested_duration = calculate_suggested_duration_minutes(tattoo_placement, tattoo_size) if (tattoo_placement or tattoo_size) else None
+    suggested_duration = calculate_suggested_duration_minutes(seating_preference, party_size) if (seating_preference or party_size) else None
     if duration_minutes is None and suggested_duration is not None:
         duration_minutes = suggested_duration
 
@@ -3811,7 +3811,7 @@ def admin_create_appointment():
         if not guest_phone:
             guest_phone = contact_phone
 
-    appointment = TattooAppointment(
+    reservation = RestaurantReservation(
         reference_code=generate_reference_code(),
         client=client_account,
         guest_name=guest_name or None,
@@ -3825,13 +3825,13 @@ def admin_create_appointment():
         contact_name=contact_name or None,
         contact_email=contact_email or None,
         contact_phone=contact_phone or None,
-        tattoo_placement=tattoo_placement or None,
-        tattoo_size=tattoo_size or None,
-        placement_notes=placement_notes or None,
+        seating_preference=seating_preference or None,
+        party_size=party_size or None,
+        special_requests=special_requests or None,
         suggested_duration_minutes=suggested_duration,
     )
 
-    db.session.add(appointment)
+    db.session.add(reservation)
 
     admin: AdminAccount = g.current_admin
 
@@ -3839,59 +3839,59 @@ def admin_create_appointment():
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
-        return jsonify({"error": "Unable to create appointment."}), 500
+        return jsonify({"error": "Unable to create reservation."}), 500
 
-    appointment = (
-        TattooAppointment.query.options(
-            joinedload(TattooAppointment.client),
-            joinedload(TattooAppointment.assigned_admin),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-            joinedload(TattooAppointment.payments),
+    reservation = (
+        RestaurantReservation.query.options(
+            joinedload(RestaurantReservation.client),
+            joinedload(RestaurantReservation.assigned_admin),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.admin_uploader),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.client_uploader),
+            joinedload(RestaurantReservation.payments),
         )
-        .get(appointment.id)
+        .get(reservation.id)
     )
 
     try:
         log_admin_activity(
             admin,
-            "appointment_create",
-            details=f"Created appointment {appointment.reference_code or appointment.id}",
+            "reservation_create",
+            details=f"Created reservation {reservation.reference_code or reservation.id}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
 
-    return jsonify(serialize_appointment(appointment)), 201
+    return jsonify(serialize_reservation(reservation)), 201
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>", methods=["DELETE"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>", methods=["DELETE"])
 @admin_required
-def admin_delete_appointment(appointment_id):
-    appointment = TattooAppointment.query.get_or_404(appointment_id)
-    reference_code = appointment.reference_code or str(appointment.id)
+def admin_delete_reservation(reservation_id):
+    reservation = RestaurantReservation.query.get_or_404(reservation_id)
+    reference_code = reservation.reference_code or str(reservation.id)
 
-    db.session.delete(appointment)
+    db.session.delete(reservation)
     admin: AdminAccount = g.current_admin
 
     try:
         log_admin_activity(
             admin,
-            "appointment_delete",
-            details=f"Deleted appointment {reference_code}",
+            "reservation_delete",
+            details=f"Deleted reservation {reference_code}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
-        return jsonify({"error": "Unable to delete appointment."}), 500
+        return jsonify({"error": "Unable to delete reservation."}), 500
 
     return jsonify({"status": "deleted"})
 
 
-@api_bp.route("/api/appointments", methods=["POST"])
-def create_appointment():
+@api_bp.route("/api/reservations", methods=["POST"])
+def create_reservation():
     payload = request.get_json(silent=True) or {}
     errors = []
     signup_verification_code = None
@@ -4072,36 +4072,36 @@ def create_appointment():
         else f"{session_option.name or 'Restaurant reservation'} - {booking_fee_percent}% deposit"
     )
 
-    appointment = TattooAppointment(
+    reservation = RestaurantReservation(
         reference_code=generate_reference_code(),
         client=client_account,
         client_description=description or None,
         scheduled_start=scheduled_start,
         duration_minutes=duration_minutes,
         status="pending",
-        placement_notes=description or None,
+        special_requests=description or None,
         suggested_duration_minutes=suggested_duration,
         session_option=session_option,
     )
 
-    appointment.contact_name = display_contact_name
-    appointment.contact_email = contact_email_value
-    appointment.contact_phone = contact_phone_value
+    reservation.contact_name = display_contact_name
+    reservation.contact_email = contact_email_value
+    reservation.contact_phone = contact_phone_value
 
     if client_account and client_account.is_guest:
-        appointment.guest_name = appointment.contact_name
-        appointment.guest_email = appointment.contact_email
-        appointment.guest_phone = appointment.contact_phone
+        reservation.guest_name = reservation.contact_name
+        reservation.guest_email = reservation.contact_email
+        reservation.guest_phone = reservation.contact_phone
 
-    db.session.add(appointment)
+    db.session.add(reservation)
     db.session.flush()
 
     assets = []
 
     for url in inspiration_urls:
         assets.append(
-            AppointmentAsset(
-                appointment=appointment,
+            ReservationAsset(
+                reservation=reservation,
                 client_uploader=client_account,
                 kind="inspiration_image",
                 file_url=url.strip(),
@@ -4111,8 +4111,8 @@ def create_appointment():
 
     if description:
         assets.append(
-            AppointmentAsset(
-                appointment=appointment,
+            ReservationAsset(
+                reservation=reservation,
                 client_uploader=client_account,
                 kind="description",
                 note_text=description,
@@ -4128,16 +4128,16 @@ def create_appointment():
         db.session.rollback()
         return jsonify({"error": "Unable to create reservation."}), 500
 
-    appointment = TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.assigned_admin),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-        joinedload(TattooAppointment.payments),
-    ).get(appointment.id)
+    reservation = RestaurantReservation.query.options(
+        joinedload(RestaurantReservation.client),
+        joinedload(RestaurantReservation.assigned_admin),
+        joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.admin_uploader),
+        joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.client_uploader),
+        joinedload(RestaurantReservation.payments),
+    ).get(reservation.id)
 
     send_booking_confirmation_email(
-        appointment,
+        reservation,
         charge_amount_cents=charge_amount,
         session_price_cents=session_price_cents,
         booking_fee_percent=booking_fee_percent,
@@ -4145,55 +4145,55 @@ def create_appointment():
         receipt_url=None,
     )
     send_internal_booking_notification(
-        appointment,
+        reservation,
         charge_amount_cents=charge_amount,
         session_price_cents=session_price_cents,
         booking_fee_percent=booking_fee_percent,
         pay_full_amount=pay_full_amount,
         receipt_url=None,
     )
-    if signup_verification_code and appointment.client:
-        send_signup_email(appointment.client, signup_verification_code)
+    if signup_verification_code and reservation.client:
+        send_signup_email(reservation.client, signup_verification_code)
 
     return jsonify(
         {
-            "appointment": serialize_appointment(appointment),
+            "reservation": serialize_reservation(reservation),
         }
     ), 201
 
 
-@api_bp.route("/api/admin/appointments", methods=["GET"])
+@api_bp.route("/api/admin/reservations", methods=["GET"])
 @admin_required
-def admin_list_appointments():
+def admin_list_reservations():
     status = request.args.get("status", type=str)
     page, per_page = _parse_pagination(default_per_page=25)
 
-    query = TattooAppointment.query
+    query = RestaurantReservation.query
     if status:
-        query = query.filter(TattooAppointment.status == status)
+        query = query.filter(RestaurantReservation.status == status)
 
     # Avoid an expensive full COUNT(*) for admin calendar loads in dev/prod.
     # Fetch one extra row to determine whether a next page exists.
-    appointments_plus_one = (
+    reservations_plus_one = (
         query.options(
-            joinedload(TattooAppointment.client),
-            joinedload(TattooAppointment.assigned_admin),
+            joinedload(RestaurantReservation.client),
+            joinedload(RestaurantReservation.assigned_admin),
         )
-        .order_by(TattooAppointment.created_at.desc())
+        .order_by(RestaurantReservation.created_at.desc())
         .offset((page - 1) * per_page)
         .limit(per_page + 1)
         .all()
     )
-    has_next = len(appointments_plus_one) > per_page
-    appointments = appointments_plus_one[:per_page]
+    has_next = len(reservations_plus_one) > per_page
+    reservations = reservations_plus_one[:per_page]
 
-    known_total = (page - 1) * per_page + len(appointments) + (1 if has_next else 0)
+    known_total = (page - 1) * per_page + len(reservations) + (1 if has_next else 0)
     total_pages = page + (1 if has_next else 0)
 
 
     return jsonify(
         {
-            "items": [serialize_appointment(appointment, include_assets=False) for appointment in appointments],
+            "items": [serialize_reservation(reservation, include_assets=False) for reservation in reservations],
             "meta": {
                 "page": page,
                 "per_page": per_page,
@@ -4204,70 +4204,70 @@ def admin_list_appointments():
     )
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>", methods=["GET"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>", methods=["GET"])
 @admin_required
-def admin_get_appointment(appointment_id):
-    appointment = (
-        TattooAppointment.query.options(
-            joinedload(TattooAppointment.client),
-            joinedload(TattooAppointment.assigned_admin),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-            joinedload(TattooAppointment.payments),
+def admin_get_reservation(reservation_id):
+    reservation = (
+        RestaurantReservation.query.options(
+            joinedload(RestaurantReservation.client),
+            joinedload(RestaurantReservation.assigned_admin),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.admin_uploader),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.client_uploader),
+            joinedload(RestaurantReservation.payments),
         )
-        .get_or_404(appointment_id)
+        .get_or_404(reservation_id)
     )
-    return jsonify(serialize_appointment(appointment))
+    return jsonify(serialize_reservation(reservation))
 
 
-@api_bp.route("/api/public/appointments/lookup", methods=["GET"])
+@api_bp.route("/api/public/reservations/lookup", methods=["GET"])
 @limiter.limit("10 per hour", key_func=get_remote_address)
-def public_lookup_appointment():
+def public_lookup_reservation():
     reference = (request.args.get("reference") or "").strip()
     contact_email = (request.args.get("email") or "").strip().lower()
     if not reference or not contact_email:
         return jsonify({"error": "Reference and contact email are required."}), 400
 
-    appointment = (
-        TattooAppointment.query.options(
-            joinedload(TattooAppointment.client),
-            joinedload(TattooAppointment.assigned_admin),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-            joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-            joinedload(TattooAppointment.payments),
+    reservation = (
+        RestaurantReservation.query.options(
+            joinedload(RestaurantReservation.client),
+            joinedload(RestaurantReservation.assigned_admin),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.admin_uploader),
+            joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.client_uploader),
+            joinedload(RestaurantReservation.payments),
         )
         .outerjoin(ClientAccount)
         .filter(
-            TattooAppointment.reference_code == reference,
+            RestaurantReservation.reference_code == reference,
             or_(
-                func.lower(TattooAppointment.contact_email) == contact_email,
-                func.lower(TattooAppointment.guest_email) == contact_email,
+                func.lower(RestaurantReservation.contact_email) == contact_email,
+                func.lower(RestaurantReservation.guest_email) == contact_email,
                 func.lower(ClientAccount.email) == contact_email,
             ),
         )
         .first()
     )
-    if not appointment:
-        return jsonify({"error": "Appointment not found."}), 404
-    return jsonify(serialize_appointment(appointment))
+    if not reservation:
+        return jsonify({"error": "Reservation not found."}), 404
+    return jsonify(serialize_reservation(reservation))
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>", methods=["PATCH"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>", methods=["PATCH"])
 @admin_required
-def admin_update_appointment(appointment_id):
-    appointment = TattooAppointment.query.get_or_404(appointment_id)
+def admin_update_reservation(reservation_id):
+    reservation = RestaurantReservation.query.get_or_404(reservation_id)
     payload = request.get_json(silent=True) or {}
 
-    previous_status = appointment.status
+    previous_status = reservation.status
     previous_status_key = (previous_status or "").strip().lower()
     status_changed = False
     updated_status_label = None
 
-    new_start = appointment.scheduled_start
-    new_duration = appointment.duration_minutes
-    new_placement = appointment.tattoo_placement
-    new_size = appointment.tattoo_size
-    new_notes = appointment.placement_notes
+    new_start = reservation.scheduled_start
+    new_duration = reservation.duration_minutes
+    new_placement = reservation.seating_preference
+    new_size = reservation.party_size
+    new_notes = reservation.special_requests
     requested_schedule_payload = "scheduled_start" in payload or "duration_minutes" in payload
     requested_start_change = "scheduled_start" in payload
     requested_duration_change = "duration_minutes" in payload
@@ -4280,7 +4280,7 @@ def admin_update_appointment(appointment_id):
         if normalized_status != previous_status_key:
             status_changed = True
             updated_status_label = format_status_label(status)
-        appointment.status = status
+        reservation.status = status
 
     if "scheduled_start" in payload:
         scheduled_start_raw = payload.get("scheduled_start")
@@ -4294,7 +4294,7 @@ def admin_update_appointment(appointment_id):
         else:
             new_start = None
 
-    reference_start = new_start if new_start is not None else appointment.scheduled_start
+    reference_start = new_start if new_start is not None else reservation.scheduled_start
     schedule_hours_map = None
     schedule_minimum_duration = MINIMUM_APPOINTMENT_DURATION_MINUTES
     schedule_day_label = None
@@ -4331,53 +4331,53 @@ def admin_update_appointment(appointment_id):
     if "assigned_admin_id" in payload:
         admin_id = payload.get("assigned_admin_id")
         if admin_id is None:
-            appointment.assigned_admin = None
+            reservation.assigned_admin = None
         else:
             assigned_admin = AdminAccount.query.get(admin_id)
             if not assigned_admin:
                 return jsonify({"error": "Admin not found."}), 404
-            appointment.assigned_admin = assigned_admin
+            reservation.assigned_admin = assigned_admin
 
     if "client_description" in payload:
-        appointment.client_description = (payload.get("client_description") or "").strip() or None
+        reservation.client_description = (payload.get("client_description") or "").strip() or None
 
     if "contact_name" in payload:
-        appointment.contact_name = (payload.get("contact_name") or "").strip() or None
+        reservation.contact_name = (payload.get("contact_name") or "").strip() or None
     if "contact_email" in payload:
-        appointment.contact_email = (payload.get("contact_email") or "").strip() or None
+        reservation.contact_email = (payload.get("contact_email") or "").strip() or None
     if "contact_phone" in payload:
-        appointment.contact_phone = (payload.get("contact_phone") or "").strip() or None
+        reservation.contact_phone = (payload.get("contact_phone") or "").strip() or None
 
-    if "tattoo_placement" in payload:
-        new_placement = (payload.get("tattoo_placement") or "").strip() or None
-    if "tattoo_size" in payload:
-        new_size = (payload.get("tattoo_size") or "").strip() or None
-    if "placement_notes" in payload:
-        new_notes = (payload.get("placement_notes") or "").strip() or None
+    if "seating_preference" in payload:
+        new_placement = (payload.get("seating_preference") or "").strip() or None
+    if "party_size" in payload:
+        new_size = (payload.get("party_size") or "").strip() or None
+    if "special_requests" in payload:
+        new_notes = (payload.get("special_requests") or "").strip() or None
 
     if "suggested_duration_minutes" in payload:
         suggested_value = payload.get("suggested_duration_minutes")
         if suggested_value is None:
-            appointment.suggested_duration_minutes = None
+            reservation.suggested_duration_minutes = None
         else:
             try:
-                appointment.suggested_duration_minutes = int(suggested_value)
+                reservation.suggested_duration_minutes = int(suggested_value)
             except (TypeError, ValueError):
                 return jsonify({"error": "Suggested duration must be an integer."}), 400
 
     existing_start_normalized = (
-        appointment.scheduled_start.replace(second=0, microsecond=0) if appointment.scheduled_start else None
+        reservation.scheduled_start.replace(second=0, microsecond=0) if reservation.scheduled_start else None
     )
     new_start_normalized = new_start.replace(second=0, microsecond=0) if new_start else None
     slot_start = new_start_normalized if new_start_normalized is not None else existing_start_normalized
-    slot_duration = new_duration if new_duration is not None else appointment.duration_minutes
+    slot_duration = new_duration if new_duration is not None else reservation.duration_minutes
     schedule_changed = (
         requested_schedule_payload
         and slot_start is not None
         and slot_duration is not None
         and (
             (requested_start_change and new_start_normalized != existing_start_normalized)
-            or (requested_duration_change and slot_duration != appointment.duration_minutes)
+            or (requested_duration_change and slot_duration != reservation.duration_minutes)
         )
     )
 
@@ -4385,7 +4385,7 @@ def admin_update_appointment(appointment_id):
         available_slots, _window = build_available_slots(
             slot_start.date(),
             slot_duration,
-            ignore_appointment_id=appointment.id,
+            ignore_reservation_id=reservation.id,
             minimum_duration_minutes=schedule_minimum_duration,
             hours_map=schedule_hours_map,
         )
@@ -4393,31 +4393,31 @@ def admin_update_appointment(appointment_id):
         if not slot_available:
             return jsonify({"error": "Selected time slot is unavailable."}), 409
 
-    appointment.scheduled_start = new_start
-    appointment.duration_minutes = new_duration
-    appointment.tattoo_placement = new_placement
-    appointment.tattoo_size = new_size
-    appointment.placement_notes = new_notes
+    reservation.scheduled_start = new_start
+    reservation.duration_minutes = new_duration
+    reservation.seating_preference = new_placement
+    reservation.party_size = new_size
+    reservation.special_requests = new_notes
 
     if (
         "suggested_duration_minutes" not in payload
-        and (appointment.suggested_duration_minutes is None or "tattoo_placement" in payload or "tattoo_size" in payload)
+        and (reservation.suggested_duration_minutes is None or "seating_preference" in payload or "party_size" in payload)
     ):
         if new_placement or new_size:
-            appointment.suggested_duration_minutes = calculate_suggested_duration_minutes(new_placement, new_size)
+            reservation.suggested_duration_minutes = calculate_suggested_duration_minutes(new_placement, new_size)
 
-    if status_changed and appointment.client:
-        reference_label = appointment.reference_code or f"Appointment #{appointment.id}"
-        schedule_label = _format_status_schedule_label(appointment.scheduled_start)
+    if status_changed and reservation.client:
+        reference_label = reservation.reference_code or f"Reservation #{reservation.id}"
+        schedule_label = _format_status_schedule_label(reservation.scheduled_start)
         notification_parts = [f"{reference_label} is now {updated_status_label.lower()}."]
         if schedule_label:
             notification_parts.append(f"Scheduled for {schedule_label}.")
         notification_parts.append("Check your portal for the latest details.")
         notification = UserNotification(
-            user=appointment.client,
-            title=f"Appointment {updated_status_label}",
+            user=reservation.client,
+            title=f"Reservation {updated_status_label}",
             body=" ".join(notification_parts),
-            category="appointments",
+            category="reservations",
         )
         db.session.add(notification)
 
@@ -4426,41 +4426,41 @@ def admin_update_appointment(appointment_id):
     try:
         log_admin_activity(
             acting_admin,
-            "appointment_update",
-            details=f"Updated appointment {appointment.id}",
+            "reservation_update",
+            details=f"Updated reservation {reservation.id}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
-        return jsonify({"error": "Unable to update appointment."}), 500
+        return jsonify({"error": "Unable to update reservation."}), 500
 
-    appointment = TattooAppointment.query.options(
-        joinedload(TattooAppointment.client),
-        joinedload(TattooAppointment.assigned_admin),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.admin_uploader),
-        joinedload(TattooAppointment.assets).joinedload(AppointmentAsset.client_uploader),
-        joinedload(TattooAppointment.payments),
-    ).get(appointment.id)
+    reservation = RestaurantReservation.query.options(
+        joinedload(RestaurantReservation.client),
+        joinedload(RestaurantReservation.assigned_admin),
+        joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.admin_uploader),
+        joinedload(RestaurantReservation.assets).joinedload(ReservationAsset.client_uploader),
+        joinedload(RestaurantReservation.payments),
+    ).get(reservation.id)
 
     if status_changed:
-        sent = send_appointment_status_update_email(
-            appointment,
+        sent = send_reservation_status_update_email(
+            reservation,
             status_label=updated_status_label,
         )
         if not sent:
             current_app.logger.debug(
-                "Appointment status update email not sent for appointment %s; recipient missing or delivery failed.",
-                appointment.id,
+                "Reservation status update email not sent for reservation %s; recipient missing or delivery failed.",
+                reservation.id,
             )
 
-    return jsonify(serialize_appointment(appointment))
+    return jsonify(serialize_reservation(reservation))
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>/assets", methods=["POST"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>/assets", methods=["POST"])
 @admin_required
-def admin_create_appointment_asset(appointment_id):
-    appointment = TattooAppointment.query.get_or_404(appointment_id)
+def admin_create_reservation_asset(reservation_id):
+    reservation = RestaurantReservation.query.get_or_404(reservation_id)
     payload = request.get_json(silent=True) or {}
 
     kind = (payload.get("kind") or "").strip()
@@ -4489,8 +4489,8 @@ def admin_create_appointment_asset(appointment_id):
         if not client_uploader:
             return jsonify({"error": "Client uploader not found."}), 404
 
-    asset = AppointmentAsset(
-        appointment=appointment,
+    asset = ReservationAsset(
+        reservation=reservation,
         admin_uploader=admin_uploader,
         client_uploader=client_uploader,
         kind=kind,
@@ -4506,7 +4506,7 @@ def admin_create_appointment_asset(appointment_id):
         log_admin_activity(
             acting_admin,
             "asset_create",
-            details=f"Added asset {kind} to appointment {appointment_id}",
+            details=f"Added asset {kind} to reservation {reservation_id}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
@@ -4514,9 +4514,9 @@ def admin_create_appointment_asset(appointment_id):
         db.session.rollback()
         return jsonify({"error": "Unable to create asset."}), 500
 
-    asset = AppointmentAsset.query.options(
-        joinedload(AppointmentAsset.admin_uploader),
-        joinedload(AppointmentAsset.client_uploader),
+    asset = ReservationAsset.query.options(
+        joinedload(ReservationAsset.admin_uploader),
+        joinedload(ReservationAsset.client_uploader),
     ).get(asset.id)
 
     return jsonify(
@@ -4539,15 +4539,15 @@ def admin_create_appointment_asset(appointment_id):
     ), 201
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>/assets/<int:asset_id>", methods=["PATCH"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>/assets/<int:asset_id>", methods=["PATCH"])
 @admin_required
-def admin_update_appointment_asset(appointment_id, asset_id):
+def admin_update_reservation_asset(reservation_id, asset_id):
     asset = (
-        AppointmentAsset.query.options(
-            joinedload(AppointmentAsset.admin_uploader),
-            joinedload(AppointmentAsset.client_uploader),
+        ReservationAsset.query.options(
+            joinedload(ReservationAsset.admin_uploader),
+            joinedload(ReservationAsset.client_uploader),
         )
-        .filter_by(appointment_id=appointment_id, id=asset_id)
+        .filter_by(reservation_id=reservation_id, id=asset_id)
         .first()
     )
 
@@ -4597,7 +4597,7 @@ def admin_update_appointment_asset(appointment_id, asset_id):
         log_admin_activity(
             acting_admin,
             "asset_update",
-            details=f"Updated asset {asset.id} on appointment {appointment_id}",
+            details=f"Updated asset {asset.id} on reservation {reservation_id}",
             ip_address=request.remote_addr,
         )
         db.session.commit()
@@ -4625,10 +4625,10 @@ def admin_update_appointment_asset(appointment_id, asset_id):
     )
 
 
-@api_bp.route("/api/admin/appointments/<int:appointment_id>/assets/<int:asset_id>", methods=["DELETE"])
+@api_bp.route("/api/admin/reservations/<int:reservation_id>/assets/<int:asset_id>", methods=["DELETE"])
 @admin_required
-def admin_delete_appointment_asset(appointment_id, asset_id):
-    asset = AppointmentAsset.query.filter_by(appointment_id=appointment_id, id=asset_id).first()
+def admin_delete_reservation_asset(reservation_id, asset_id):
+    asset = ReservationAsset.query.filter_by(reservation_id=reservation_id, id=asset_id).first()
     if not asset:
         return jsonify({"error": "Asset not found."}), 404
 
@@ -4639,7 +4639,7 @@ def admin_delete_appointment_asset(appointment_id, asset_id):
         log_admin_activity(
             acting_admin,
             "asset_delete",
-            details=f"Removed asset {asset.id} from appointment {appointment_id}",
+            details=f"Removed asset {asset.id} from reservation {reservation_id}",
             ip_address=request.remote_addr,
         )
         db.session.commit()

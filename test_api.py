@@ -15,7 +15,7 @@ with app.app_context():
         with client.session_transaction() as sess:
             sess['admin_id'] = admin.id
             
-        response = client.get('/api/admin/appointments')
+        response = client.get('/api/admin/reservations')
         print(f"Status: {response.status_code}")
         if response.status_code != 200:
             print(f"Data: {response.get_data(as_text=True)}")

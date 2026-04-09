@@ -94,7 +94,7 @@ export default function ClientPortalLayout() {
                   </svg>
                 )}
               </button>
-              <Button as={Link} to="/appointments/new" className="hidden md:inline-flex">
+              <Button as={Link} to="/reservations/new" className="hidden md:inline-flex">
                 Book Consult
               </Button>
               <Button variant="secondary" onClick={handleSignOut} className="hidden md:inline-flex">
@@ -121,7 +121,7 @@ export default function ClientPortalLayout() {
                 ))}
               </nav>
               <div className="mt-4 flex flex-col gap-2">
-                <Button as={Link} to="/appointments/new" className="w-full" onClick={() => setMobileMenuOpen(false)}>
+                <Button as={Link} to="/reservations/new" className="w-full" onClick={() => setMobileMenuOpen(false)}>
                   Book Consult
                 </Button>
                 <Button

@@ -14,13 +14,13 @@ export default function Testimonials() {
         eyebrow: 'Testimonios',
         title: 'Clientas felices',
         description:
-          'Algunas notas breves de clientas que visitan Melodi Nails por sus acabados hermosos, reservas organizadas y una experiencia tranquila de principio a fin.',
+          'Algunas notas breves de clientas que visitan Tredici Social por sus acabados hermosos, reservas organizadas y una experiencia tranquila de principio a fin.',
       }
     : {
         eyebrow: 'Testimonials',
         title: 'Clients leave glowing',
         description:
-          'A few quick notes from clients who come to Melodi Nails for beautiful finishes, organized booking, and an experience that feels calm from start to finish.',
+          'A few quick notes from clients who come to Tredici Social for beautiful finishes, organized booking, and an experience that feels calm from start to finish.',
       };
 
   const filteredEntries = useMemo(

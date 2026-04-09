@@ -132,22 +132,22 @@ export default function StudioHours() {
         description:
           'La disponibilidad se actualiza en tiempo real segun la duracion del servicio para que cada reserva tenga el tiempo correcto.',
         cta: 'Reservar cita',
-        loading: 'Cargando horario del salon...',
+        loading: 'Cargando horario del restaurant...',
         fallback: 'Actualmente no aceptamos visitas sin cita.',
         defaultDescription:
-          'Melodi Nails trabaja con cita previa para que cada manicure, pedicure o servicio de acrilico tenga el tiempo necesario para una buena preparacion, detalle y acabado pulido.',
-        error: 'No se pudo cargar el horario del salon en este momento.',
+          'Tredici Social trabaja con cita previa para que cada manicure, pedicure o servicio de acrilico tenga el tiempo necesario para una buena preparacion, detalle y acabado pulido.',
+        error: 'No se pudo cargar el horario del restaurant en este momento.',
       }
     : {
         eyebrow: 'Hours',
-        title: 'Appointment availability',
+        title: 'Reservation availability',
         description:
           'Availability updates in real-time based on service duration, so each booking has the right amount of time.',
-        cta: 'Book Appointment',
+        cta: 'Book Reservation',
         loading: 'Loading studio hours...',
         fallback: 'Currently not accepting walk-ins.',
         defaultDescription:
-          'Melodi Nails works by appointment so each manicure, pedicure, or acrylic service has enough time for proper prep, detail work, and a polished finish.',
+          'Tredici Social works by reservation so each manicure, pedicure, or acrylic service has enough time for proper prep, detail work, and a polished finish.',
         error: 'Unable to load studio hours right now.',
       };
 
@@ -199,7 +199,7 @@ export default function StudioHours() {
           />
           <div className="flex justify-center">
             <Link
-              to="/appointments/new"
+              to="/reservations/new"
               className="inline-flex items-center gap-2 rounded-full border border-[#2a3923] px-6 py-2 text-sm font-medium text-[#2a3923] transition hover:bg-[#f3e7d9]"
             >
               {copy.cta} <span className="text-lg">→</span>

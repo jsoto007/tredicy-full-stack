@@ -25,7 +25,7 @@ import ActivateAccount from './pages/ActivateAccount.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import ClientPortalLayout from './pages/portal/ClientPortalLayout.jsx';
 import ClientDashboardPage from './pages/portal/ClientDashboardPage.jsx';
-import ClientAppointmentsPage from './pages/portal/ClientAppointmentsPage.jsx';
+import ClientReservationsPage from './pages/portal/ClientReservationsPage.jsx';
 import ClientProfilePage from './pages/portal/ClientProfilePage.jsx';
 import Policies from './pages/Policies.jsx';
 
@@ -60,7 +60,7 @@ export default function App() {
         <Route path="/portal/*" element={<ClientPortalLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<ClientDashboardPage />} />
-          <Route path="appointments" element={<ClientAppointmentsPage />} />
+          <Route path="reservations" element={<ClientReservationsPage />} />
           <Route path="profile" element={<ClientProfilePage />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Route>

@@ -28,7 +28,7 @@ export function getAdminResourcesForPath(path) {
     return Array.from(resources);
   }
   if (path.includes('/dashboard/admin/calendar')) {
-    resources.add('appointments');
+    resources.add('reservations');
     resources.add('schedule');
     resources.add('admins');
   }
@@ -37,7 +37,7 @@ export function getAdminResourcesForPath(path) {
     resources.add('categories');
   }
   if (path.includes('/dashboard/admin/user/')) {
-    resources.add('appointments');
+    resources.add('reservations');
     resources.add('users');
   }
   return Array.from(resources);
@@ -108,19 +108,19 @@ export function AdminDashboardProvider({ children }) {
     total: 0,
     pages: 1
   });
-  const [appointments, setAppointments] = useState([]);
-  const [appointmentsPagination, setAppointmentsPagination] = useState({
+  const [reservations, setReservations] = useState([]);
+  const [reservationsPagination, setReservationsPagination] = useState({
     page: 1,
     per_page: 25,
     total: 0,
     pages: 1
   });
-  const [appointmentsLoading, setAppointmentsLoading] = useState(false);
+  const [reservationsLoading, setReservationsLoading] = useState(false);
   const [overview, setOverview] = useState(null);
   const [recentUsers, setRecentUsers] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [activityTracking, setActivityTracking] = useState([]);
-  const [analytics, setAnalytics] = useState({ appointments_by_status: {}, gallery_items_by_category: {} });
+  const [analytics, setAnalytics] = useState({ reservations_by_status: {}, gallery_items_by_category: {} });
   const [settings, setSettings] = useState([]);
   const [schedule, setSchedule] = useState({ operating_hours: [], days_off: [], closures: [] });
   const [pricing, setPricing] = useState({
@@ -134,11 +134,11 @@ export function AdminDashboardProvider({ children }) {
   const noticeIdRef = useRef(0);
   const cacheRef = useRef({});
   const pendingResourceLoadsRef = useRef(new Map());
-  const appointmentsLengthRef = useRef(appointments.length);
+  const reservationsLengthRef = useRef(reservations.length);
 
   useEffect(() => {
-    appointmentsLengthRef.current = appointments.length;
-  }, [appointments.length]);
+    reservationsLengthRef.current = reservations.length;
+  }, [reservations.length]);
 
   const markFetched = useCallback((key) => {
     cacheRef.current[key] = Date.now();
@@ -193,7 +193,7 @@ export function AdminDashboardProvider({ children }) {
     setAvailableRoles(ensureArray(userManagement.available_roles));
 
     setActivityTracking(ensureArray(dashboard.activity_tracking));
-    setAnalytics(dashboard.analytics || { appointments_by_status: {}, gallery_items_by_category: {} });
+    setAnalytics(dashboard.analytics || { reservations_by_status: {}, gallery_items_by_category: {} });
     setSettings(ensureArray(dashboard.system_settings));
 
     if (dashboard.admin) {
@@ -233,11 +233,11 @@ export function AdminDashboardProvider({ children }) {
     return response;
   }, [markFetched]);
 
-  const refreshAppointments = useCallback(
-    async ({ page = 1, perPage = appointmentsPagination.per_page, append = false } = {}) => {
-      const isInitialLoad = !append && appointmentsLengthRef.current === 0;
+  const refreshReservations = useCallback(
+    async ({ page = 1, perPage = reservationsPagination.per_page, append = false } = {}) => {
+      const isInitialLoad = !append && reservationsLengthRef.current === 0;
       if (isInitialLoad) {
-        setAppointmentsLoading(true);
+        setReservationsLoading(true);
       }
       try {
         const params = new URLSearchParams();
@@ -245,48 +245,48 @@ export function AdminDashboardProvider({ children }) {
         params.set('per_page', perPage);
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15_000);
-        const response = await apiGet(`/api/admin/appointments?${params.toString()}`, {
+        const response = await apiGet(`/api/admin/reservations?${params.toString()}`, {
           signal: controller.signal
         }).finally(() => {
           clearTimeout(timeout);
         });
         // Support both paginated payloads ({ items, meta }) and legacy array payloads.
         const items = ensureArray(
-          Array.isArray(response) ? response : response?.items ?? response?.appointments
+          Array.isArray(response) ? response : response?.items ?? response?.reservations
         );
         const meta = !Array.isArray(response) && response?.meta ? response.meta : null;
-        setAppointments((prev) => (append && page > 1 ? [...prev, ...items] : items));
-        setAppointmentsPagination({
+        setReservations((prev) => (append && page > 1 ? [...prev, ...items] : items));
+        setReservationsPagination({
           page: meta?.page ?? page,
           per_page: meta?.per_page ?? perPage,
           total: meta?.total ?? items.length,
           pages: meta?.pages ?? 1
         });
-        markFetched('appointments');
+        markFetched('reservations');
         return response;
       } catch (err) {
         if (err?.name === 'AbortError') {
-          showNotice({ tone: 'error', message: 'Appointments request timed out. Please retry.' });
+          showNotice({ tone: 'error', message: 'Reservations request timed out. Please retry.' });
         } else {
-          showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to load appointments.') });
+          showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to load reservations.') });
         }
         throw err;
       } finally {
         if (isInitialLoad) {
-          setAppointmentsLoading(false);
+          setReservationsLoading(false);
         }
       }
     },
-    [appointmentsPagination.per_page, markFetched, showNotice]
+    [reservationsPagination.per_page, markFetched, showNotice]
   );
 
-  const loadMoreAppointments = useCallback(async () => {
-    const nextPage = appointmentsPagination.page + 1;
-    if (nextPage > appointmentsPagination.pages) {
+  const loadMoreReservations = useCallback(async () => {
+    const nextPage = reservationsPagination.page + 1;
+    if (nextPage > reservationsPagination.pages) {
       return;
     }
-    await refreshAppointments({ page: nextPage, append: true });
-  }, [appointmentsPagination.page, appointmentsPagination.pages, refreshAppointments]);
+    await refreshReservations({ page: nextPage, append: true });
+  }, [reservationsPagination.page, reservationsPagination.pages, refreshReservations]);
 
   const refreshSchedule = useCallback(async () => {
     const response = await apiGet('/api/admin/schedule');
@@ -434,7 +434,7 @@ export function AdminDashboardProvider({ children }) {
       admins: refreshAdmins,
       users: refreshUsers,
       categories: refreshCategories,
-      appointments: refreshAppointments,
+      reservations: refreshReservations,
       schedule: refreshSchedule,
       pricing: refreshHourlyRate,
       gallery: refreshGalleryItems
@@ -444,7 +444,7 @@ export function AdminDashboardProvider({ children }) {
       refreshAdmins,
       refreshUsers,
       refreshCategories,
-      refreshAppointments,
+      refreshReservations,
       refreshSchedule,
       refreshHourlyRate,
       refreshGalleryItems
@@ -749,99 +749,99 @@ export function AdminDashboardProvider({ children }) {
     [galleryItems, showNotice, markFetched]
   );
 
-  const createAppointment = useCallback(
+  const createReservation = useCallback(
     async (payload) => {
-      const tempId = `temp-appointment-${Date.now()}`;
-      const optimisticAppointment = {
+      const tempId = `temp-reservation-${Date.now()}`;
+      const optimisticReservation = {
         id: tempId,
         ...payload,
         status: payload.status || 'pending',
         assets: [],
         optimistic: true
       };
-      setAppointments((prev) => [optimisticAppointment, ...prev]);
-      setAppointmentsPagination((prev) => ({
+      setReservations((prev) => [optimisticReservation, ...prev]);
+      setReservationsPagination((prev) => ({
         ...prev,
         total: prev.total + 1
       }));
-      markFetched('appointments');
+      markFetched('reservations');
       try {
-        const appointment = await apiPost('/api/admin/appointments', payload);
-        setAppointments((prev) => prev.map((entry) => (entry.id === tempId ? appointment : entry)));
-        showNotice({ tone: 'success', message: 'Appointment created.' });
+        const reservation = await apiPost('/api/admin/reservations', payload);
+        setReservations((prev) => prev.map((entry) => (entry.id === tempId ? reservation : entry)));
+        showNotice({ tone: 'success', message: 'Reservation created.' });
         refreshDashboardMetrics().catch(() => {});
-        return appointment;
+        return reservation;
       } catch (err) {
-        setAppointments((prev) => prev.filter((entry) => entry.id !== tempId));
-        setAppointmentsPagination((prev) => ({
+        setReservations((prev) => prev.filter((entry) => entry.id !== tempId));
+        setReservationsPagination((prev) => ({
           ...prev,
           total: Math.max(0, prev.total - 1)
         }));
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to create appointment.') });
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to create reservation.') });
         throw err;
       }
     },
     [showNotice, refreshDashboardMetrics, markFetched]
   );
 
-  const updateAppointment = useCallback(
-    async (appointmentId, payload) => {
-      const previousAppointments = appointments;
-      setAppointments((prev) =>
-        prev.map((appointment) =>
-          appointment.id === appointmentId
+  const updateReservation = useCallback(
+    async (reservationId, payload) => {
+      const previousReservations = reservations;
+      setReservations((prev) =>
+        prev.map((reservation) =>
+          reservation.id === reservationId
             ? {
-                ...appointment,
+                ...reservation,
                 ...payload,
-                scheduled_start: payload.scheduled_start ?? appointment.scheduled_start,
-                duration_minutes: payload.duration_minutes ?? appointment.duration_minutes
+                scheduled_start: payload.scheduled_start ?? reservation.scheduled_start,
+                duration_minutes: payload.duration_minutes ?? reservation.duration_minutes
               }
-            : appointment
+            : reservation
         )
       );
       try {
-        const updated = await apiPatch(`/api/admin/appointments/${appointmentId}`, payload);
-        setAppointments((prev) => prev.map((appointment) => (appointment.id === appointmentId ? updated : appointment)));
-        showNotice({ tone: 'success', message: 'Appointment updated.' });
-        markFetched('appointments');
+        const updated = await apiPatch(`/api/admin/reservations/${reservationId}`, payload);
+        setReservations((prev) => prev.map((reservation) => (reservation.id === reservationId ? updated : reservation)));
+        showNotice({ tone: 'success', message: 'Reservation updated.' });
+        markFetched('reservations');
         refreshDashboardMetrics().catch(() => {});
       } catch (err) {
-        setAppointments(previousAppointments);
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update appointment.') });
+        setReservations(previousReservations);
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update reservation.') });
         throw err;
       }
     },
-    [appointments, showNotice, refreshDashboardMetrics, markFetched]
+    [reservations, showNotice, refreshDashboardMetrics, markFetched]
   );
 
-  const deleteAppointment = useCallback(
-    async (appointmentId) => {
-      const previousAppointments = appointments;
-      setAppointments((prev) => prev.filter((appointment) => appointment.id !== appointmentId));
-      setAppointmentsPagination((prev) => ({
+  const deleteReservation = useCallback(
+    async (reservationId) => {
+      const previousReservations = reservations;
+      setReservations((prev) => prev.filter((reservation) => reservation.id !== reservationId));
+      setReservationsPagination((prev) => ({
         ...prev,
         total: Math.max(0, prev.total - 1)
       }));
       try {
-        await apiDelete(`/api/admin/appointments/${appointmentId}`);
-        showNotice({ tone: 'success', message: 'Appointment deleted.' });
-        markFetched('appointments');
+        await apiDelete(`/api/admin/reservations/${reservationId}`);
+        showNotice({ tone: 'success', message: 'Reservation deleted.' });
+        markFetched('reservations');
         refreshDashboardMetrics().catch(() => {});
       } catch (err) {
-        setAppointments(previousAppointments);
-        setAppointmentsPagination((prev) => ({
+        setReservations(previousReservations);
+        setReservationsPagination((prev) => ({
           ...prev,
           total: prev.total + 1
         }));
-        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to delete appointment.') });
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to delete reservation.') });
         throw err;
       }
     },
-    [appointments, showNotice, refreshDashboardMetrics, markFetched]
+    [reservations, showNotice, refreshDashboardMetrics, markFetched]
   );
 
-  const createAppointmentAsset = useCallback(
-    async (appointmentId, payload) => {
+  const createReservationAsset = useCallback(
+    async (reservationId, payload) => {
       const tempId = `temp-asset-${Date.now()}`;
       const optimisticAsset = {
         id: tempId,
@@ -854,83 +854,83 @@ export function AdminDashboardProvider({ children }) {
         uploaded_by_client: null,
         optimistic: true
       };
-      setAppointments((prev) =>
-        prev.map((appointment) => {
-          if (appointment.id !== appointmentId) {
-            return appointment;
+      setReservations((prev) =>
+        prev.map((reservation) => {
+          if (reservation.id !== reservationId) {
+            return reservation;
           }
-          const assets = Array.isArray(appointment.assets) ? [optimisticAsset, ...appointment.assets] : [optimisticAsset];
-          return { ...appointment, assets };
+          const assets = Array.isArray(reservation.assets) ? [optimisticAsset, ...reservation.assets] : [optimisticAsset];
+          return { ...reservation, assets };
         })
       );
-      markFetched('appointments');
+      markFetched('reservations');
       try {
-        const asset = await apiPost(`/api/admin/appointments/${appointmentId}/assets`, payload);
-        setAppointments((prev) =>
-          prev.map((appointment) => {
-            if (appointment.id !== appointmentId) {
-              return appointment;
+        const asset = await apiPost(`/api/admin/reservations/${reservationId}/assets`, payload);
+        setReservations((prev) =>
+          prev.map((reservation) => {
+            if (reservation.id !== reservationId) {
+              return reservation;
             }
-            const assets = Array.isArray(appointment.assets)
-              ? appointment.assets.map((entry) => (entry.id === tempId ? asset : entry))
+            const assets = Array.isArray(reservation.assets)
+              ? reservation.assets.map((entry) => (entry.id === tempId ? asset : entry))
               : [asset];
-            return { ...appointment, assets };
+            return { ...reservation, assets };
           })
         );
-        showNotice({ tone: 'success', message: 'Asset attached to appointment.' });
-        refreshAppointments().catch(() => {});
+        showNotice({ tone: 'success', message: 'Asset attached to reservation.' });
+        refreshReservations().catch(() => {});
         return asset;
       } catch (err) {
-        setAppointments((prev) =>
-          prev.map((appointment) => {
-            if (appointment.id !== appointmentId) {
-              return appointment;
+        setReservations((prev) =>
+          prev.map((reservation) => {
+            if (reservation.id !== reservationId) {
+              return reservation;
             }
-            const assets = Array.isArray(appointment.assets)
-              ? appointment.assets.filter((entry) => entry.id !== tempId)
+            const assets = Array.isArray(reservation.assets)
+              ? reservation.assets.filter((entry) => entry.id !== tempId)
               : [];
-            return { ...appointment, assets };
+            return { ...reservation, assets };
           })
         );
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to add asset.') });
         throw err;
       }
     },
-    [currentAdmin, showNotice, refreshAppointments, markFetched]
+    [currentAdmin, showNotice, refreshReservations, markFetched]
   );
 
-  const toggleAppointmentAssetVisibility = useCallback(
-    async (appointmentId, assetId, isVisible) => {
-      const previousAppointments = appointments;
-      setAppointments((prev) =>
-        prev.map((appointment) => {
-          if (appointment.id !== appointmentId) {
-            return appointment;
+  const toggleReservationAssetVisibility = useCallback(
+    async (reservationId, assetId, isVisible) => {
+      const previousReservations = reservations;
+      setReservations((prev) =>
+        prev.map((reservation) => {
+          if (reservation.id !== reservationId) {
+            return reservation;
           }
-          const assets = Array.isArray(appointment.assets)
-            ? appointment.assets.map((asset) =>
+          const assets = Array.isArray(reservation.assets)
+            ? reservation.assets.map((asset) =>
                 asset.id === assetId ? { ...asset, is_visible_to_client: isVisible } : asset
               )
             : [];
-          return { ...appointment, assets };
+          return { ...reservation, assets };
         })
       );
       try {
-        await apiPatch(`/api/admin/appointments/${appointmentId}/assets/${assetId}`, {
+        await apiPatch(`/api/admin/reservations/${reservationId}/assets/${assetId}`, {
           is_visible_to_client: isVisible
         });
         showNotice({
           tone: 'success',
           message: `Asset ${isVisible ? 'shared with client' : 'hidden from client'}.`
         });
-        markFetched('appointments');
+        markFetched('reservations');
       } catch (err) {
-        setAppointments(previousAppointments);
+        setReservations(previousReservations);
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to update asset visibility.') });
         throw err;
       }
     },
-    [appointments, showNotice, markFetched]
+    [reservations, showNotice, markFetched]
   );
 
   const updateSchedule = useCallback(
@@ -1022,11 +1022,11 @@ export function AdminDashboardProvider({ children }) {
         categories,
         galleryItems,
         galleryPagination,
-        appointments,
-        appointmentsPagination,
+        reservations,
+        reservationsPagination,
         schedule,
         pricing,
-        appointmentsLoading
+        reservationsLoading
       },
       actions: {
         showNotice,
@@ -1038,7 +1038,7 @@ export function AdminDashboardProvider({ children }) {
         refreshAdmins,
         refreshUsers,
         refreshCategories,
-        refreshAppointments,
+        refreshReservations,
         refreshGalleryItems,
         refreshSchedule,
         refreshHourlyRate,
@@ -1047,7 +1047,7 @@ export function AdminDashboardProvider({ children }) {
         updateSessionOption,
         deleteSessionOption,
         updateBookingFee,
-        loadMoreAppointments,
+        loadMoreReservations,
         loadMoreGalleryItems,
         logout,
         updateUserRole,
@@ -1059,11 +1059,11 @@ export function AdminDashboardProvider({ children }) {
         createGalleryItem,
         updateGalleryItem,
         deleteGalleryItem,
-        createAppointment,
-        updateAppointment,
-        deleteAppointment,
-        createAppointmentAsset,
-        toggleAppointmentAssetVisibility,
+        createReservation,
+        updateReservation,
+        deleteReservation,
+        createReservationAsset,
+        toggleReservationAssetVisibility,
         updateSchedule,
         createClosure,
         updateClosure,
@@ -1086,9 +1086,9 @@ export function AdminDashboardProvider({ children }) {
       categories,
       galleryItems,
       galleryPagination,
-      appointments,
-      appointmentsPagination,
-      appointmentsLoading,
+      reservations,
+      reservationsPagination,
+      reservationsLoading,
       schedule,
       pricing,
       showNotice,
@@ -1099,7 +1099,7 @@ export function AdminDashboardProvider({ children }) {
       refreshAdmins,
       refreshUsers,
       refreshCategories,
-      refreshAppointments,
+      refreshReservations,
       refreshGalleryItems,
       refreshSchedule,
       refreshHourlyRate,
@@ -1108,7 +1108,7 @@ export function AdminDashboardProvider({ children }) {
       updateSessionOption,
       deleteSessionOption,
       updateBookingFee,
-      loadMoreAppointments,
+      loadMoreReservations,
       loadMoreGalleryItems,
       logout,
       updateUserRole,
@@ -1120,11 +1120,11 @@ export function AdminDashboardProvider({ children }) {
       createGalleryItem,
       updateGalleryItem,
       deleteGalleryItem,
-      createAppointment,
-      updateAppointment,
-      deleteAppointment,
-      createAppointmentAsset,
-      toggleAppointmentAssetVisibility,
+      createReservation,
+      updateReservation,
+      deleteReservation,
+      createReservationAsset,
+      toggleReservationAssetVisibility,
       updateSchedule,
       createClosure,
       updateClosure,

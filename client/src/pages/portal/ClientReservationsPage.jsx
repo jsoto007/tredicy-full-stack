@@ -7,7 +7,7 @@ import Dialog from '../../components/Dialog.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
 import Tabs from '../../components/Tabs.jsx';
 import { useClientPortal } from '../../contexts/ClientPortalContext.jsx';
-import { getAppointmentTypeLabel } from '../../lib/appointments.js';
+import { getReservationTypeLabel } from '../../lib/reservations.js';
 import { formatStatusLabel, getStatusBadgeClasses } from '../../lib/statusStyles.js';
 
 const PAST_STATUSES = new Set(['cancelled', 'cancelled_by_client', 'declined', 'completed', 'no_show']);
@@ -41,23 +41,23 @@ function formatDialogTitle(value) {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export default function ClientAppointmentsPage() {
+export default function ClientReservationsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [selectedReservation, setSelectedReservation] = useState(null);
   const [actionDialog, setActionDialog] = useState(null);
-  const { loading, error, appointments } = useClientPortal();
+  const { loading, error, reservations } = useClientPortal();
 
-  const upcomingAppointments = useMemo(() => {
+  const upcomingReservations = useMemo(() => {
     const now = Date.now();
-    return [...(appointments || [])]
-      .filter((appointment) => {
-        const isPast = PAST_STATUSES.has(appointment.status);
+    return [...(reservations || [])]
+      .filter((reservation) => {
+        const isPast = PAST_STATUSES.has(reservation.status);
         if (isPast) {
           return false;
         }
-        const start = appointment.scheduled_start ? new Date(appointment.scheduled_start).getTime() : null;
+        const start = reservation.scheduled_start ? new Date(reservation.scheduled_start).getTime() : null;
         if (start && start < now) {
           return false;
         }
@@ -68,14 +68,14 @@ export default function ClientAppointmentsPage() {
         const bTime = b.scheduled_start ? new Date(b.scheduled_start).getTime() : Infinity;
         return aTime - bTime;
       });
-  }, [appointments]);
+  }, [reservations]);
 
-  const pastAppointments = useMemo(() => {
+  const pastReservations = useMemo(() => {
     const now = Date.now();
-    return [...(appointments || [])]
-      .filter((appointment) => {
-        const isPastStatus = PAST_STATUSES.has(appointment.status);
-        const start = appointment.scheduled_start ? new Date(appointment.scheduled_start).getTime() : null;
+    return [...(reservations || [])]
+      .filter((reservation) => {
+        const isPastStatus = PAST_STATUSES.has(reservation.status);
+        const start = reservation.scheduled_start ? new Date(reservation.scheduled_start).getTime() : null;
         if (isPastStatus) {
           return true;
         }
@@ -89,22 +89,22 @@ export default function ClientAppointmentsPage() {
         const bTime = b.scheduled_start ? new Date(b.scheduled_start).getTime() : 0;
         return bTime - aTime;
       });
-  }, [appointments]);
+  }, [reservations]);
 
   useEffect(() => {
     const focusId = location.state?.focus;
-    if (!focusId || !appointments?.length) {
+    if (!focusId || !reservations?.length) {
       return;
     }
-    const target = appointments.find((appointment) => String(appointment.id) === String(focusId));
+    const target = reservations.find((reservation) => String(reservation.id) === String(focusId));
     if (target) {
-      setSelectedAppointment(target);
+      setSelectedReservation(target);
       navigate(location.pathname, { replace: true, state: null });
     }
-  }, [location.pathname, location.state, navigate, appointments]);
+  }, [location.pathname, location.state, navigate, reservations]);
 
-  const handleActionClick = (type, appointment) => {
-    setActionDialog({ type, appointment });
+  const handleActionClick = (type, reservation) => {
+    setActionDialog({ type, reservation });
   };
 
   const buildActionMessage = () => {
@@ -120,7 +120,7 @@ export default function ClientAppointmentsPage() {
     return null;
   };
 
-  const renderAppointmentList = (items, variant) => {
+  const renderReservationList = (items, variant) => {
     if (!items.length) {
       const message = variant === 'upcoming'
         ? 'You don’t have any upcoming sessions yet.'
@@ -128,7 +128,7 @@ export default function ClientAppointmentsPage() {
       return (
         <Card className="flex flex-col items-start gap-3 text-xs uppercase tracking-[0.3em] text-gray-500">
           <p>{message}</p>
-          <Button as={Link} to="/appointments/new" variant="ghost">
+          <Button as={Link} to="/reservations/new" variant="ghost">
             Book consult
           </Button>
         </Card>
@@ -136,47 +136,47 @@ export default function ClientAppointmentsPage() {
     }
     return (
       <div className="space-y-4">
-        {items.map((appointment) => {
+        {items.map((reservation) => {
           return (
             <article
-              key={appointment.id}
+              key={reservation.id}
               className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white/80 p-4 text-sm text-gray-700 shadow-sm sm:flex-row sm:items-center"
             >
               <div className="w-full sm:w-32">
-                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">{formatDate(appointment.scheduled_start)}</p>
-                <p className="text-lg font-semibold text-gray-900">{formatTime(appointment.scheduled_start)}</p>
+                <p className="text-xs uppercase tracking-[0.4em] text-gray-500">{formatDate(reservation.scheduled_start)}</p>
+                <p className="text-lg font-semibold text-gray-900">{formatTime(reservation.scheduled_start)}</p>
               </div>
               <div className="flex-1 space-y-1">
                 <p className="text-[0.65rem] uppercase tracking-[0.3em] text-gray-500">
-                  {getAppointmentTypeLabel(appointment)}
+                  {getReservationTypeLabel(reservation)}
                 </p>
-                {appointment.assigned_admin ? (
-                  <p className="text-sm font-semibold text-gray-900">{appointment.assigned_admin.name}</p>
+                {reservation.assigned_admin ? (
+                  <p className="text-sm font-semibold text-gray-900">{reservation.assigned_admin.name}</p>
                 ) : null}
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
-                  <Badge className={getStatusBadgeClasses(appointment.status)}>
-                    {formatStatusLabel(appointment.status)}
+                  <Badge className={getStatusBadgeClasses(reservation.status)}>
+                    {formatStatusLabel(reservation.status)}
                   </Badge>
-                  {appointment.service?.name ? (
-                    <span className="text-gray-500">{appointment.service.name}</span>
+                  {reservation.service?.name ? (
+                    <span className="text-gray-500">{reservation.service.name}</span>
                   ) : null}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
-                <Button variant="ghost" onClick={() => setSelectedAppointment(appointment)}>
+                <Button variant="ghost" onClick={() => setSelectedReservation(reservation)}>
                   View details
                 </Button>
                 {variant === 'upcoming' ? (
                   <>
-                    <Button variant="ghost" onClick={() => handleActionClick('reschedule', appointment)}>
+                    <Button variant="ghost" onClick={() => handleActionClick('reschedule', reservation)}>
                       Reschedule
                     </Button>
-                    <Button variant="ghost" onClick={() => handleActionClick('cancel', appointment)}>
+                    <Button variant="ghost" onClick={() => handleActionClick('cancel', reservation)}>
                       Cancel
                     </Button>
                   </>
                 ) : (
-                  <Button variant="ghost" onClick={() => navigate('/appointments/new')}>
+                  <Button variant="ghost" onClick={() => navigate('/reservations/new')}>
                     Rebook
                   </Button>
                 )}
@@ -191,7 +191,7 @@ export default function ClientAppointmentsPage() {
   if (loading) {
     return (
       <main className="space-y-6">
-        <SectionTitle eyebrow="Client portal" title="Appointments" description="Loading your schedule…" />
+        <SectionTitle eyebrow="Client portal" title="Reservations" description="Loading your schedule…" />
       </main>
     );
   }
@@ -199,7 +199,7 @@ export default function ClientAppointmentsPage() {
   if (error) {
     return (
       <main className="space-y-6">
-        <SectionTitle eyebrow="Client portal" title="Appointments" description="We hit a snag." />
+        <SectionTitle eyebrow="Client portal" title="Reservations" description="We hit a snag." />
         <Card className="text-xs uppercase tracking-[0.3em] text-rose-600">{error}</Card>
         <Button as={Link} to="/auth" variant="secondary">
           Return to sign in
@@ -215,22 +215,22 @@ export default function ClientAppointmentsPage() {
 
   return (
     <div className="space-y-6">
-      <SectionTitle eyebrow="Client portal" title="Appointments" description="A clean view of your schedule." />
+      <SectionTitle eyebrow="Client portal" title="Reservations" description="A clean view of your schedule." />
       <Card className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Appointments</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Reservations</p>
             <p className="text-sm text-gray-500">Manage your studio time with confidence.</p>
           </div>
-          <Button as={Link} to="/appointments/new">
+          <Button as={Link} to="/reservations/new">
             Book consult
           </Button>
         </div>
         <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} renderPanel={(tabId) => {
           if (tabId === 'upcoming') {
-            return renderAppointmentList(upcomingAppointments, 'upcoming');
+            return renderReservationList(upcomingReservations, 'upcoming');
           }
-          return renderAppointmentList(pastAppointments, 'past');
+          return renderReservationList(pastReservations, 'past');
         }} />
       </Card>
 
@@ -244,27 +244,27 @@ export default function ClientAppointmentsPage() {
       </Dialog>
 
       <Dialog
-        open={!!selectedAppointment}
-        onClose={() => setSelectedAppointment(null)}
-        title="Appointment details"
-        footer={<Button onClick={() => setSelectedAppointment(null)}>Close</Button>}
+        open={!!selectedReservation}
+        onClose={() => setSelectedReservation(null)}
+        title="Reservation details"
+        footer={<Button onClick={() => setSelectedReservation(null)}>Close</Button>}
       >
-        {selectedAppointment ? (
+        {selectedReservation ? (
           <div className="space-y-3 text-sm text-gray-700">
-            <p className="font-semibold text-gray-900">{formatDate(selectedAppointment.scheduled_start)} · {formatTime(selectedAppointment.scheduled_start)}</p>
+            <p className="font-semibold text-gray-900">{formatDate(selectedReservation.scheduled_start)} · {formatTime(selectedReservation.scheduled_start)}</p>
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
-              {getAppointmentTypeLabel(selectedAppointment)}
+              {getReservationTypeLabel(selectedReservation)}
             </p>
-            {selectedAppointment.assigned_admin ? (
-              <p>Artist: {selectedAppointment.assigned_admin.name}</p>
+            {selectedReservation.assigned_admin ? (
+              <p>Artist: {selectedReservation.assigned_admin.name}</p>
             ) : null}
                     <p>
                       Status:{' '}
-                      <span className={getStatusBadgeClasses(selectedAppointment.status)}>
-                        {formatStatusLabel(selectedAppointment.status)}
+                      <span className={getStatusBadgeClasses(selectedReservation.status)}>
+                        {formatStatusLabel(selectedReservation.status)}
                       </span>
                     </p>
-            {selectedAppointment.service?.notes ? <p>Notes: {selectedAppointment.service.notes}</p> : null}
+            {selectedReservation.service?.notes ? <p>Notes: {selectedReservation.service.notes}</p> : null}
           </div>
         ) : null}
       </Dialog>

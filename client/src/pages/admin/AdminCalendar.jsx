@@ -6,7 +6,7 @@ import ConfirmDialog from '../../components/ConfirmDialog.jsx';
 import Dialog from '../../components/Dialog.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
 import { useAdminDashboard } from './AdminDashboardContext.jsx';
-import { getAppointmentTypeLabel } from '../../lib/appointments.js';
+import { getReservationTypeLabel } from '../../lib/reservations.js';
 import { formatStatusLabel, getStatusBadgeClasses } from '../../lib/statusStyles.js';
 
 const NEW_APPOINTMENT_TEMPLATE = {
@@ -22,15 +22,15 @@ const NEW_APPOINTMENT_TEMPLATE = {
 };
 
 const NEW_APPOINTMENT_FIELD_IDS = {
-  clientId: 'new-appointment-client-id',
-  status: 'new-appointment-status',
-  guestName: 'new-appointment-guest-name',
-  guestEmail: 'new-appointment-guest-email',
-  scheduledStart: 'new-appointment-scheduled-start',
-  duration: 'new-appointment-duration',
-  assignedAdmin: 'new-appointment-assigned-admin',
-  guestPhone: 'new-appointment-guest-phone',
-  description: 'new-appointment-description'
+  clientId: 'new-reservation-client-id',
+  status: 'new-reservation-status',
+  guestName: 'new-reservation-guest-name',
+  guestEmail: 'new-reservation-guest-email',
+  scheduledStart: 'new-reservation-scheduled-start',
+  duration: 'new-reservation-duration',
+  assignedAdmin: 'new-reservation-assigned-admin',
+  guestPhone: 'new-reservation-guest-phone',
+  description: 'new-reservation-description'
 };
 
 const WEEK_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -143,15 +143,15 @@ function getMonthGridDaysNyc(source) {
   return days;
 }
 
-function formatAppointmentTimeRange(appointment) {
-  if (!appointment?.scheduled_start) {
+function formatReservationTimeRange(reservation) {
+  if (!reservation?.scheduled_start) {
     return 'Awaiting schedule';
   }
-  const start = new Date(appointment.scheduled_start);
+  const start = new Date(reservation.scheduled_start);
   if (Number.isNaN(start.getTime())) {
     return 'Awaiting schedule';
   }
-  const end = addMinutes(start, appointment.duration_minutes || SLOT_INTERVAL_MINUTES);
+  const end = addMinutes(start, reservation.duration_minutes || SLOT_INTERVAL_MINUTES);
 
   const startStr = formatInTimeZone(start, TIMEZONE, 'h:mm a');
   const endStr = formatInTimeZone(end, TIMEZONE, 'h:mm a');
@@ -159,25 +159,25 @@ function formatAppointmentTimeRange(appointment) {
   return `${startStr} – ${endStr}`;
 }
 
-function buildAppointmentUpdatePayload(appointment, draft) {
-  if (!appointment) {
+function buildReservationUpdatePayload(reservation, draft) {
+  if (!reservation) {
     return null;
   }
 
   const payload = {};
 
   const normalizedStatus = (draft.status ?? '').trim() || 'pending';
-  if (normalizedStatus !== (appointment.status || 'pending')) {
+  if (normalizedStatus !== (reservation.status || 'pending')) {
     payload.status = normalizedStatus;
   }
 
-  const originalStartLocal = toNycInput(appointment.scheduled_start) || '';
+  const originalStartLocal = toNycInput(reservation.scheduled_start) || '';
   const draftStartLocal = draft.scheduled_start || '';
   if (draftStartLocal !== originalStartLocal) {
     payload.scheduled_start = draftStartLocal ? fromNycInput(draftStartLocal) : null;
   }
 
-  const originalDuration = appointment.duration_minutes ?? null;
+  const originalDuration = reservation.duration_minutes ?? null;
   const durationRaw = draft.duration_minutes;
   const parsedDuration =
     durationRaw === '' || durationRaw === null || durationRaw === undefined ? null : Number(durationRaw);
@@ -186,7 +186,7 @@ function buildAppointmentUpdatePayload(appointment, draft) {
     payload.duration_minutes = normalizedDuration;
   }
 
-  const originalAssignedId = appointment.assigned_admin?.id ?? null;
+  const originalAssignedId = reservation.assigned_admin?.id ?? null;
   const assignedRaw = draft.assigned_admin_id;
   const parsedAssigned =
     assignedRaw === '' || assignedRaw === null || assignedRaw === undefined ? null : Number(assignedRaw);
@@ -195,7 +195,7 @@ function buildAppointmentUpdatePayload(appointment, draft) {
     payload.assigned_admin_id = normalizedAssigned;
   }
 
-  const originalNotes = appointment.client_description || null;
+  const originalNotes = reservation.client_description || null;
   const normalizedNotes = draft.client_description?.trim() || null;
   if (normalizedNotes !== originalNotes) {
     payload.client_description = normalizedNotes;
@@ -204,7 +204,7 @@ function buildAppointmentUpdatePayload(appointment, draft) {
   return payload;
 }
 
-function buildAppointmentCreatePayload(draft) {
+function buildReservationCreatePayload(draft) {
   return {
     status: draft.status?.trim() || 'pending',
     client_id: draft.client_id ? Number(draft.client_id) : undefined,
@@ -257,8 +257,8 @@ function normaliseOperatingHours(hours) {
       incoming.set(entry.day, {
         day: entry.day,
         is_open: Boolean(entry.is_open),
-        open_time: entry.open_time || '10:00',
-        close_time: entry.close_time || '18:00'
+        open_time: entry.open_time || '',
+        close_time: entry.close_time || ''
       });
     }
   });
@@ -266,17 +266,11 @@ function normaliseOperatingHours(hours) {
     if (incoming.has(day)) {
       return { ...incoming.get(day) };
     }
-    const defaults =
-      day === 'saturday'
-        ? { open_time: '10:00', close_time: '16:00' }
-        : day === 'sunday'
-          ? { open_time: '10:00', close_time: '14:00', is_open: false }
-          : { open_time: '10:00', close_time: '18:00', is_open: true };
     return {
       day,
-      is_open: defaults.is_open ?? true,
-      open_time: defaults.open_time,
-      close_time: defaults.close_time
+      is_open: false,
+      open_time: '',
+      close_time: ''
     };
   });
 }
@@ -288,13 +282,13 @@ function ensureArray(value) {
   return value;
 }
 
-function buildDraftFromAppointment(appointment) {
+function buildDraftFromReservation(reservation) {
   return {
-    status: appointment.status || 'pending',
-    scheduled_start: toNycInput(appointment.scheduled_start),
-    duration_minutes: appointment.duration_minutes ?? '',
-    assigned_admin_id: appointment.assigned_admin?.id ? String(appointment.assigned_admin.id) : '',
-    client_description: appointment.client_description || ''
+    status: reservation.status || 'pending',
+    scheduled_start: toNycInput(reservation.scheduled_start),
+    duration_minutes: reservation.duration_minutes ?? '',
+    assigned_admin_id: reservation.assigned_admin?.id ? String(reservation.assigned_admin.id) : '',
+    client_description: reservation.client_description || ''
   };
 }
 
@@ -476,25 +470,25 @@ function buildStatusOptions(currentStatus) {
 
 export default function AdminCalendar() {
   const {
-    state: { appointments, appointmentsPagination, admins, schedule, loading, users, appointmentsLoading },
+    state: { reservations, reservationsPagination, admins, schedule, loading, users, reservationsLoading },
     actions: {
       setFeedback,
-      createAppointment,
-      updateAppointment,
-      deleteAppointment,
+      createReservation,
+      updateReservation,
+      deleteReservation,
       updateSchedule,
       createClosure,
       updateClosure,
       deleteClosure,
-      loadMoreAppointments,
-      refreshAppointments,
+      loadMoreReservations,
+      refreshReservations,
       refreshUsers
     }
   } = useAdminDashboard();
   const navigate = useNavigate();
 
-  const [appointmentDrafts, setAppointmentDrafts] = useState({});
-  const [newAppointmentDraft, setNewAppointmentDraft] = useState(NEW_APPOINTMENT_TEMPLATE);
+  const [reservationDrafts, setReservationDrafts] = useState({});
+  const [newReservationDraft, setNewReservationDraft] = useState(NEW_APPOINTMENT_TEMPLATE);
   const [hoursDraft, setHoursDraft] = useState(normaliseOperatingHours(schedule.operating_hours));
   const [closureDateInput, setClosureDateInput] = useState('');
   const [closureReasonInput, setClosureReasonInput] = useState('');
@@ -505,26 +499,26 @@ export default function AdminCalendar() {
   const [editingClosureError, setEditingClosureError] = useState('');
   const [closureBusy, setClosureBusy] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
+  const [editingReservationId, setEditingReservationId] = useState(null);
   const [confirmation, setConfirmation] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-  const [appointmentSearchQuery, setAppointmentSearchQuery] = useState('');
-  const [appointmentSortOption, setAppointmentSortOption] = useState('schedule-asc');
+  const [reservationSearchQuery, setReservationSearchQuery] = useState('');
+  const [reservationSortOption, setReservationSortOption] = useState('schedule-asc');
   const [viewMode, setViewMode] = useState('month');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [showClientSearchResults, setShowClientSearchResults] = useState(false);
   const [focusDate, setFocusDate] = useState(() => new Date());
   const [dayModalDate, setDayModalDate] = useState(null);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  const initialAppointmentsLoadRef = useRef(false);
+  const [selectedReservationId, setSelectedReservationId] = useState(null);
+  const initialReservationsLoadRef = useRef(false);
 
   useEffect(() => {
     const drafts = {};
-    appointments.forEach((appointment) => {
-      drafts[appointment.id] = buildDraftFromAppointment(appointment);
+    reservations.forEach((reservation) => {
+      drafts[reservation.id] = buildDraftFromReservation(reservation);
     });
-    setAppointmentDrafts(drafts);
-  }, [appointments]);
+    setReservationDrafts(drafts);
+  }, [reservations]);
 
   useEffect(() => {
     setHoursDraft(normaliseOperatingHours(schedule.operating_hours));
@@ -537,19 +531,19 @@ export default function AdminCalendar() {
   }, [showCreateForm, users.length, refreshUsers]);
 
   useEffect(() => {
-    if (initialAppointmentsLoadRef.current) {
+    if (initialReservationsLoadRef.current) {
       return;
     }
-    if (appointments.length) {
-      initialAppointmentsLoadRef.current = true;
+    if (reservations.length) {
+      initialReservationsLoadRef.current = true;
       return;
     }
-    if (loading || appointmentsLoading) {
+    if (loading || reservationsLoading) {
       return;
     }
-    initialAppointmentsLoadRef.current = true;
-    refreshAppointments().catch(() => { });
-  }, [appointments.length, loading, appointmentsLoading, refreshAppointments]);
+    initialReservationsLoadRef.current = true;
+    refreshReservations().catch(() => { });
+  }, [reservations.length, loading, reservationsLoading, refreshReservations]);
 
   const closures = useMemo(() => ensureArray(schedule.closures), [schedule.closures]);
   const closureDaysSet = useMemo(() => new Set(ensureArray(schedule.days_off)), [schedule.days_off]);
@@ -560,12 +554,12 @@ export default function AdminCalendar() {
   );
   const clientDirectory = useMemo(() => ensureArray(users), [users]);
   const selectedClient = useMemo(() => {
-    const id = Number(newAppointmentDraft.client_id);
+    const id = Number(newReservationDraft.client_id);
     if (!id) {
       return null;
     }
     return clientDirectory.find((client) => client.id === id) || null;
-  }, [clientDirectory, newAppointmentDraft.client_id]);
+  }, [clientDirectory, newReservationDraft.client_id]);
   const filteredClients = useMemo(() => {
     const query = clientSearchQuery.trim().toLowerCase();
     const orderedDirectory = clientDirectory.slice().sort((a, b) => {
@@ -583,27 +577,27 @@ export default function AdminCalendar() {
       })
       .slice(0, 8);
   }, [clientDirectory, clientSearchQuery]);
-  const isLoadingAppointments = !appointments.length && (loading || appointmentsLoading);
+  const isLoadingReservations = !reservations.length && (loading || reservationsLoading);
 
-  const filteredAppointments = useMemo(() => {
-    const query = appointmentSearchQuery.trim().toLowerCase();
-    const scheduleTime = (appointment) =>
-      appointment.scheduled_start ? new Date(appointment.scheduled_start).getTime() : null;
-    const createdTime = (appointment) => (appointment.created_at ? new Date(appointment.created_at).getTime() : 0);
-    const matchesQuery = (appointment) => {
+  const filteredReservations = useMemo(() => {
+    const query = reservationSearchQuery.trim().toLowerCase();
+    const scheduleTime = (reservation) =>
+      reservation.scheduled_start ? new Date(reservation.scheduled_start).getTime() : null;
+    const createdTime = (reservation) => (reservation.created_at ? new Date(reservation.created_at).getTime() : 0);
+    const matchesQuery = (reservation) => {
       if (!query) {
         return true;
       }
       const fields = [
-        appointment.client?.display_name,
-        appointment.guest_name,
-        appointment.guest_email,
-        appointment.guest_phone,
-        appointment.reference_code,
-        appointment.status,
-        appointment.assigned_admin?.name,
-        appointment.assigned_admin?.display_name,
-        appointment.assigned_admin?.email
+        reservation.client?.display_name,
+        reservation.guest_name,
+        reservation.guest_email,
+        reservation.guest_phone,
+        reservation.reference_code,
+        reservation.status,
+        reservation.assigned_admin?.name,
+        reservation.assigned_admin?.display_name,
+        reservation.assigned_admin?.email
       ]
         .filter(Boolean)
         .map((value) => value.toString().toLowerCase());
@@ -663,23 +657,23 @@ export default function AdminCalendar() {
         'schedule-desc': compareScheduleDesc,
         'status-asc': compareStatusAsc,
         'status-desc': compareStatusDesc
-      }[appointmentSortOption] || compareScheduleAsc;
+      }[reservationSortOption] || compareScheduleAsc;
 
-    return appointments.filter(matchesQuery).slice().sort(comparator);
-  }, [appointmentSearchQuery, appointmentSortOption, appointments]);
+    return reservations.filter(matchesQuery).slice().sort(comparator);
+  }, [reservationSearchQuery, reservationSortOption, reservations]);
 
-  const hasSearchQuery = Boolean(appointmentSearchQuery.trim());
-  const totalAppointments = appointmentsPagination.total || appointments.length;
+  const hasSearchQuery = Boolean(reservationSearchQuery.trim());
+  const totalReservations = reservationsPagination.total || reservations.length;
   const todayKey = useMemo(() => formatNycDateKey(new Date()), []);
 
-  const appointmentsByDate = useMemo(() => {
+  const reservationsByDate = useMemo(() => {
     const map = new Map();
-    filteredAppointments.forEach((appointment) => {
-      const dateKey = formatNycDateKey(appointment.scheduled_start);
+    filteredReservations.forEach((reservation) => {
+      const dateKey = formatNycDateKey(reservation.scheduled_start);
       if (!dateKey) return;
 
       const bucket = map.get(dateKey) || [];
-      bucket.push(appointment);
+      bucket.push(reservation);
       map.set(dateKey, bucket);
     });
     map.forEach((bucket) => {
@@ -690,7 +684,7 @@ export default function AdminCalendar() {
       });
     });
     return map;
-  }, [filteredAppointments]);
+  }, [filteredReservations]);
 
   const weekStart = useMemo(() => startOfWeekNyc(focusDate), [focusDate]);
   const weekDays = useMemo(() => {
@@ -713,18 +707,18 @@ export default function AdminCalendar() {
     return formatInTimeZone(focusDate, TIMEZONE, 'EEEE, MMM d');
   }, [focusDate, viewMode, weekStart]);
 
-  const handleAppointmentDraftChange = (appointmentId, field, value) => {
-    setAppointmentDrafts((prev) => ({
+  const handleReservationDraftChange = (reservationId, field, value) => {
+    setReservationDrafts((prev) => ({
       ...prev,
-      [appointmentId]: {
-        ...prev[appointmentId],
+      [reservationId]: {
+        ...prev[reservationId],
         [field]: value
       }
     }));
   };
 
   const handleCreateDraftChange = (field, value) => {
-    setNewAppointmentDraft((prev) => ({
+    setNewReservationDraft((prev) => ({
       ...prev,
       [field]: value
     }));
@@ -732,7 +726,7 @@ export default function AdminCalendar() {
 
   const handleClientSearchChange = (value) => {
     setClientSearchQuery(value);
-    if (newAppointmentDraft.client_id) {
+    if (newReservationDraft.client_id) {
       handleCreateDraftChange('client_id', '');
     }
     setShowClientSearchResults(true);
@@ -742,7 +736,7 @@ export default function AdminCalendar() {
     if (!client?.id) {
       return;
     }
-    setNewAppointmentDraft((prev) => ({
+    setNewReservationDraft((prev) => ({
       ...prev,
       client_id: String(client.id),
       guest_name: client.display_name || '',
@@ -754,7 +748,7 @@ export default function AdminCalendar() {
   };
 
   const handleClientClear = () => {
-    setNewAppointmentDraft((prev) => ({
+    setNewReservationDraft((prev) => ({
       ...prev,
       client_id: '',
       guest_name: '',
@@ -779,14 +773,14 @@ export default function AdminCalendar() {
     );
   };
 
-  const requestAppointmentUpdate = (appointmentId) => {
-    const draft = appointmentDrafts[appointmentId];
+  const requestReservationUpdate = (reservationId) => {
+    const draft = reservationDrafts[reservationId];
     if (!draft) {
       return;
     }
-    const appointment = appointments.find((entry) => entry.id === appointmentId);
-    if (!appointment) {
-      setFeedback({ tone: 'offline', message: 'Appointment not found.' });
+    const reservation = reservations.find((entry) => entry.id === reservationId);
+    if (!reservation) {
+      setFeedback({ tone: 'offline', message: 'Reservation not found.' });
       return;
     }
     const normalizedStart = alignScheduledStartInput(draft.scheduled_start);
@@ -797,46 +791,46 @@ export default function AdminCalendar() {
       duration_minutes: normalizedDuration
     };
     if (normalizedStart !== draft.scheduled_start || normalizedDuration !== draft.duration_minutes) {
-      setAppointmentDrafts((prev) => ({
+      setReservationDrafts((prev) => ({
         ...prev,
-        [appointmentId]: normalizedDraft
+        [reservationId]: normalizedDraft
       }));
     }
-    const payload = buildAppointmentUpdatePayload(appointment, normalizedDraft);
+    const payload = buildReservationUpdatePayload(reservation, normalizedDraft);
     if (!payload || !Object.keys(payload).length) {
       setFeedback({ tone: 'offline', message: 'No changes to save.' });
       return;
     }
     setConfirmation({
       type: 'update',
-      appointmentId,
+      reservationId,
       payload,
-      title: 'Update appointment',
-      description: `Apply scheduling changes to appointment #${appointmentId}?`
+      title: 'Update reservation',
+      description: `Apply scheduling changes to reservation #${reservationId}?`
     });
   };
 
-  const requestAppointmentDelete = (appointment) => {
+  const requestReservationDelete = (reservation) => {
     setConfirmation({
       type: 'delete',
-      appointmentId: appointment.id,
-      title: 'Delete appointment',
-      description: `This will remove appointment ${appointment.reference_code || `#${appointment.id}`}.`
+      reservationId: reservation.id,
+      title: 'Delete reservation',
+      description: `This will remove reservation ${reservation.reference_code || `#${reservation.id}`}.`
     });
   };
 
-  const requestAppointmentCreate = () => {
-    const normalizedStart = alignScheduledStartInput(newAppointmentDraft.scheduled_start);
-    const normalizedDuration = alignDurationInput(newAppointmentDraft.duration_minutes);
+  const requestReservationCreate = () => {
+    const normalizedStart = alignScheduledStartInput(newReservationDraft.scheduled_start);
+    const normalizedDuration = alignDurationInput(newReservationDraft.duration_minutes);
     const normalizedDraft = {
-      ...newAppointmentDraft,
+      ...newReservationDraft,
       scheduled_start: normalizedStart,
       duration_minutes: normalizedDuration
     };
-    if (normalizedStart !== newAppointmentDraft.scheduled_start || normalizedDuration !== newAppointmentDraft.duration_minutes) {
-      setNewAppointmentDraft(normalizedDraft);
+    if (normalizedStart !== newReservationDraft.scheduled_start || normalizedDuration !== newReservationDraft.duration_minutes) {
+      setNewReservationDraft(normalizedDraft);
     }
-    const payload = buildAppointmentCreatePayload(normalizedDraft);
+    const payload = buildReservationCreatePayload(normalizedDraft);
     if (!payload.client_id && (!payload.guest_name || !payload.guest_email)) {
       setFeedback({ tone: 'offline', message: 'Select a client or provide guest name and email.' });
       return;
@@ -844,8 +838,8 @@ export default function AdminCalendar() {
     setConfirmation({
       type: 'create',
       payload,
-      title: 'Create appointment',
-      description: 'Add this appointment to the calendar?'
+      title: 'Create reservation',
+      description: 'Add this reservation to the calendar?'
     });
   };
 
@@ -943,25 +937,25 @@ export default function AdminCalendar() {
       return;
     }
     const activeConfirmation = confirmation;
-    const editingTargetId = editingAppointmentId;
+    const editingTargetId = editingReservationId;
     const shouldCloseEditor =
       (activeConfirmation.type === 'update' || activeConfirmation.type === 'delete') &&
-      editingTargetId === activeConfirmation.appointmentId;
+      editingTargetId === activeConfirmation.reservationId;
     setConfirmBusy(true);
     setConfirmation(null);
     if (shouldCloseEditor) {
-      setEditingAppointmentId(null);
+      setEditingReservationId(null);
     }
     try {
       if (activeConfirmation.type === 'create') {
-        await createAppointment(activeConfirmation.payload);
-        setNewAppointmentDraft(NEW_APPOINTMENT_TEMPLATE);
+        await createReservation(activeConfirmation.payload);
+        setNewReservationDraft(NEW_APPOINTMENT_TEMPLATE);
         setClientSearchQuery('');
         setShowClientSearchResults(false);
       } else if (activeConfirmation.type === 'update') {
-        await updateAppointment(activeConfirmation.appointmentId, activeConfirmation.payload);
+        await updateReservation(activeConfirmation.reservationId, activeConfirmation.payload);
       } else if (activeConfirmation.type === 'delete') {
-        await deleteAppointment(activeConfirmation.appointmentId);
+        await deleteReservation(activeConfirmation.reservationId);
       } else if (activeConfirmation.type === 'closureDelete') {
         await deleteClosure(activeConfirmation.closureId);
         handleCancelEditClosure();
@@ -973,21 +967,21 @@ export default function AdminCalendar() {
         tone: 'offline',
         message:
           activeConfirmation.type === 'create'
-            ? 'Unable to create appointment.'
+            ? 'Unable to create reservation.'
             : activeConfirmation.type === 'update'
-              ? 'Unable to update appointment.'
+              ? 'Unable to update reservation.'
               : activeConfirmation.type === 'delete'
-                ? 'Unable to delete appointment.'
+                ? 'Unable to delete reservation.'
                 : activeConfirmation.type === 'closureDelete'
                   ? 'Unable to remove closure.'
                   : 'Unable to update hours.'
       });
       if (shouldCloseEditor && activeConfirmation.type === 'update') {
-        const latestAppointment = appointments.find((entry) => entry.id === activeConfirmation.appointmentId);
-        if (latestAppointment) {
-          resetAppointmentDraft(latestAppointment);
+        const latestReservation = reservations.find((entry) => entry.id === activeConfirmation.reservationId);
+        if (latestReservation) {
+          resetReservationDraft(latestReservation);
         }
-        setEditingAppointmentId(activeConfirmation.appointmentId);
+        setEditingReservationId(activeConfirmation.reservationId);
       }
     } finally {
       setConfirmBusy(false);
@@ -995,31 +989,31 @@ export default function AdminCalendar() {
   };
 
 
-  const resetAppointmentDraft = (appointment) => {
-    setAppointmentDrafts((prev) => ({
+  const resetReservationDraft = (reservation) => {
+    setReservationDrafts((prev) => ({
       ...prev,
-      [appointment.id]: buildDraftFromAppointment(appointment)
+      [reservation.id]: buildDraftFromReservation(reservation)
     }));
   };
 
-  const handleEditClick = (appointment) => {
-    if (editingAppointmentId === appointment.id) {
-      resetAppointmentDraft(appointment);
-      setEditingAppointmentId(null);
+  const handleEditClick = (reservation) => {
+    if (editingReservationId === reservation.id) {
+      resetReservationDraft(reservation);
+      setEditingReservationId(null);
       return;
     }
-    if (editingAppointmentId !== null && editingAppointmentId !== appointment.id) {
-      const previous = appointments.find((entry) => entry.id === editingAppointmentId);
+    if (editingReservationId !== null && editingReservationId !== reservation.id) {
+      const previous = reservations.find((entry) => entry.id === editingReservationId);
       if (previous) {
-        resetAppointmentDraft(previous);
+        resetReservationDraft(previous);
       }
     }
-    setEditingAppointmentId(appointment.id);
+    setEditingReservationId(reservation.id);
   };
 
-  const handleCancelEdit = (appointment) => {
-    resetAppointmentDraft(appointment);
-    setEditingAppointmentId(null);
+  const handleCancelEdit = (reservation) => {
+    resetReservationDraft(reservation);
+    setEditingReservationId(null);
   };
 
   const renderEmptyState = (message) => (
@@ -1029,7 +1023,7 @@ export default function AdminCalendar() {
     </div>
   );
 
-  const renderLoadingState = (message = 'Loading appointments...') => (
+  const renderLoadingState = (message = 'Loading reservations...') => (
     <div className="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center text-sm text-gray-600">
       <svg className="h-6 w-6 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
         <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
@@ -1041,7 +1035,7 @@ export default function AdminCalendar() {
 
   const handleCreateSubmit = (event) => {
     event.preventDefault();
-    requestAppointmentCreate();
+    requestReservationCreate();
   };
 
   // Prevent any global/app-level key handlers (ex: calendar navigation shortcuts)
@@ -1103,18 +1097,18 @@ export default function AdminCalendar() {
     setDayModalDate(null);
   };
 
-  const renderAppointmentBadge = (appointment) => {
-    const clientName = appointment.client?.display_name || appointment.guest_name || 'Guest client';
-    const timeRange = formatAppointmentTimeRange(appointment);
-    const status = appointment.status || 'pending';
+  const renderReservationBadge = (reservation) => {
+    const clientName = reservation.client?.display_name || reservation.guest_name || 'Guest client';
+    const timeRange = formatReservationTimeRange(reservation);
+    const status = reservation.status || 'pending';
     const statusClasses = getStatusBadgeClasses(status);
     const statusLabel = formatStatusLabel(status) || 'Pending';
-    const reference = appointment.reference_code || `#${appointment.id}`;
+    const reference = reservation.reference_code || `#${reservation.id}`;
     return (
       <button
         type="button"
-        onClick={() => setSelectedAppointmentId(appointment.id)}
-        key={appointment.id}
+        onClick={() => setSelectedReservationId(reservation.id)}
+        key={reservation.id}
         className="w-full space-y-2 rounded-2xl border border-gray-200 bg-white p-3 text-left shadow-sm transition hover:border-gray-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
       >
         <div className="flex items-center justify-between gap-2">
@@ -1134,18 +1128,18 @@ export default function AdminCalendar() {
   };
 
   const renderDayContent = (date) => {
-    if (isLoadingAppointments) {
+    if (isLoadingReservations) {
       return renderLoadingState();
     }
 
     const dayKey = formatNycDateKey(date);
-    const dayAppointments = dayKey ? appointmentsByDate.get(dayKey) || [] : [];
+    const dayReservations = dayKey ? reservationsByDate.get(dayKey) || [] : [];
 
-    if (!dayAppointments.length) {
-      return renderEmptyState('No appointments scheduled for this day.');
+    if (!dayReservations.length) {
+      return renderEmptyState('No reservations scheduled for this day.');
     }
 
-    return <div className="grid gap-3">{dayAppointments.map((appointment) => renderAppointmentBadge(appointment))}</div>;
+    return <div className="grid gap-3">{dayReservations.map((reservation) => renderReservationBadge(reservation))}</div>;
   };
 
   const renderDayView = () => renderDayContent(focusDate);
@@ -1154,7 +1148,7 @@ export default function AdminCalendar() {
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
       {weekDays.map((day) => {
         const dateKey = formatNycDateKey(day);
-        const entries = dateKey ? appointmentsByDate.get(dateKey) || [] : [];
+        const entries = dateKey ? reservationsByDate.get(dateKey) || [] : [];
         const isToday = todayKey === dateKey;
         return (
           <div
@@ -1180,17 +1174,17 @@ export default function AdminCalendar() {
                   <button
                     key={entry.id}
                     type="button"
-                    onClick={() => setSelectedAppointmentId(entry.id)}
+                    onClick={() => setSelectedReservationId(entry.id)}
                     className="w-full rounded-xl bg-gray-50 p-2 text-left text-xs transition hover:border hover:border-gray-200 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                   >
-                    <p className="font-semibold text-gray-900">{formatAppointmentTimeRange(entry)}</p>
+                    <p className="font-semibold text-gray-900">{formatReservationTimeRange(entry)}</p>
                     <p className="text-gray-600">{entry.client?.display_name || entry.guest_name}</p>
                   </button>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-gray-500">
-                {isLoadingAppointments ? 'Loading appointments...' : 'No appointments'}
+                {isLoadingReservations ? 'Loading reservations...' : 'No reservations'}
               </p>
             )}
           </div>
@@ -1202,7 +1196,7 @@ export default function AdminCalendar() {
   const renderMonthView = () => {
     const activeMonth = focusDate.getMonth();
     const selectedDateKey = formatNycDateKey(focusDate);
-    const selectedEntries = selectedDateKey ? appointmentsByDate.get(selectedDateKey) || [] : [];
+    const selectedEntries = selectedDateKey ? reservationsByDate.get(selectedDateKey) || [] : [];
     const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return (
@@ -1227,7 +1221,7 @@ export default function AdminCalendar() {
                 <li key={entry.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedAppointmentId(entry.id)}
+                    onClick={() => setSelectedReservationId(entry.id)}
                     className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 px-3 py-2 text-left transition hover:border-gray-300 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
                   >
                     <div className="flex-1">
@@ -1235,7 +1229,7 @@ export default function AdminCalendar() {
                         {entry.client?.display_name || entry.guest_name || 'Guest client'}
                       </p>
                       <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <span>{formatAppointmentTimeRange(entry)}</span>
+                        <span>{formatReservationTimeRange(entry)}</span>
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
                             entry.status
@@ -1250,7 +1244,7 @@ export default function AdminCalendar() {
               ))
             ) : (
               <li className="rounded-2xl border border-dashed border-gray-300 px-3 py-4 text-xs text-gray-500">
-                {isLoadingAppointments ? 'Loading appointments...' : 'No appointments scheduled.'}
+                {isLoadingReservations ? 'Loading reservations...' : 'No reservations scheduled.'}
               </li>
             )}
           </ol>
@@ -1268,7 +1262,7 @@ export default function AdminCalendar() {
           <div className="grid grid-cols-7 gap-1.5">
             {monthDays.map((day, index) => {
               const dateKey = formatNycDateKey(day);
-              const entries = dateKey ? appointmentsByDate.get(dateKey) || [] : [];
+              const entries = dateKey ? reservationsByDate.get(dateKey) || [] : [];
               const isCurrentMonth = day.getMonth() === activeMonth;
               const isToday = dateKey === todayKey;
               const isSelected = dateKey === selectedDateKey;
@@ -1330,42 +1324,42 @@ export default function AdminCalendar() {
     );
   };
 
-  const selectedAppointment = useMemo(
-    () => appointments.find((appointment) => appointment.id === selectedAppointmentId) || null,
-    [appointments, selectedAppointmentId]
+  const selectedReservation = useMemo(
+    () => reservations.find((reservation) => reservation.id === selectedReservationId) || null,
+    [reservations, selectedReservationId]
   );
 
-  const closeAppointmentModal = () => setSelectedAppointmentId(null);
+  const closeReservationModal = () => setSelectedReservationId(null);
 
-  const renderAppointmentModal = () => {
-    if (!selectedAppointment) {
+  const renderReservationModal = () => {
+    if (!selectedReservation) {
       return null;
     }
 
-    const scheduledDate = selectedAppointment.scheduled_start
-      ? new Date(selectedAppointment.scheduled_start)
+    const scheduledDate = selectedReservation.scheduled_start
+      ? new Date(selectedReservation.scheduled_start)
       : null;
     const scheduledLabel = scheduledDate
       ? formatInTimeZone(scheduledDate, TIMEZONE, 'PPP p')
       : 'Awaiting schedule';
-    const durationLabel = selectedAppointment.duration_minutes
-      ? `${selectedAppointment.duration_minutes} minutes`
+    const durationLabel = selectedReservation.duration_minutes
+      ? `${selectedReservation.duration_minutes} minutes`
       : 'Not set';
     const assigned =
-      selectedAppointment.assigned_admin?.name ||
-      selectedAppointment.assigned_admin?.display_name ||
-      selectedAppointment.assigned_admin?.email ||
+      selectedReservation.assigned_admin?.name ||
+      selectedReservation.assigned_admin?.display_name ||
+      selectedReservation.assigned_admin?.email ||
       'Unassigned';
     const contact =
-      selectedAppointment.client?.email ||
-      selectedAppointment.guest_email ||
-      selectedAppointment.guest_phone ||
+      selectedReservation.client?.email ||
+      selectedReservation.guest_email ||
+      selectedReservation.guest_phone ||
       'No contact info';
-    const clientName = selectedAppointment.client?.display_name || selectedAppointment.guest_name || 'Guest client';
-    const reference = selectedAppointment.reference_code || `#${selectedAppointment.id}`;
+    const clientName = selectedReservation.client?.display_name || selectedReservation.guest_name || 'Guest client';
+    const reference = selectedReservation.reference_code || `#${selectedReservation.id}`;
 
     return (
-      <Dialog open={Boolean(selectedAppointment)} onClose={closeAppointmentModal} title="Appointment details">
+      <Dialog open={Boolean(selectedReservation)} onClose={closeReservationModal} title="Reservation details">
         <div className="space-y-2 rounded-2xl border border-gray-200 bg-gray-50 p-4">
           <p className="text-sm font-semibold text-gray-900">{clientName}</p>
           <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Ref {reference}</p>
@@ -1380,10 +1374,10 @@ export default function AdminCalendar() {
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Status</p>
             <span
               className={`inline-flex w-fit items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
-                selectedAppointment.status
+                selectedReservation.status
               )}`}
             >
-              {formatStatusLabel(selectedAppointment.status) || 'Pending'}
+              {formatStatusLabel(selectedReservation.status) || 'Pending'}
             </span>
             <p className="text-xs text-gray-500">Assigned: {assigned}</p>
           </div>
@@ -1393,20 +1387,20 @@ export default function AdminCalendar() {
           </div>
           <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Type</p>
-            <p className="font-semibold text-gray-900">{getAppointmentTypeLabel(selectedAppointment)}</p>
+            <p className="font-semibold text-gray-900">{getReservationTypeLabel(selectedReservation)}</p>
           </div>
           <div className="space-y-1 rounded-2xl border border-gray-200 p-3 text-sm">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Notes</p>
             <p className="text-sm text-gray-700">
-              {selectedAppointment.client_description || 'No notes yet.'}
+              {selectedReservation.client_description || 'No notes yet.'}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={closeAppointmentModal}>
+          <Button type="button" variant="ghost" onClick={closeReservationModal}>
             Close
           </Button>
-          <Button type="button" onClick={() => navigate(`${selectedAppointment.id}`)}>
+          <Button type="button" onClick={() => navigate(`${selectedReservation.id}`)}>
             View full details
           </Button>
         </div>
@@ -1421,7 +1415,7 @@ export default function AdminCalendar() {
           <IconPlus className="h-5 w-5" />
         </span>
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.3em]">Create appointment</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.3em]">Create reservation</p>
           <p className="text-xs text-gray-500">Schedule time for a client or guest.</p>
         </div>
       </div>
@@ -1451,7 +1445,7 @@ export default function AdminCalendar() {
               onKeyUp={stopGlobalHotkeysWhenTyping}
               onKeyDownCapture={stopGlobalHotkeysWhenTyping}
             />
-            {newAppointmentDraft.client_id ? (
+            {newReservationDraft.client_id ? (
               <button
                 type="button"
                 onClick={handleClientClear}
@@ -1502,7 +1496,7 @@ export default function AdminCalendar() {
           </label>
           <select
             id={NEW_APPOINTMENT_FIELD_IDS.status}
-            value={newAppointmentDraft.status}
+            value={newReservationDraft.status}
             onChange={(event) => handleCreateDraftChange('status', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           >
@@ -1523,7 +1517,7 @@ export default function AdminCalendar() {
           <input
             id={NEW_APPOINTMENT_FIELD_IDS.guestName}
             type="text"
-            value={newAppointmentDraft.guest_name}
+            value={newReservationDraft.guest_name}
             onChange={(event) => handleCreateDraftChange('guest_name', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             placeholder="Required if no client ID"
@@ -1539,7 +1533,7 @@ export default function AdminCalendar() {
           <input
             id={NEW_APPOINTMENT_FIELD_IDS.guestEmail}
             type="email"
-            value={newAppointmentDraft.guest_email}
+            value={newReservationDraft.guest_email}
             onChange={(event) => handleCreateDraftChange('guest_email', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             placeholder="Required if no client ID"
@@ -1556,7 +1550,7 @@ export default function AdminCalendar() {
             id={NEW_APPOINTMENT_FIELD_IDS.scheduledStart}
             type="datetime-local"
             step="3600"
-            value={newAppointmentDraft.scheduled_start}
+            value={newReservationDraft.scheduled_start}
             onChange={(event) => handleCreateDraftChange('scheduled_start', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
@@ -1573,7 +1567,7 @@ export default function AdminCalendar() {
             type="number"
             min="60"
             step="60"
-            value={newAppointmentDraft.duration_minutes}
+            value={newReservationDraft.duration_minutes}
             onChange={(event) => handleCreateDraftChange('duration_minutes', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
@@ -1587,7 +1581,7 @@ export default function AdminCalendar() {
           </label>
           <select
             id={NEW_APPOINTMENT_FIELD_IDS.assignedAdmin}
-            value={newAppointmentDraft.assigned_admin_id}
+            value={newReservationDraft.assigned_admin_id}
             onChange={(event) => handleCreateDraftChange('assigned_admin_id', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           >
@@ -1609,7 +1603,7 @@ export default function AdminCalendar() {
           <input
             id={NEW_APPOINTMENT_FIELD_IDS.guestPhone}
             type="tel"
-            value={newAppointmentDraft.guest_phone}
+            value={newReservationDraft.guest_phone}
             onChange={(event) => handleCreateDraftChange('guest_phone', event.target.value)}
             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
           />
@@ -1625,7 +1619,7 @@ export default function AdminCalendar() {
         <textarea
           id={NEW_APPOINTMENT_FIELD_IDS.description}
           rows={3}
-          value={newAppointmentDraft.client_description}
+          value={newReservationDraft.client_description}
           onChange={(event) => handleCreateDraftChange('client_description', event.target.value)}
           placeholder="Client or session notes (optional)"
           className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
@@ -1641,33 +1635,33 @@ export default function AdminCalendar() {
     </form>
   );
 
-  const renderAppointmentList = () => {
-    const showingTotal = totalAppointments || filteredAppointments.length;
+  const renderReservationList = () => {
+    const showingTotal = totalReservations || filteredReservations.length;
     const showingLabel = hasSearchQuery
-      ? `Showing ${filteredAppointments.length} of ${showingTotal} appointments`
-      : `Showing ${filteredAppointments.length} appointments`;
+      ? `Showing ${filteredReservations.length} of ${showingTotal} reservations`
+      : `Showing ${filteredReservations.length} reservations`;
 
-    if (isLoadingAppointments) {
+    if (isLoadingReservations) {
       return renderLoadingState();
     }
 
-    const hasFilteredAppointments = filteredAppointments.length > 0;
-    const emptyMessage = hasSearchQuery ? 'No appointments match your search.' : 'No appointments scheduled yet.';
+    const hasFilteredReservations = filteredReservations.length > 0;
+    const emptyMessage = hasSearchQuery ? 'No reservations match your search.' : 'No reservations scheduled yet.';
 
     return (
       <div className="space-y-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="w-full min-w-[240px] lg:w-72">
             <label htmlFor="admin-calendar-search" className="sr-only">
-              Search appointments
+              Search reservations
             </label>
             <div className="relative">
               <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm">🔍</span>
               <input
                 id="admin-calendar-search"
                 type="search"
-                value={appointmentSearchQuery}
-                onChange={(event) => setAppointmentSearchQuery(event.target.value)}
+                value={reservationSearchQuery}
+                onChange={(event) => setReservationSearchQuery(event.target.value)}
                 placeholder="Search by client, contact, reference, or status"
                 className="w-full rounded-2xl border border-gray-200 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none focus:ring-0"
                 onKeyDown={stopGlobalHotkeysWhenTyping}
@@ -1686,8 +1680,8 @@ export default function AdminCalendar() {
             </label>
             <select
               id="admin-calendar-sort"
-              value={appointmentSortOption}
-              onChange={(event) => setAppointmentSortOption(event.target.value)}
+              value={reservationSortOption}
+              onChange={(event) => setReservationSortOption(event.target.value)}
               className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
             >
               <option value="schedule-asc">Upcoming (chronological)</option>
@@ -1698,11 +1692,11 @@ export default function AdminCalendar() {
           </div>
         </div>
 
-        {hasFilteredAppointments && (
+        {hasFilteredReservations && (
           <p className="text-xs text-gray-500">{showingLabel}</p>
         )}
 
-        {hasFilteredAppointments ? (
+        {hasFilteredReservations ? (
           <>
             <div className="flow-root">
               <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
@@ -1745,35 +1739,35 @@ export default function AdminCalendar() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                          {filteredAppointments.map((appointment) => {
-                            const draft = appointmentDrafts[appointment.id] || buildDraftFromAppointment(appointment);
-                            const scheduledDate = appointment.scheduled_start ? new Date(appointment.scheduled_start) : null;
+                          {filteredReservations.map((reservation) => {
+                            const draft = reservationDrafts[reservation.id] || buildDraftFromReservation(reservation);
+                            const scheduledDate = reservation.scheduled_start ? new Date(reservation.scheduled_start) : null;
                             const formattedDate = scheduledDate
                               ? scheduledDate.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
                               : 'Awaiting schedule';
-                            const clientName = appointment.client?.display_name || appointment.guest_name || 'Guest client';
+                            const clientName = reservation.client?.display_name || reservation.guest_name || 'Guest client';
                             const contact =
-                              appointment.client?.email || appointment.guest_email || appointment.guest_phone || 'No contact info';
-                            const reference = appointment.reference_code || `#${appointment.id}`;
+                              reservation.client?.email || reservation.guest_email || reservation.guest_phone || 'No contact info';
+                            const reference = reservation.reference_code || `#${reservation.id}`;
                             const assigned =
-                              appointment.assigned_admin?.name ||
-                              appointment.assigned_admin?.display_name ||
-                              appointment.assigned_admin?.email ||
+                              reservation.assigned_admin?.name ||
+                              reservation.assigned_admin?.display_name ||
+                              reservation.assigned_admin?.email ||
                               'Unassigned';
                             const scheduledDateKey = scheduledDate ? scheduledDate.toISOString().slice(0, 10) : null;
                             const isDayOff = scheduledDateKey ? closureDaysSet.has(scheduledDateKey) : false;
-                            const baseId = `appointment-${appointment.id}`;
+                            const baseId = `reservation-${reservation.id}`;
                             const statusId = `${baseId}-status`;
                             const startId = `${baseId}-start`;
                             const durationId = `${baseId}-duration`;
                             const adminId = `${baseId}-assigned-admin`;
                             const notesId = `${baseId}-notes`;
-                            const isEditing = editingAppointmentId === appointment.id;
-                            const statusOptions = buildStatusOptions(draft.status ?? appointment.status);
-                            const statusLabel = formatStatusLabel(appointment.status) || 'Pending';
+                            const isEditing = editingReservationId === reservation.id;
+                            const statusOptions = buildStatusOptions(draft.status ?? reservation.status);
+                            const statusLabel = formatStatusLabel(reservation.status) || 'Pending';
 
                             return [
-                              <tr key={appointment.id} className="bg-white">
+                              <tr key={reservation.id} className="bg-white">
                                 <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-6">
                                   <div className="flex items-center">
                                     <div className="mr-4 flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 text-white">
@@ -1789,13 +1783,13 @@ export default function AdminCalendar() {
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                   <div className="text-gray-900">{formattedDate}</div>
                                   <div className="mt-1 text-xs text-gray-500">
-                                    Duration {appointment.duration_minutes ? `${appointment.duration_minutes} min` : '—'}
+                                    Duration {reservation.duration_minutes ? `${reservation.duration_minutes} min` : '—'}
                                   </div>
                                 </td>
                                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                                   <span
                                     className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-[0.2em] ring-1 ring-inset ${getStatusBadgeClasses(
-                                      appointment.status
+                                      reservation.status
                                     )}`}
                                   >
                                     {statusLabel}
@@ -1814,8 +1808,8 @@ export default function AdminCalendar() {
                                     <Button
                                       type="button"
                                       variant="ghost"
-                                      onClick={() => navigate(`${appointment.id}`)}
-                                      aria-label={`View appointment ${reference} details`}
+                                      onClick={() => navigate(`${reservation.id}`)}
+                                      aria-label={`View reservation ${reference} details`}
                                       className="px-3 py-2"
                                     >
                                       <IconEye className="h-4 w-4" />
@@ -1823,21 +1817,21 @@ export default function AdminCalendar() {
                                     </Button>
                                     <ActionIconButton
                                       icon={IconPencil}
-                                      label={isEditing ? 'Close editor' : 'Edit appointment'}
-                                      onClick={() => handleEditClick(appointment)}
+                                      label={isEditing ? 'Close editor' : 'Edit reservation'}
+                                      onClick={() => handleEditClick(reservation)}
                                       active={isEditing}
                                     />
                                     <ActionIconButton
                                       icon={IconTrash}
-                                      label={`Delete appointment ${reference}`}
-                                      onClick={() => requestAppointmentDelete(appointment)}
+                                      label={`Delete reservation ${reference}`}
+                                      onClick={() => requestReservationDelete(reservation)}
                                       tone="danger"
                                     />
                                   </div>
                                 </td>
                               </tr>,
                               isEditing ? (
-                                <tr key={`${appointment.id}-edit`} className="bg-gray-50">
+                                <tr key={`${reservation.id}-edit`} className="bg-gray-50">
                                   <td colSpan={5} className="px-4 py-5 sm:px-6">
                                     <div className="space-y-4">
                                       <div className="grid gap-4 md:grid-cols-2">
@@ -1852,7 +1846,7 @@ export default function AdminCalendar() {
                                             id={statusId}
                                             value={draft.status ?? ''}
                                             onChange={(event) =>
-                                              handleAppointmentDraftChange(appointment.id, 'status', event.target.value)
+                                              handleReservationDraftChange(reservation.id, 'status', event.target.value)
                                             }
                                             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           >
@@ -1876,7 +1870,7 @@ export default function AdminCalendar() {
                                             step="3600"
                                             value={draft.scheduled_start ?? ''}
                                             onChange={(event) =>
-                                              handleAppointmentDraftChange(appointment.id, 'scheduled_start', event.target.value)
+                                              handleReservationDraftChange(reservation.id, 'scheduled_start', event.target.value)
                                             }
                                             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           />
@@ -1895,7 +1889,7 @@ export default function AdminCalendar() {
                                             step="60"
                                             value={draft.duration_minutes ?? ''}
                                             onChange={(event) =>
-                                              handleAppointmentDraftChange(appointment.id, 'duration_minutes', event.target.value)
+                                              handleReservationDraftChange(reservation.id, 'duration_minutes', event.target.value)
                                             }
                                             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           />
@@ -1911,7 +1905,7 @@ export default function AdminCalendar() {
                                             id={adminId}
                                             value={draft.assigned_admin_id ?? ''}
                                             onChange={(event) =>
-                                              handleAppointmentDraftChange(appointment.id, 'assigned_admin_id', event.target.value)
+                                              handleReservationDraftChange(reservation.id, 'assigned_admin_id', event.target.value)
                                             }
                                             className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                           >
@@ -1936,7 +1930,7 @@ export default function AdminCalendar() {
                                           rows={3}
                                           value={draft.client_description ?? ''}
                                           onChange={(event) =>
-                                            handleAppointmentDraftChange(appointment.id, 'client_description', event.target.value)
+                                            handleReservationDraftChange(reservation.id, 'client_description', event.target.value)
                                           }
                                           className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
                                         />
@@ -1944,19 +1938,19 @@ export default function AdminCalendar() {
                                       <div className="flex flex-wrap items-center justify-between gap-3">
                                         <p className="text-xs text-gray-500">
                                           Last update{' '}
-                                          {appointment.updated_at
-                                            ? new Date(appointment.updated_at).toLocaleString([], {
+                                          {reservation.updated_at
+                                            ? new Date(reservation.updated_at).toLocaleString([], {
                                               dateStyle: 'medium',
                                               timeStyle: 'short'
                                             })
                                             : 'n/a'}
                                         </p>
                                         <div className="flex items-center gap-2">
-                                          <Button type="button" onClick={() => requestAppointmentUpdate(appointment.id)}>
+                                          <Button type="button" onClick={() => requestReservationUpdate(reservation.id)}>
                                             <IconPencil className="h-4 w-4" />
                                             Save changes
                                           </Button>
-                                          <Button type="button" variant="ghost" onClick={() => handleCancelEdit(appointment)}>
+                                          <Button type="button" variant="ghost" onClick={() => handleCancelEdit(reservation)}>
                                             Cancel
                                           </Button>
                                         </div>
@@ -1974,10 +1968,10 @@ export default function AdminCalendar() {
                 </div>
               </div>
             </div>
-            {appointmentsPagination.page < appointmentsPagination.pages ? (
+            {reservationsPagination.page < reservationsPagination.pages ? (
               <div className="mt-4 flex justify-center">
-                <Button type="button" variant="ghost" onClick={() => loadMoreAppointments()}>
-                  Load more appointments
+                <Button type="button" variant="ghost" onClick={() => loadMoreReservations()}>
+                  Load more reservations
                 </Button>
               </div>
             ) : null}
@@ -1989,19 +1983,19 @@ export default function AdminCalendar() {
     );
   };
 
-  const appointmentCountLabel =
-    isLoadingAppointments
-      ? 'Loading appointments...'
-      : totalAppointments === 1
-        ? '1 appointment scheduled'
-        : `${totalAppointments} appointments scheduled`;
+  const reservationCountLabel =
+    isLoadingReservations
+      ? 'Loading reservations...'
+      : totalReservations === 1
+        ? '1 reservation scheduled'
+        : `${totalReservations} reservations scheduled`;
 
   return (
     <div className="space-y-8">
       <SectionTitle
         eyebrow="Admin"
         title="Calendar & hours"
-        description="Manage appointments, operating hours, and closures in one place."
+        description="Manage reservations, operating hours, and closures in one place."
       />
 
       <Card className="space-y-6">
@@ -2014,7 +2008,7 @@ export default function AdminCalendar() {
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
                 Calendar
               </p>
-              <p className="text-sm text-gray-600">{appointmentCountLabel}</p>
+              <p className="text-sm text-gray-600">{reservationCountLabel}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -2026,7 +2020,7 @@ export default function AdminCalendar() {
               variant="primary"
             >
               <IconPlus className="h-4 w-4" />
-              New appointment
+              New reservation
             </Button>
           </div>
         </div>
@@ -2034,7 +2028,7 @@ export default function AdminCalendar() {
           <Dialog
             open={showCreateForm}
             onClose={() => setShowCreateForm(false)}
-            title="New appointment"
+            title="New reservation"
             className="md:items-center"
           >
             <div className="space-y-4">
@@ -2085,7 +2079,7 @@ export default function AdminCalendar() {
           </div>
         </div>
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-          {renderAppointmentList()}
+          {renderReservationList()}
         </div>
       </Card>
 
@@ -2348,7 +2342,7 @@ export default function AdminCalendar() {
       </Card>
 
       {renderDayModal()}
-      {renderAppointmentModal()}
+      {renderReservationModal()}
 
       <ConfirmDialog
         open={Boolean(confirmation)}
@@ -2371,9 +2365,9 @@ export default function AdminCalendar() {
         }}
         busy={confirmBusy}
       >
-        {confirmation?.type === 'update' && confirmation?.appointmentId ? (
+        {confirmation?.type === 'update' && confirmation?.reservationId ? (
           <p>
-            Appointment <strong>#{confirmation.appointmentId}</strong> will be updated with the new details.
+            Reservation <strong>#{confirmation.reservationId}</strong> will be updated with the new details.
           </p>
         ) : null}
         {confirmation?.type === 'create' ? (

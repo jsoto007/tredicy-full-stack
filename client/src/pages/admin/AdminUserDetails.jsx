@@ -41,8 +41,8 @@ export default function AdminUserDetails() {
   const numericUserId = Number(userId);
 
   const {
-    state: { users, recentUsers, appointments, availableRoles },
-    actions: { refreshUsers, refreshAppointments, updateUserRole }
+    state: { users, recentUsers, reservations, availableRoles },
+    actions: { refreshUsers, refreshReservations, updateUserRole }
   } = useAdminDashboard();
 
   const [userProfile, setUserProfile] = useState(null);
@@ -120,10 +120,10 @@ export default function AdminUserDetails() {
   }, [numericUserId, findUserInStore]);
 
   useEffect(() => {
-    if (!Array.isArray(appointments) || appointments.length === 0) {
-      refreshAppointments().catch(() => {});
+    if (!Array.isArray(reservations) || reservations.length === 0) {
+      refreshReservations().catch(() => {});
     }
-  }, [appointments, refreshAppointments]);
+  }, [reservations, refreshReservations]);
 
   const roleOptions = useMemo(() => {
     const base = Array.isArray(availableRoles) ? availableRoles : [];
@@ -134,37 +134,37 @@ export default function AdminUserDetails() {
     return Array.from(unique);
   }, [availableRoles, userProfile?.role]);
 
-  const userAppointments = useMemo(() => {
-    if (!numericUserId || !Array.isArray(appointments)) {
+  const userReservations = useMemo(() => {
+    if (!numericUserId || !Array.isArray(reservations)) {
       return [];
     }
-    return appointments.filter((appointment) => appointment?.client?.id === numericUserId);
-  }, [appointments, numericUserId]);
+    return reservations.filter((reservation) => reservation?.client?.id === numericUserId);
+  }, [reservations, numericUserId]);
 
   const userAssets = useMemo(() => {
     const files = [];
     const notes = [];
-    userAppointments.forEach((appointment) => {
-      const assets = Array.isArray(appointment?.assets) ? appointment.assets : [];
+    userReservations.forEach((reservation) => {
+      const assets = Array.isArray(reservation?.assets) ? reservation.assets : [];
       assets.forEach((asset) => {
         if (asset?.file_url) {
-          files.push({ asset, appointment });
+          files.push({ asset, reservation });
         }
         if (asset?.note_text) {
-          notes.push({ asset, appointment });
+          notes.push({ asset, reservation });
         }
       });
     });
     return { files, notes };
-  }, [userAppointments]);
+  }, [userReservations]);
 
   const totalFiles = userAssets.files.length;
   const totalNotes = userAssets.notes.length;
-  const upcomingAppointments = userAppointments.filter((appointment) => {
-    if (!appointment?.scheduled_start) {
+  const upcomingReservations = userReservations.filter((reservation) => {
+    if (!reservation?.scheduled_start) {
       return false;
     }
-    const start = new Date(appointment.scheduled_start);
+    const start = new Date(reservation.scheduled_start);
     if (Number.isNaN(start.getTime())) {
       return false;
     }
@@ -175,8 +175,8 @@ export default function AdminUserDetails() {
     navigate('/dashboard/admin/calendar');
   };
 
-  const handleViewAppointment = (appointmentId) => {
-    navigate(`/dashboard/admin/calendar/${appointmentId}`);
+  const handleViewReservation = (reservationId) => {
+    navigate(`/dashboard/admin/calendar/${reservationId}`);
   };
 
   const handleRoleChange = async (event) => {
@@ -242,7 +242,7 @@ export default function AdminUserDetails() {
         <SectionTitle
           eyebrow="User profile"
           title={userProfile.display_name || 'Client record'}
-          description="Review contact details, appointments, files, and notes for this client."
+          description="Review contact details, reservations, files, and notes for this client."
         />
         <Button type="button" variant="secondary" onClick={handleBackToSettings}>
           Back to calendar
@@ -308,13 +308,13 @@ export default function AdminUserDetails() {
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-gray-200 bg-white/80 p-4 text-sm shadow-inner">
-            <p className="text-xs uppercase tracking-[0.25em] text-gray-400">Appointments</p>
-            <p className="mt-2 text-2xl font-semibold text-gray-900">{userAppointments.length}</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-gray-400">Reservations</p>
+            <p className="mt-2 text-2xl font-semibold text-gray-900">{userReservations.length}</p>
             <p className="text-xs text-gray-500">Total recorded</p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white/80 p-4 text-sm shadow-inner">
             <p className="text-xs uppercase tracking-[0.25em] text-gray-400">Upcoming</p>
-            <p className="mt-2 text-2xl font-semibold text-gray-900">{upcomingAppointments}</p>
+            <p className="mt-2 text-2xl font-semibold text-gray-900">{upcomingReservations}</p>
             <p className="text-xs text-gray-500">Scheduled sessions</p>
           </div>
           <div className="rounded-xl border border-gray-200 bg-white/80 p-4 text-sm shadow-inner">
@@ -329,41 +329,41 @@ export default function AdminUserDetails() {
         <Card className="space-y-4">
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
-              Past appointments
+              Past reservations
             </h3>
-            <p className="text-sm text-gray-600">Review booking history and open appointment records.</p>
+            <p className="text-sm text-gray-600">Review booking history and open reservation records.</p>
           </div>
-          {userAppointments.length ? (
+          {userReservations.length ? (
             <ul className="space-y-3">
-              {userAppointments.map((appointment) => (
+              {userReservations.map((reservation) => (
                 <li
-                  key={appointment.id}
+                  key={reservation.id}
                   className="rounded-xl border border-gray-200 p-4 text-sm text-gray-700 shadow-sm"
                 >
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">
-                        {appointment.reference_code || `Appointment #${appointment.id}`}
+                        {reservation.reference_code || `Reservation #${reservation.id}`}
                       </p>
                       <p className="text-xs uppercase tracking-[0.25em] text-gray-400">
-                        {appointment.status || 'unspecified'}
+                        {reservation.status || 'unspecified'}
                       </p>
                     </div>
-                    <Button type="button" variant="ghost" onClick={() => handleViewAppointment(appointment.id)}>
-                      View appointment
+                    <Button type="button" variant="ghost" onClick={() => handleViewReservation(reservation.id)}>
+                      View reservation
                     </Button>
                   </div>
                   <dl className="mt-3 grid gap-2 text-xs text-gray-500 sm:grid-cols-2">
                     <div>
                       <dt className="uppercase tracking-[0.2em]">Scheduled</dt>
                       <dd className="text-gray-700">
-                        {formatDateTime(appointment.scheduled_start, 'Not scheduled')}
+                        {formatDateTime(reservation.scheduled_start, 'Not scheduled')}
                       </dd>
                     </div>
                     <div>
                       <dt className="uppercase tracking-[0.2em]">Duration</dt>
                       <dd className="text-gray-700">
-                        {appointment.duration_minutes ? `${appointment.duration_minutes} minutes` : 'Not set'}
+                        {reservation.duration_minutes ? `${reservation.duration_minutes} minutes` : 'Not set'}
                       </dd>
                     </div>
                   </dl>
@@ -372,7 +372,7 @@ export default function AdminUserDetails() {
             </ul>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
-              No appointments have been recorded for this user.
+              No reservations have been recorded for this user.
             </div>
           )}
         </Card>
@@ -383,12 +383,12 @@ export default function AdminUserDetails() {
               Attached files
             </h3>
             <p className="text-sm text-gray-600">
-              Documents and imagery uploaded for the user across appointments.
+              Documents and imagery uploaded for the user across reservations.
             </p>
           </div>
           {userAssets.files.length ? (
             <ul className="space-y-3">
-              {userAssets.files.map(({ asset, appointment }) => (
+              {userAssets.files.map(({ asset, reservation }) => (
                 <li
                   key={asset.id}
                   className="rounded-xl border border-gray-200 p-4 text-sm text-gray-700 shadow-sm"
@@ -397,7 +397,7 @@ export default function AdminUserDetails() {
                     {normaliseAssetKind(asset.kind)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {appointment.reference_code || `Appointment #${appointment.id}`}
+                    {reservation.reference_code || `Reservation #${reservation.id}`}
                   </p>
                   <a
                     href={resolveApiUrl(asset.file_url)}
@@ -412,7 +412,7 @@ export default function AdminUserDetails() {
             </ul>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
-              No files have been attached to this user&apos;s appointments yet.
+              No files have been attached to this user&apos;s reservations yet.
             </div>
           )}
         </Card>
@@ -429,13 +429,13 @@ export default function AdminUserDetails() {
         </div>
         {userAssets.notes.length ? (
           <ul className="space-y-3">
-            {userAssets.notes.map(({ asset, appointment }) => (
+            {userAssets.notes.map(({ asset, reservation }) => (
               <li
                 key={asset.id}
                 className="rounded-xl border border-gray-200 p-4 text-sm text-gray-700 shadow-sm"
               >
                 <p className="text-xs uppercase tracking-[0.25em] text-gray-400">
-                  {appointment.reference_code || `Appointment #${appointment.id}`}
+                  {reservation.reference_code || `Reservation #${reservation.id}`}
                 </p>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">{asset.note_text}</p>
                 <p className="mt-2 text-xs text-gray-500">

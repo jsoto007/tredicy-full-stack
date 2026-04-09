@@ -9,7 +9,7 @@ sys.path.insert(0, "./server")
 
 from app import create_app
 from app.config import db
-from app.models import AppointmentPayment, SessionOption, TattooAppointment
+from app.models import ReservationPayment, SessionOption, RestaurantReservation
 
 
 class FakeStripeObject(dict):
@@ -41,9 +41,9 @@ def client(app):
     return app.test_client()
 
 
-def _create_appointment(status="awaiting_payment", payment_status="pending", provider_payment_id="cs_test_123"):
+def _create_reservation(status="awaiting_payment", payment_status="pending", provider_payment_id="cs_test_123"):
     session_option = SessionOption(name="Test service", duration_minutes=60, price_cents=100)
-    appointment = TattooAppointment(
+    reservation = RestaurantReservation(
         reference_code="TEST-123",
         contact_name="Test Customer",
         contact_email="test@example.com",
@@ -53,8 +53,8 @@ def _create_appointment(status="awaiting_payment", payment_status="pending", pro
         duration_minutes=60,
         session_option=session_option,
     )
-    payment = AppointmentPayment(
-        appointment=appointment,
+    payment = ReservationPayment(
+        reservation=reservation,
         provider="stripe",
         provider_payment_id=provider_payment_id,
         status=payment_status,
@@ -62,9 +62,9 @@ def _create_appointment(status="awaiting_payment", payment_status="pending", pro
         currency="USD",
         note="Stripe Checkout payment",
     )
-    db.session.add_all([session_option, appointment, payment])
+    db.session.add_all([session_option, reservation, payment])
     db.session.commit()
-    return appointment
+    return reservation
 
 
 def _set_csrf(client):
@@ -75,12 +75,12 @@ def _set_csrf(client):
 
 def test_verify_session_accepts_succeeded_payment_intent_before_checkout_status_updates(app, client, monkeypatch):
     with app.app_context():
-        appointment = _create_appointment()
-        appointment_id = appointment.id
+        reservation = _create_reservation()
+        reservation_id = reservation.id
 
     fake_checkout = {
         "id": "cs_test_123",
-        "client_reference_id": str(appointment_id),
+        "client_reference_id": str(reservation_id),
         "payment_status": "unpaid",
         "status": "complete",
         "payment_intent": "pi_test_123",
@@ -99,7 +99,7 @@ def test_verify_session_accepts_succeeded_payment_intent_before_checkout_status_
 
     response = client.post(
         "/api/payments/stripe/verify-session",
-        json={"appointment_id": appointment_id, "session_id": "cs_test_123"},
+        json={"reservation_id": reservation_id, "session_id": "cs_test_123"},
         headers=_set_csrf(client),
     )
 
@@ -113,21 +113,21 @@ def test_stripe_webhook_finalizes_payment_once(app, client, monkeypatch):
     notifications = {"client": 0, "internal": 0}
 
     with app.app_context():
-        appointment = _create_appointment()
-        appointment_id = appointment.id
+        reservation = _create_reservation()
+        reservation_id = reservation.id
 
     fake_event = {
         "type": "checkout.session.completed",
         "data": {
             "object": {
                 "id": "cs_test_123",
-                "client_reference_id": str(appointment_id),
+                "client_reference_id": str(reservation_id),
                 "payment_status": "paid",
                 "status": "complete",
                 "payment_intent": "pi_test_123",
                 "amount_total": 95,
                 "currency": "usd",
-                "metadata": {"appointment_id": str(appointment_id)},
+                "metadata": {"reservation_id": str(reservation_id)},
             }
         },
     }
@@ -157,9 +157,9 @@ def test_stripe_webhook_finalizes_payment_once(app, client, monkeypatch):
         assert response.status_code == 200
 
     with app.app_context():
-        appointment = TattooAppointment.query.get(appointment_id)
-        assert appointment.status == "pending"
-        assert appointment.payments[0].status == "paid"
+        reservation = RestaurantReservation.query.get(reservation_id)
+        assert reservation.status == "pending"
+        assert reservation.payments[0].status == "paid"
 
     assert notifications["client"] == 1
     assert notifications["internal"] == 1
@@ -167,12 +167,12 @@ def test_stripe_webhook_finalizes_payment_once(app, client, monkeypatch):
 
 def test_verify_session_marks_failed_payment_as_not_booked(app, client, monkeypatch):
     with app.app_context():
-        appointment = _create_appointment()
-        appointment_id = appointment.id
+        reservation = _create_reservation()
+        reservation_id = reservation.id
 
     fake_checkout = {
         "id": "cs_test_123",
-        "client_reference_id": str(appointment_id),
+        "client_reference_id": str(reservation_id),
         "payment_status": "unpaid",
         "status": "expired",
         "payment_intent": "pi_test_123",
@@ -186,29 +186,29 @@ def test_verify_session_marks_failed_payment_as_not_booked(app, client, monkeypa
 
     response = client.post(
         "/api/payments/stripe/verify-session",
-        json={"appointment_id": appointment_id, "session_id": "cs_test_123"},
+        json={"reservation_id": reservation_id, "session_id": "cs_test_123"},
         headers=_set_csrf(client),
     )
 
     assert response.status_code == 400
 
     with app.app_context():
-        appointment = TattooAppointment.query.get(appointment_id)
-        assert appointment.status == "payment_expired"
-        assert appointment.payments[0].status == "failed"
+        reservation = RestaurantReservation.query.get(reservation_id)
+        assert reservation.status == "payment_expired"
+        assert reservation.payments[0].status == "failed"
 
 
 def test_stale_awaiting_payment_hold_does_not_block_availability(app):
     from app.routes import collect_blocked_intervals
 
     with app.app_context():
-        appointment = _create_appointment()
-        appointment.scheduled_start = datetime.utcnow() + timedelta(days=1)
-        appointment.created_at = datetime.utcnow() - timedelta(hours=2)
-        appointment.updated_at = appointment.created_at
+        reservation = _create_reservation()
+        reservation.scheduled_start = datetime.utcnow() + timedelta(days=1)
+        reservation.created_at = datetime.utcnow() - timedelta(hours=2)
+        reservation.updated_at = reservation.created_at
         db.session.commit()
 
-        day_start = appointment.scheduled_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_start = reservation.scheduled_start.replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
         intervals = collect_blocked_intervals(day_start, day_end)
 

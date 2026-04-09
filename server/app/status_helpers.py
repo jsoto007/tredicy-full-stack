@@ -19,7 +19,7 @@ _STATUS_LABEL_OVERRIDES = {
 
 
 def format_status_label(status: str | None) -> str:
-    """Return a readable label for a tattoo appointment status."""
+    """Return a readable label for a restaurant reservation status."""
     if not status:
         return DEFAULT_STATUS_LABEL
     normalized = status.strip().lower()

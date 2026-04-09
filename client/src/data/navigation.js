@@ -7,7 +7,7 @@ export const DEFAULT_NAV_ITEMS = [
 
 export const USER_NAV_ITEMS = [
   { label: 'Dashboard', to: '/portal/dashboard', type: 'link', end: true },
-  { label: 'Appointments', to: '/portal/appointments', type: 'link' },
+  { label: 'Reservations', to: '/portal/reservations', type: 'link' },
   { label: 'Profile', to: '/portal/profile', type: 'link' }
 ];
 

@@ -11,7 +11,7 @@ from flask import current_app
 from .base import brand_name, client_base_url, mailgun_send
 from .booking_confirmation import (
     _default_currency,
-    _format_appointment_datetime,
+    _format_reservation_datetime,
     _format_currency,
 )
 
@@ -86,17 +86,17 @@ def _build_calendar_attachment(
     ]
     return "\r\n".join(lines)
 
-def _compute_end_time(appointment: "TattooAppointment") -> datetime | None:
-    if appointment.scheduled_end:
-        return appointment.scheduled_end
-    if not appointment.scheduled_start:
+def _compute_end_time(reservation: "RestaurantReservation") -> datetime | None:
+    if reservation.scheduled_end:
+        return reservation.scheduled_end
+    if not reservation.scheduled_start:
         return None
-    duration = appointment.duration_minutes or appointment.suggested_duration_minutes or 60
-    return appointment.scheduled_start + timedelta(minutes=duration)
+    duration = reservation.duration_minutes or reservation.suggested_duration_minutes or 60
+    return reservation.scheduled_start + timedelta(minutes=duration)
 
 def _detail_lines(
     reference: str,
-    appointment: "TattooAppointment",
+    reservation: "RestaurantReservation",
     scheduled_label: str,
     duration_label: str,
     payment_label: str,
@@ -108,17 +108,17 @@ def _detail_lines(
     ) -> list[str]:
     lines = [
         f"Reference: {reference}",
-        f"Client: {appointment.display_client_name}",
-        f"Contact: {appointment.display_contact_email or 'n/a'}",
+        f"Client: {reservation.display_client_name}",
+        f"Contact: {reservation.display_contact_email or 'n/a'}",
         f"Scheduled: {scheduled_label}",
         f"Duration: {duration_label}",
-        f"Service: {appointment.session_option.name if getattr(appointment, 'session_option', None) and appointment.session_option.name else 'Restaurant reservation'}",
+        f"Service: {reservation.session_option.name if getattr(reservation, 'session_option', None) and reservation.session_option.name else 'Restaurant reservation'}",
         f"Payment: {payment_label} ({_format_currency(charge_amount_cents, payment_currency)})",
     ]
     if session_price_cents:
         lines.append(f"Service price: {_format_currency(session_price_cents, payment_currency)}")
-    if appointment.client_description:
-        lines.append(f"Notes: {appointment.client_description}")
+    if reservation.client_description:
+        lines.append(f"Notes: {reservation.client_description}")
     if receipt_url:
         lines.append(f"Receipt: {receipt_url}")
     if manage_url:
@@ -126,7 +126,7 @@ def _detail_lines(
     return lines
 
 def send_internal_booking_notification(
-    appointment: "TattooAppointment",
+    reservation: "RestaurantReservation",
     *,
     charge_amount_cents: int,
     session_price_cents: int,
@@ -136,17 +136,17 @@ def send_internal_booking_notification(
 ) -> bool:
     """Notify the internal inbox and include an invite for jsoto@sotodev.com."""
     brand = brand_name()
-    reference = appointment.reference_code or f"Appointment #{appointment.id}"
-    payments = getattr(appointment, "payments", None) or []
+    reference = reservation.reference_code or f"Reservation #{reservation.id}"
+    payments = getattr(reservation, "payments", None) or []
     payment_currency = payments[0].currency if payments else _default_currency()
-    scheduled_label = _format_appointment_datetime(appointment.scheduled_start)
-    duration_label = _duration_label(appointment.duration_minutes)
+    scheduled_label = _format_reservation_datetime(reservation.scheduled_start)
+    duration_label = _duration_label(reservation.duration_minutes)
     payment_label = _payment_label(charge_amount_cents, pay_full_amount, booking_fee_percent)
     base_url = client_base_url()
-    manage_url = f"{base_url}/portal/appointments" if base_url else None
+    manage_url = f"{base_url}/portal/reservations" if base_url else None
     detail_lines = _detail_lines(
         reference,
-        appointment,
+        reservation,
         scheduled_label,
         duration_label,
         payment_label,
@@ -156,7 +156,7 @@ def send_internal_booking_notification(
         receipt_url,
         manage_url,
     )
-    appointment_location = current_app.config.get("BOOKING_LOCATION_NAME") or brand
+    reservation_location = current_app.config.get("BOOKING_LOCATION_NAME") or brand
     organizer_email = current_app.config.get("MAILGUN_FROM") or f"no-reply@{current_app.config.get('MAILGUN_DOMAIN') or 'mail.tredicisocial.com'}"
     internal_email = (
         current_app.config.get("INTERNAL_BOOKING_NOTIFICATION_EMAIL") or "reservations@tredicisocial.com"
@@ -165,16 +165,16 @@ def send_internal_booking_notification(
     calendar_invite_text: str | None = None
     calendar_invite_filename = f"{_safe_filename(reference)}.ics"
     calendar_invite_data_uri: str | None = None
-    if appointment.scheduled_start:
-        end_time = _compute_end_time(appointment)
+    if reservation.scheduled_start:
+        end_time = _compute_end_time(reservation)
         if end_time:
             summary = f"{brand} booking – {reference}"
             description = "\n".join(detail_lines)
             calendar_invite_text = _build_calendar_attachment(
                 summary=summary,
                 description=description,
-                location=appointment_location,
-                start=appointment.scheduled_start,
+                location=reservation_location,
+                start=reservation.scheduled_start,
                 end=end_time,
                 organizer_email=organizer_email,
                 attendee_email=internal_email,
@@ -241,7 +241,7 @@ def send_internal_booking_notification(
         "</tr>"
         "<tr>"
         "<td style=\"padding:28px 32px;color:#0f172a;font-size:15px;line-height:1.6;\">"
-        "<p style=\"margin:0 0 12px 0;\">🔔 New appointment booked. This message notifies you of the booking details and includes a calendar invite.</p>"
+        "<p style=\"margin:0 0 12px 0;\">🔔 New reservation booked. This message notifies you of the booking details and includes a calendar invite.</p>"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" "
         "style=\"width:100%;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;\">"
         f"{detail_table}"
@@ -260,6 +260,6 @@ def send_internal_booking_notification(
         subject=f"{brand} booking confirmed – {reference}",
         text=text,
         html=html,
-        tags=("appointments", "admin-notification"),
+        tags=("reservations", "admin-notification"),
         attachments=attachments or None,
     )

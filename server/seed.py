@@ -10,8 +10,8 @@ from app.models import (
     AccountActivationToken,
     AdminAccount,
     AdminActivityLog,
-    AppointmentAsset,
-    AppointmentPayment,
+    ReservationAsset,
+    ReservationPayment,
     ClientAccount,
     ClientDocument,
     Consultation,
@@ -25,8 +25,8 @@ from app.models import (
     StudioAvailabilityBlock,
     StudioClosure,
     StudioWorkingHour,
-    TattooAppointment,
-    TattooCategory,
+    RestaurantReservation,
+    GalleryCategory,
     Testimonial,
     UserNotification,
 )
@@ -78,9 +78,9 @@ def _schema_rebuild_requested() -> bool:
 def clear_existing_data():
     """Completely wipe known tables so the seed always replaces the data."""
     models_in_order = [
-        AppointmentAsset,
-        AppointmentPayment,
-        TattooAppointment,
+        ReservationAsset,
+        ReservationPayment,
+        RestaurantReservation,
         GalleryItem,
         AdminActivityLog,
         UserNotification,
@@ -90,7 +90,7 @@ def clear_existing_data():
         StudioAvailabilityBlock,
         SessionOption,
         SystemSetting,
-        TattooCategory,
+        GalleryCategory,
         ClientAccount,
         AdminAccount,
         StudioClosure,
@@ -144,20 +144,20 @@ def ensure_user_account():
 
 
 def ensure_categories():
-    if TattooCategory.query.count() > 0:
+    if GalleryCategory.query.count() > 0:
         return False
 
     db.session.add_all(
         [
-            TattooCategory(
+            GalleryCategory(
                 name="Dining Room",
                 description="Main dining room photography and guest table styling.",
             ),
-            TattooCategory(
+            GalleryCategory(
                 name="Bar & Cocktails",
                 description="Signature drinks, bar detail shots, and evening ambiance.",
             ),
-            TattooCategory(
+            GalleryCategory(
                 name="Private Events",
                 description="Private dining, chef's table, and special occasion imagery.",
             ),
@@ -188,15 +188,15 @@ def ensure_testimonials():
     return True
 
 
-def ensure_appointment(admin, user):
+def ensure_reservation(admin, user):
     if not admin or not user:
         return False
 
-    existing = TattooAppointment.query.filter_by(reference_code="TREDICI-SEED-01").first()
+    existing = RestaurantReservation.query.filter_by(reference_code="TREDICI-SEED-01").first()
     if existing:
         return False
 
-    appointment = TattooAppointment(
+    reservation = RestaurantReservation(
         reference_code="TREDICI-SEED-01",
         client=user,
         assigned_admin=admin,
@@ -205,12 +205,12 @@ def ensure_appointment(admin, user):
         scheduled_start=datetime.utcnow() + timedelta(days=18),
         duration_minutes=90,
     )
-    db.session.add(appointment)
+    db.session.add(reservation)
     db.session.flush()
 
     db.session.add(
-        AppointmentAsset(
-            appointment=appointment,
+        ReservationAsset(
+            reservation=reservation,
             admin_uploader=admin,
             kind="note",
             note_text="Confirm patio seating and note any dietary preferences before service.",
@@ -223,7 +223,7 @@ def ensure_appointment(admin, user):
 
 
 # Seed real reservations from the embedded schedule data.
-def seed_real_appointments(admin):
+def seed_real_reservations(admin):
     """Seed real reservations from the embedded schedule data.
 
     This does NOT wipe existing data and is safe to run multiple times. It
@@ -253,7 +253,7 @@ def seed_real_appointments(admin):
             continue
 
         raw_email = (data.get("email") or "").strip()
-        email = raw_email or f"guest-{data['appointment_id']}@placeholder.invalid"
+        email = raw_email or f"guest-{data['reservation_id']}@placeholder.invalid"
 
         client = ClientAccount.query.filter_by(email=email).first()
         if not client:
@@ -269,8 +269,8 @@ def seed_real_appointments(admin):
             db.session.flush()
             created_any = True
 
-        reference_code = f"REAL-{data['appointment_id']}"
-        existing_reservation = TattooAppointment.query.filter_by(
+        reference_code = f"REAL-{data['reservation_id']}"
+        existing_reservation = RestaurantReservation.query.filter_by(
             reference_code=reference_code
         ).first()
         if existing_reservation:
@@ -279,19 +279,19 @@ def seed_real_appointments(admin):
 
         duration_minutes = int((end - start).total_seconds() // 60)
 
-        appointment = TattooAppointment(
+        reservation = RestaurantReservation(
             reference_code=reference_code,
             client=client,
             assigned_admin=admin,
             status="confirmed" if data["paid"] else "pending",
-            client_description=data["appointment_type"],
+            client_description=data["reservation_type"],
             scheduled_start=start,
             duration_minutes=duration_minutes,
             contact_name=f"{data['first_name']} {data['last_name']}".strip(),
             contact_email=raw_email or None,
             contact_phone=(data.get("phone") or "").strip() or None,
         )
-        db.session.add(appointment)
+        db.session.add(reservation)
 
         note_lines = []
 
@@ -299,9 +299,9 @@ def seed_real_appointments(admin):
         if base_note:
             note_lines.append(base_note)
 
-        if data.get("appointment_price") is not None:
+        if data.get("reservation_price") is not None:
             note_lines.append(
-                f"Reservation total: ${data['appointment_price']:,.2f}"
+                f"Reservation total: ${data['reservation_price']:,.2f}"
             )
         if data.get("amount_paid_online") is not None:
             note_lines.append(
@@ -324,8 +324,8 @@ def seed_real_appointments(admin):
 
         if note_lines:
             db.session.add(
-                AppointmentAsset(
-                    appointment=appointment,
+                ReservationAsset(
+                    reservation=reservation,
                     admin_uploader=admin,
                     kind="note",
                     note_text="\n".join(note_lines),
@@ -335,8 +335,8 @@ def seed_real_appointments(admin):
 
         if data.get("amount_paid_online"):
             db.session.add(
-                AppointmentPayment(
-                    appointment=appointment,
+                ReservationPayment(
+                    reservation=reservation,
                     provider="seed",
                     provider_payment_id=f"SEED-{reference_code}",
                     status="paid" if data.get("paid") else "pending",
@@ -399,7 +399,7 @@ def ensure_admin_activity(admin):
             ),
             AdminActivityLog(
                 admin=admin,
-                action="appointment_update",
+                action="reservation_update",
                 details="Double-checked the pending reservation references.",
                 ip_address="127.0.0.1",
             ),
@@ -526,13 +526,13 @@ def seed_demo_data():
 
     ensure_categories()
     ensure_testimonials()
-    ensure_appointment(owner_admin, user)
+    ensure_reservation(owner_admin, user)
     ensure_notifications(user)
     ensure_admin_activity(owner_admin)
     ensure_settings()
     ensure_session_options()
     ensure_menu()
-    seed_real_appointments(owner_admin)
+    seed_real_reservations(owner_admin)
 
     db.session.commit()
     return True

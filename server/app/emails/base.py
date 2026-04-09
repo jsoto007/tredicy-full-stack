@@ -13,7 +13,8 @@ def brand_name() -> str:
     return configured or DEFAULT_BRAND_NAME
 
 
-def email_logo_url() -> str | None:
+from typing import Optional
+def email_logo_url() -> Optional[str]:
     raw_url = (current_app.config.get("EMAIL_LOGO_URL") or "").strip()
     if not raw_url:
         return None

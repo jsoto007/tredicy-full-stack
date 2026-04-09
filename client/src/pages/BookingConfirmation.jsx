@@ -7,32 +7,32 @@ import SectionTitle from '../components/SectionTitle.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { formatStatusLabel, getStatusBadgeClasses } from '../lib/statusStyles.js';
 import { apiGet, apiPost } from '../lib/api.js';
-import { sanitizeAppointmentForConfirmation } from '../lib/appointments.js';
+import { sanitizeReservationForConfirmation } from '../lib/reservations.js';
 
 const BOOKING_RECEIPT_KEY = 'melodi-nails:last-booking';
 const LOCATION_LINE = '1205 College Ave, Bronx, NY 10456';
 const STUDIO_EMAIL = 'melodinails@mail.sotodev.com';
 const DIRECTIONS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(LOCATION_LINE)}`;
-function readLatestAppointment() {
+function readLatestReservation() {
   try {
     const raw = sessionStorage.getItem(BOOKING_RECEIPT_KEY);
     if (!raw) {
       return null;
     }
     const parsed = JSON.parse(raw);
-    return parsed?.appointment || null;
+    return parsed?.reservation || null;
   } catch {
     return null;
   }
 }
 
-function storeLatestAppointment(appointment) {
-  const sanitized = sanitizeAppointmentForConfirmation(appointment);
+function storeLatestReservation(reservation) {
+  const sanitized = sanitizeReservationForConfirmation(reservation);
   if (!sanitized) {
     return;
   }
   try {
-    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ appointment: sanitized, savedAt: Date.now() }));
+    sessionStorage.setItem(BOOKING_RECEIPT_KEY, JSON.stringify({ reservation: sanitized, savedAt: Date.now() }));
   } catch {
     // Ignore persistence failures (e.g. Safari private mode).
   }
@@ -86,7 +86,7 @@ function RelatedServices({ currentServiceName, currentCategory }) {
               </span>
             </div>
             <Link
-              to="/appointments/new"
+              to="/reservations/new"
               className="mt-1 block text-center rounded-xl border border-[#2a3923] px-3 py-2 text-xs font-semibold text-[#2a3923] transition hover:bg-[#2a3923] hover:text-white"
             >
               Reservar
@@ -100,11 +100,11 @@ function RelatedServices({ currentServiceName, currentCategory }) {
 
 export default function BookingConfirmation() {
   const { isAuthenticated } = useAuth();
-  const [appointment, setAppointment] = useState(() => readLatestAppointment());
+  const [reservation, setReservation] = useState(() => readLatestReservation());
 
   const location = useLocation();
-  const locationAppointment = location.state?.appointment ?? null;
-  const [remoteAppointment, setRemoteAppointment] = useState(null);
+  const locationReservation = location.state?.reservation ?? null;
+  const [remoteReservation, setRemoteReservation] = useState(null);
   const [isFetchingRemote, setIsFetchingRemote] = useState(false);
   const [fetchError, setFetchError] = useState(null);
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -128,10 +128,10 @@ export default function BookingConfirmation() {
           if (!isActive) {
             return;
           }
-          const appointmentPayload = payload?.appointment ?? payload;
-          if (appointmentPayload) {
-            setRemoteAppointment(appointmentPayload);
-            storeLatestAppointment(appointmentPayload);
+          const reservationPayload = payload?.reservation ?? payload;
+          if (reservationPayload) {
+            setRemoteReservation(reservationPayload);
+            storeLatestReservation(reservationPayload);
           }
           if (payload?.payment_status === 'processing' && attempt < 6) {
             retryTimer = window.setTimeout(() => verifyPayment(attempt + 1), 2000);
@@ -143,10 +143,10 @@ export default function BookingConfirmation() {
           if (!isActive) {
             return;
           }
-          const fallbackAppointment = error.body?.appointment ?? null;
-          if (fallbackAppointment) {
-            setRemoteAppointment(fallbackAppointment);
-            storeLatestAppointment(fallbackAppointment);
+          const fallbackReservation = error.body?.reservation ?? null;
+          if (fallbackReservation) {
+            setRemoteReservation(fallbackReservation);
+            storeLatestReservation(fallbackReservation);
           }
           setFetchError(error.message || 'Unable to verify Stripe payment.');
           setIsFetchingRemote(false);
@@ -162,7 +162,7 @@ export default function BookingConfirmation() {
   }, [sessionIdQuery]);
 
   useEffect(() => {
-    if (appointment || remoteAppointment || !referenceQuery || !emailQuery) {
+    if (reservation || remoteReservation || !referenceQuery || !emailQuery) {
       return;
     }
     let isActive = true;
@@ -170,7 +170,7 @@ export default function BookingConfirmation() {
     setIsFetchingRemote(true);
     setFetchError(null);
     apiGet(
-      `/api/public/appointments/lookup?reference=${encodeURIComponent(referenceQuery)}&email=${encodeURIComponent(
+      `/api/public/reservations/lookup?reference=${encodeURIComponent(referenceQuery)}&email=${encodeURIComponent(
         emailQuery
       )}`,
       { signal: controller.signal }
@@ -179,14 +179,14 @@ export default function BookingConfirmation() {
         if (!isActive) {
           return;
         }
-        setRemoteAppointment(payload);
-        storeLatestAppointment(payload);
+        setRemoteReservation(payload);
+        storeLatestReservation(payload);
       })
       .catch((error) => {
         if (!isActive || error.name === 'AbortError') {
           return;
         }
-        setFetchError(error.message || 'Unable to load appointment details.');
+        setFetchError(error.message || 'Unable to load reservation details.');
       })
       .finally(() => {
         if (isActive) {
@@ -197,17 +197,17 @@ export default function BookingConfirmation() {
       isActive = false;
       controller.abort();
     };
-  }, [appointment, remoteAppointment, referenceQuery, emailQuery]);
+  }, [reservation, remoteReservation, referenceQuery, emailQuery]);
 
   useEffect(() => {
-    if (!locationAppointment) {
+    if (!locationReservation) {
       return;
     }
-    setAppointment(locationAppointment);
-    storeLatestAppointment(locationAppointment);
-  }, [locationAppointment]);
+    setReservation(locationReservation);
+    storeLatestReservation(locationReservation);
+  }, [locationReservation]);
 
-  const bookingDetails = remoteAppointment || appointment;
+  const bookingDetails = remoteReservation || reservation;
   const scheduledStart = bookingDetails?.scheduled_start ? new Date(bookingDetails.scheduled_start) : null;
   const formattedDateLabel = useMemo(
     () => (scheduledStart ? DAY_FORMATTER.format(scheduledStart) : 'Pending scheduling'),
@@ -242,7 +242,7 @@ export default function BookingConfirmation() {
   const serviceLabel =
     bookingDetails?.service?.name || bookingDetails?.session_option?.name || 'Service pending';
   const placementNotes =
-    bookingDetails?.service?.notes || bookingDetails?.client_description || bookingDetails?.tattoo?.notes || '';
+    bookingDetails?.service?.notes || bookingDetails?.client_description || bookingDetails?.restaurant?.notes || '';
   const descriptionCopy = bookingDetails?.client_description || '';
   const artistName =
     bookingDetails?.assigned_admin?.name ||
@@ -258,12 +258,12 @@ export default function BookingConfirmation() {
     ? 'Payment still processing'
     : isPaymentFailed
       ? 'Payment was not completed'
-      : 'Appointment confirmed';
+      : 'Reservation confirmed';
   const confirmationDescription = isPaymentAwaiting
-    ? 'Your time is on a temporary hold while Stripe finishes processing payment. We will only confirm the appointment after payment succeeds.'
+    ? 'Your time is on a temporary hold while Stripe finishes processing payment. We will only confirm the reservation after payment succeeds.'
     : isPaymentFailed
-      ? 'Stripe did not confirm payment, so this appointment was not booked. Start a new checkout to reserve a time.'
-      : 'Thanks for securing your appointment. We emailed a confirmation with calendar invites—check your inbox or spam folder.';
+      ? 'Stripe did not confirm payment, so this reservation was not booked. Start a new checkout to reserve a time.'
+      : 'Thanks for securing your reservation. We emailed a confirmation with calendar invites—check your inbox or spam folder.';
   const depositSecondary = payment?.receipt_url ? (
     <a
       href={payment.receipt_url}
@@ -290,9 +290,9 @@ export default function BookingConfirmation() {
         <FadeIn>
           <p className="text-sm text-gray-600">
             {isPaymentAwaiting
-              ? 'Keep this page open for a moment while we verify the Stripe session. If payment does not complete, the temporary hold will expire and the appointment will not be booked.'
+              ? 'Keep this page open for a moment while we verify the Stripe session. If payment does not complete, the temporary hold will expire and the reservation will not be booked.'
               : isPaymentFailed
-                ? 'If Stripe charged your card but this page still shows a failed payment, verify the Stripe receipt first and then review the webhook logs before manually creating or confirming an appointment.'
+                ? 'If Stripe charged your card but this page still shows a failed payment, verify the Stripe receipt first and then review the webhook logs before manually creating or confirming an reservation.'
               : <>If you don’t see the email, double-check your spam or promotions folder and look for an email from <span className="font-semibold">melodinails@mail.sotodev.com</span>. The confirmation includes Google and Apple calendar options so you can lock in the time.</>}
           </p>
         </FadeIn>
@@ -329,7 +329,7 @@ export default function BookingConfirmation() {
                   secondary={scheduledStart ? `${timeZoneLabel || 'Local'} time` : 'Scheduling in progress'}
                 />
                 <DetailItem
-                  label="Appointment length"
+                  label="Reservation length"
                   value={durationLabel}
                   secondary={suggestedDurationLabel ? `Suggested ${suggestedDurationLabel}` : null}
                 />
@@ -361,7 +361,7 @@ export default function BookingConfirmation() {
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Appointment details</p>
+                <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Reservation details</p>
                 <p className="text-sm text-gray-900">{serviceLabel}</p>
                 {placementNotes ? <p className="text-sm text-gray-600">{placementNotes}</p> : null}
                 {descriptionCopy ? (
@@ -396,8 +396,8 @@ export default function BookingConfirmation() {
                   View dashboard
                 </Button>
               ) : (
-                <Button as={Link} to="/appointments/new">
-                  Book another appointment
+                <Button as={Link} to="/reservations/new">
+                  Book another reservation
                 </Button>
               )}
             </div>
@@ -427,7 +427,7 @@ export default function BookingConfirmation() {
                 Use the reference code and contact email sent to you (or revisit the confirmation link) to view the full details even without signing in.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button as={Link} to="/appointments/new">
+                <Button as={Link} to="/reservations/new">
                   Start a booking
                 </Button>
                 <Button as={Link} to="/" variant="secondary">

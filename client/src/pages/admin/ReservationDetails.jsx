@@ -6,7 +6,7 @@ import FadeIn from '../../components/FadeIn.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../../lib/api.js';
 import { ASSET_KIND_OPTIONS, useAdminDashboard } from './AdminDashboardContext.jsx';
-import { getAppointmentTypeLabel } from '../../lib/appointments.js';
+import { getReservationTypeLabel } from '../../lib/reservations.js';
 import { formatStatusLabel, getStatusBadgeClasses } from '../../lib/statusStyles.js';
 import { shouldIgnoreHotkeys } from '../../lib/hotkeys.js';
 
@@ -18,11 +18,11 @@ const INITIAL_ASSET_DRAFT = {
 };
 
 const ASSET_FIELD_IDS = {
-  kind: 'appointment-asset-kind',
-  share: 'appointment-asset-share',
-  fileUrl: 'appointment-asset-file-url',
-  fileUpload: 'appointment-asset-file-upload',
-  note: 'appointment-asset-note'
+  kind: 'reservation-asset-kind',
+  share: 'reservation-asset-share',
+  fileUrl: 'reservation-asset-file-url',
+  fileUpload: 'reservation-asset-file-upload',
+  note: 'reservation-asset-note'
 };
 
 const STATUS_OPTIONS = [
@@ -31,7 +31,7 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' }
 ];
 
-const APPOINTMENT_STATUS_FIELD_ID = 'appointment-status-select';
+const APPOINTMENT_STATUS_FIELD_ID = 'reservation-status-select';
 const ICON_BADGE_CLASS =
   'flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-black/10';
 
@@ -190,27 +190,27 @@ function IconShield(props) {
   );
 }
 
-export default function AppointmentDetails() {
-  const { appointmentId } = useParams();
-  const appointmentNumericId = Number(appointmentId);
+export default function ReservationDetails() {
+  const { reservationId } = useParams();
+  const reservationNumericId = Number(reservationId);
   const navigate = useNavigate();
   const location = useLocation();
 
   const {
-    state: { appointments, currentAdmin },
+    state: { reservations, currentAdmin },
     actions: {
       setFeedback,
-      createAppointmentAsset,
-      toggleAppointmentAssetVisibility,
+      createReservationAsset,
+      toggleReservationAssetVisibility,
       uploadMedia,
-      updateAppointment
+      updateReservation
     }
   } = useAdminDashboard();
 
-  const [appointment, setAppointment] = useState(() =>
-    appointments.find((entry) => entry.id === appointmentNumericId) || null
+  const [reservation, setReservation] = useState(() =>
+    reservations.find((entry) => entry.id === reservationNumericId) || null
   );
-  const [loading, setLoading] = useState(!appointment);
+  const [loading, setLoading] = useState(!reservation);
   const [error, setError] = useState(null);
   const [assetDraft, setAssetDraft] = useState(INITIAL_ASSET_DRAFT);
   const [busyAssetId, setBusyAssetId] = useState(null);
@@ -221,75 +221,75 @@ export default function AppointmentDetails() {
   const imageInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
   const [activePreviewAssetId, setActivePreviewAssetId] = useState(null);
-  const hasFetchedFullAppointmentRef = useRef(false);
+  const hasFetchedFullReservationRef = useRef(false);
 
-  const reloadAppointment = useCallback(async ({ showLoader = false } = {}) => {
-    if (!appointmentNumericId) {
+  const reloadReservation = useCallback(async ({ showLoader = false } = {}) => {
+    if (!reservationNumericId) {
       return;
     }
     if (showLoader) {
       setLoading(true);
     }
     try {
-      const response = await apiGet(`/api/admin/appointments/${appointmentNumericId}`);
-      setAppointment(response);
+      const response = await apiGet(`/api/admin/reservations/${reservationNumericId}`);
+      setReservation(response);
       setError(null);
     } catch (err) {
-      setError('Unable to load appointment details.');
+      setError('Unable to load reservation details.');
     } finally {
       if (showLoader) {
         setLoading(false);
       }
     }
-  }, [appointmentNumericId]);
+  }, [reservationNumericId]);
 
   useEffect(() => {
-    if (!appointmentNumericId || hasFetchedFullAppointmentRef.current) {
+    if (!reservationNumericId || hasFetchedFullReservationRef.current) {
       return;
     }
-    hasFetchedFullAppointmentRef.current = true;
-    // Always fetch the full appointment once so assets/photos are present when arriving from the calendar list.
-    reloadAppointment({ showLoader: !appointment });
-  }, [appointmentNumericId, appointment, reloadAppointment]);
+    hasFetchedFullReservationRef.current = true;
+    // Always fetch the full reservation once so assets/photos are present when arriving from the calendar list.
+    reloadReservation({ showLoader: !reservation });
+  }, [reservationNumericId, reservation, reloadReservation]);
 
   useEffect(() => {
-    const fresh = appointments.find((entry) => entry.id === appointmentNumericId);
+    const fresh = reservations.find((entry) => entry.id === reservationNumericId);
     if (fresh) {
-      setAppointment(fresh);
+      setReservation(fresh);
     }
-  }, [appointments, appointmentNumericId]);
+  }, [reservations, reservationNumericId]);
 
   const assetOptions = useMemo(() => ASSET_KIND_OPTIONS, []);
   const imageAssets = useMemo(() => {
-    if (!appointment || !Array.isArray(appointment.assets)) {
+    if (!reservation || !Array.isArray(reservation.assets)) {
       return [];
     }
-    return appointment.assets.filter((asset) => {
+    return reservation.assets.filter((asset) => {
       if (!asset?.file_url) {
         return false;
       }
       return ['id_front', 'id_back', 'inspiration_image'].includes(asset.kind);
     });
-  }, [appointment]);
+  }, [reservation]);
   const previewableAssets = useMemo(() => {
-    if (!appointment?.assets?.length) {
+    if (!reservation?.assets?.length) {
       return [];
     }
-    return appointment.assets
+    return reservation.assets
       .map((asset) => ({
         ...asset,
         resolvedUrl: resolveApiUrl(asset.file_url)
       }))
       .filter((asset) => Boolean(asset.resolvedUrl));
-  }, [appointment]);
-  const appointmentStatusOptions = useMemo(() => {
+  }, [reservation]);
+  const reservationStatusOptions = useMemo(() => {
     const options = [...STATUS_OPTIONS];
-    const currentStatus = appointment?.status;
+    const currentStatus = reservation?.status;
     if (currentStatus && !options.some((entry) => entry.value === currentStatus)) {
       options.push({ value: currentStatus, label: formatStatusLabel(currentStatus) });
     }
     return options;
-  }, [appointment?.status]);
+  }, [reservation?.status]);
 
   const handleAssetDraftChange = (field, value) => {
     setAssetDraft((prev) => ({
@@ -313,7 +313,7 @@ export default function AppointmentDetails() {
 
   const handleAssetSubmit = async (event) => {
     event.preventDefault();
-    if (!appointment) {
+    if (!reservation) {
       return;
     }
     if (!assetDraft.kind) {
@@ -337,7 +337,7 @@ export default function AppointmentDetails() {
         }
         uploadedUrl = upload.url;
       }
-      await createAppointmentAsset(appointment.id, {
+      await createReservationAsset(reservation.id, {
         kind: assetDraft.kind,
         file_url: uploadedUrl || null,
         note_text: trimmedNote || null,
@@ -353,14 +353,14 @@ export default function AppointmentDetails() {
   };
 
   const handleAssetVisibilityToggle = async (asset) => {
-    if (!appointment) {
+    if (!reservation) {
       return;
     }
     const nextVisibility = !asset.is_visible_to_client;
     setBusyAssetId(asset.id);
     try {
-      await toggleAppointmentAssetVisibility(appointment.id, asset.id, nextVisibility);
-      setAppointment((prev) => {
+      await toggleReservationAssetVisibility(reservation.id, asset.id, nextVisibility);
+      setReservation((prev) => {
         if (!prev || !Array.isArray(prev.assets)) {
           return prev;
         }
@@ -501,7 +501,7 @@ export default function AppointmentDetails() {
   const handleImageUpload = async (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!appointment || !file) {
+    if (!reservation || !file) {
       return;
     }
 
@@ -511,7 +511,7 @@ export default function AppointmentDetails() {
       if (!upload?.url) {
         throw new Error('Upload failed.');
       }
-      await createAppointmentAsset(appointment.id, {
+      await createReservationAsset(reservation.id, {
         kind: 'inspiration_image',
         file_url: upload.url,
         note_text: null,
@@ -526,18 +526,18 @@ export default function AppointmentDetails() {
   };
 
   const handleStatusChange = async (event) => {
-    if (!appointment) {
+    if (!reservation) {
       return;
     }
     const newStatus = event.target.value;
-    if (!newStatus || newStatus === appointment.status) {
+    if (!newStatus || newStatus === reservation.status) {
       return;
     }
     setStatusUpdateError(null);
     setStatusUpdating(true);
     try {
-      await updateAppointment(appointment.id, { status: newStatus });
-      setAppointment((prev) => (prev ? { ...prev, status: newStatus } : prev));
+      await updateReservation(reservation.id, { status: newStatus });
+      setReservation((prev) => (prev ? { ...prev, status: newStatus } : prev));
     } catch (err) {
       setStatusUpdateError(getErrorMessage(err, 'Unable to update status.'));
     } finally {
@@ -545,11 +545,11 @@ export default function AppointmentDetails() {
     }
   };
 
-  if (!appointmentNumericId || Number.isNaN(appointmentNumericId)) {
+  if (!reservationNumericId || Number.isNaN(reservationNumericId)) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl px-1 sm:px-1">
-          <p className="text-sm text-red-500">Invalid appointment identifier.</p>
+          <p className="text-sm text-red-500">Invalid reservation identifier.</p>
         </div>
       </main>
     );
@@ -559,7 +559,7 @@ export default function AppointmentDetails() {
     return (
       <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-4 px-4 sm:px-6">
-          <SectionTitle eyebrow="Admin" title="Appointment details" description="Loading appointment information..." />
+          <SectionTitle eyebrow="Admin" title="Reservation details" description="Loading reservation information..." />
         </div>
       </main>
     );
@@ -569,7 +569,7 @@ export default function AppointmentDetails() {
     return (
       <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
-          <SectionTitle eyebrow="Admin" title="Appointment details" description="Something went wrong." />
+          <SectionTitle eyebrow="Admin" title="Reservation details" description="Something went wrong." />
           <p className="text-sm text-red-500">{error}</p>
           <Button type="button" onClick={() => navigate('/dashboard/admin/calendar')}>
             Back to calendar
@@ -579,11 +579,11 @@ export default function AppointmentDetails() {
     );
   }
 
-  if (!appointment) {
+  if (!reservation) {
     return (
       <main className="bg-gray-50 py-16 text-gray-900">
         <div className="mx-auto max-w-5xl space-y-6 px-4 sm:px-6">
-          <SectionTitle eyebrow="Admin" title="Appointment details" description="Appointment not found." />
+          <SectionTitle eyebrow="Admin" title="Reservation details" description="Reservation not found." />
           <Button type="button" onClick={() => navigate('/dashboard/admin/calendar')}>
             Back to calendar
           </Button>
@@ -592,21 +592,21 @@ export default function AppointmentDetails() {
     );
   }
 
-  const client = appointment.client || {
-    display_name: appointment.guest_name || 'Guest',
-    email: appointment.guest_email,
-    phone: appointment.guest_phone
+  const client = reservation.client || {
+    display_name: reservation.guest_name || 'Guest',
+    email: reservation.guest_email,
+    phone: reservation.guest_phone
   };
-  const contact = appointment.contact || {
-    name: appointment.contact_name || client.display_name,
-    email: appointment.contact_email || client.email,
-    phone: appointment.contact_phone || client.phone
+  const contact = reservation.contact || {
+    name: reservation.contact_name || client.display_name,
+    email: reservation.contact_email || client.email,
+    phone: reservation.contact_phone || client.phone
   };
 
-  const appointmentTitle = appointment.reference_code || `#${appointment.id}`;
-  const statusBadgeLabel = formatStatusLabel(appointment.status);
-  const statusBadgeClasses = getStatusBadgeClasses(appointment.status);
-  const appointmentTypeLabel = getAppointmentTypeLabel(appointment);
+  const reservationTitle = reservation.reference_code || `#${reservation.id}`;
+  const statusBadgeLabel = formatStatusLabel(reservation.status);
+  const statusBadgeClasses = getStatusBadgeClasses(reservation.status);
+  const reservationTypeLabel = getReservationTypeLabel(reservation);
 
   return (
     <main className="bg-gray-100 py-14 text-gray-900">
@@ -617,8 +617,8 @@ export default function AppointmentDetails() {
               Signed in as {currentAdmin?.name || 'Admin'}
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Appointment</p>
-              <h1 className="text-3xl font-black tracking-tight text-gray-900">{appointmentTitle}</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-500">Reservation</p>
+              <h1 className="text-3xl font-black tracking-tight text-gray-900">{reservationTitle}</h1>
               <p className="mt-2 text-sm text-gray-500">
                 Review client information, assets, and admin-only notes.
               </p>
@@ -632,7 +632,7 @@ export default function AppointmentDetails() {
         <Card className="space-y-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">Appointment overview</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">Reservation overview</p>
               <div className="flex flex-wrap items-center gap-3">
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${statusBadgeClasses}`}
@@ -643,12 +643,12 @@ export default function AppointmentDetails() {
                   <span>Update status</span>
                   <select
                     id={APPOINTMENT_STATUS_FIELD_ID}
-                    value={appointment.status || STATUS_OPTIONS[0].value}
+                    value={reservation.status || STATUS_OPTIONS[0].value}
                     onChange={handleStatusChange}
                     disabled={statusUpdating}
                     className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-800 transition focus:border-gray-900 focus:outline-none focus:ring-0"
                   >
-                    {appointmentStatusOptions.map((option) => (
+                    {reservationStatusOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -666,27 +666,27 @@ export default function AppointmentDetails() {
             <div className="grid w-full gap-4 sm:grid-cols-2 md:max-w-xl">
               <div className="rounded-2xl bg-gray-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Scheduled start</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDateTime(appointment.scheduled_start)}</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDateTime(reservation.scheduled_start)}</p>
               </div>
               <div className="rounded-2xl bg-gray-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Duration</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDuration(appointment.duration_minutes)}</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{formatDuration(reservation.duration_minutes)}</p>
               </div>
               <div className="rounded-2xl bg-gray-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Suggested duration</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {formatDuration(appointment.suggested_duration_minutes)}
+                  {formatDuration(reservation.suggested_duration_minutes)}
                 </p>
               </div>
               <div className="rounded-2xl bg-gray-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Assigned admin</p>
                 <p className="mt-1 text-sm font-semibold text-gray-800">
-                  {appointment.assigned_admin?.name || 'Unassigned'}
+                  {reservation.assigned_admin?.name || 'Unassigned'}
                 </p>
               </div>
               <div className="rounded-2xl bg-gray-50 p-4">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Type</p>
-                <p className="mt-1 text-sm font-semibold text-gray-800">{appointmentTypeLabel}</p>
+                <p className="mt-1 text-sm font-semibold text-gray-800">{reservationTypeLabel}</p>
               </div>
             </div>
           </div>
@@ -694,25 +694,25 @@ export default function AppointmentDetails() {
             <div className="rounded-2xl bg-gray-50 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Service</p>
               <p className="mt-1 text-sm text-gray-800">
-                {appointment.service?.name || appointment.session_option?.name || 'Not provided'}
+                {reservation.service?.name || reservation.session_option?.name || 'Not provided'}
               </p>
             </div>
             <div className="rounded-2xl bg-gray-50 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Duration</p>
               <p className="mt-1 text-sm text-gray-800">
-                {appointment.duration_minutes ? `${appointment.duration_minutes} minutes` : 'Not provided'}
+                {reservation.duration_minutes ? `${reservation.duration_minutes} minutes` : 'Not provided'}
               </p>
             </div>
             <div className="md:col-span-2 rounded-2xl bg-gray-50 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Client notes</p>
               <p className="mt-1 text-sm text-gray-700">
-                {appointment.service?.notes || appointment.client_description || appointment.placement_notes || 'No notes added.'}
+                {reservation.service?.notes || reservation.client_description || reservation.special_requests || 'No notes added.'}
               </p>
             </div>
           </div>
           <div className="rounded-2xl border-l-4 border-amber-400 bg-amber-50 px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-amber-700">Client notes</p>
-            <p className="mt-1 text-sm text-amber-900">{appointment.client_description || 'No notes from client.'}</p>
+            <p className="mt-1 text-sm text-amber-900">{reservation.client_description || 'No notes from client.'}</p>
           </div>
         </Card>
 
@@ -786,7 +786,7 @@ export default function AppointmentDetails() {
               </div>
               <div className="flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-500">Account type</p>
-                <p className="text-sm font-semibold text-gray-900">{appointment.client ? appointment.client.role : 'Guest'}</p>
+                <p className="text-sm font-semibold text-gray-900">{reservation.client ? reservation.client.role : 'Guest'}</p>
               </div>
             </div>
           </div>
@@ -818,7 +818,7 @@ export default function AppointmentDetails() {
                 {uploadingImage ? 'Uploading…' : 'Upload Photo'}
               </Button>
               <span className="rounded-full bg-gray-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-white">
-                {(appointment.assets?.length || 0).toString().padStart(2, '0')} Attached
+                {(reservation.assets?.length || 0).toString().padStart(2, '0')} Attached
               </span>
             </div>
           </div>
@@ -978,7 +978,7 @@ export default function AppointmentDetails() {
             </div>
           </form>
           <div className="space-y-3">
-            {appointment.assets?.map((asset) => {
+            {reservation.assets?.map((asset) => {
               const fileUrl = resolveApiUrl(asset.file_url);
               const extension = getFileExtension(fileUrl);
               const isImagePreview = fileUrl && isImageAsset(asset.kind, fileUrl);
@@ -1083,9 +1083,9 @@ export default function AppointmentDetails() {
                 </div>
               );
             })}
-            {!appointment.assets?.length ? (
+            {!reservation.assets?.length ? (
               <div className="rounded-xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
-                No assets linked to this appointment yet.
+                No assets linked to this reservation yet.
               </div>
             ) : null}
           </div>

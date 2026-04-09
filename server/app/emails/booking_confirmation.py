@@ -15,7 +15,7 @@ BOOKING_SUPPORT_EMAIL = "reservations@tredicisocial.com"
 NYC_TZ = ZoneInfo("America/New_York")
 
 if TYPE_CHECKING:  # pragma: no cover
-    from app.models import TattooAppointment
+    from app.models import RestaurantReservation
 
 
 def _default_currency() -> str:
@@ -29,7 +29,7 @@ def _format_currency(amount_cents: int | float | None, currency: str | None = No
     return f"{code} {float(amount_cents) / 100:,.2f}"
 
 
-def _format_appointment_datetime(dt: datetime | None, duration_minutes: int | None = None) -> str:
+def _format_reservation_datetime(dt: datetime | None, duration_minutes: int | None = None) -> str:
     if not dt:
         return "To be scheduled"
     try:
@@ -64,7 +64,7 @@ def _format_field_label(value: str | None) -> str:
 
 
 def send_booking_confirmation_email(
-    appointment: "TattooAppointment",
+    reservation: "RestaurantReservation",
     *,
     charge_amount_cents: int,
     session_price_cents: int,
@@ -75,21 +75,21 @@ def send_booking_confirmation_email(
     """Send the booking confirmation with payment and session details."""
     brand = brand_name()
     logo_url = email_logo_url()
-    recipient = appointment.contact_email or (appointment.client.email if appointment.client else None)
+    recipient = reservation.contact_email or (reservation.client.email if reservation.client else None)
     if not recipient:
         return False
     base_url = client_base_url()
-    payments = getattr(appointment, "payments", None) or []
+    payments = getattr(reservation, "payments", None) or []
     payment_currency = payments[0].currency if payments else _default_currency()
-    reference = appointment.reference_code or f"Appointment #{appointment.id}"
-    scheduled_label = _format_appointment_datetime(appointment.scheduled_start, appointment.duration_minutes)
+    reference = reservation.reference_code or f"Reservation #{reservation.id}"
+    scheduled_label = _format_reservation_datetime(reservation.scheduled_start, reservation.duration_minutes)
     service_name = (
-        appointment.session_option.name
-        if getattr(appointment, "session_option", None) and appointment.session_option.name
+        reservation.session_option.name
+        if getattr(reservation, "session_option", None) and reservation.session_option.name
         else "Restaurant reservation"
     )
-    if appointment.duration_minutes:
-        hours = appointment.duration_minutes / 60.0
+    if reservation.duration_minutes:
+        hours = reservation.duration_minutes / 60.0
         duration_label = f"{hours:.1f}h" if not hours.is_integer() else f"{int(hours)}h"
     else:
         duration_label = "Session"
@@ -98,22 +98,22 @@ def send_booking_confirmation_email(
         if charge_amount_cents <= 0
         else ("Paid in full" if pay_full_amount else f"{booking_fee_percent}% deposit received")
     )
-    manage_url = f"{base_url}/portal/appointments"
+    manage_url = f"{base_url}/portal/reservations"
     studio_location = current_app.config.get("STUDIO_LOCATION") or DEFAULT_STUDIO_LOCATION
     booking_contact_email = current_app.config.get("BOOKING_CONTACT_EMAIL") or BOOKING_SUPPORT_EMAIL
     confirmation_url = None
-    if base_url and appointment.contact_email:
+    if base_url and reservation.contact_email:
         confirmation_url = (
             f"{base_url}/booking/confirmation?reference={quote_plus(reference)}"
-            f"&email={quote_plus(appointment.contact_email)}"
+            f"&email={quote_plus(reservation.contact_email)}"
         )
 
     calendar_attachment = None
     google_calendar_url = None
     apple_calendar_data_uri = None
-    if appointment.scheduled_start:
-        duration_minutes = appointment.duration_minutes or 60
-        start_at = appointment.scheduled_start
+    if reservation.scheduled_start:
+        duration_minutes = reservation.duration_minutes or 60
+        start_at = reservation.scheduled_start
         # Naive datetimes are stored in NYC local time
         if start_at.tzinfo is None:
             start_at = start_at.replace(tzinfo=NYC_TZ)
@@ -131,7 +131,7 @@ def send_booking_confirmation_email(
             f"&details={quote_plus(description)}"
             f"&location={quote_plus(studio_location)}"
         )
-        event_uid = f"{reference}-{appointment.id}@mail.tredicisocial.com"
+        event_uid = f"{reference}-{reservation.id}@mail.tredicisocial.com"
         dtstamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         ics_lines = [
             "BEGIN:VCALENDAR",
@@ -158,7 +158,7 @@ def send_booking_confirmation_email(
     subject = f"{brand} booking confirmed – {reference}"
 
     lines = [
-        f"Hi {appointment.contact_name or 'there'},",
+        f"Hi {reservation.contact_name or 'there'},",
         f"Thank you for booking with {brand}. Your reservation is confirmed. Here are the details:",
         f"- Reference: {reference}",
         f"- Reservation: {scheduled_label} ({duration_label})",
@@ -168,8 +168,8 @@ def send_booking_confirmation_email(
     ]
     if session_price_cents:
         lines.append(f"- Service price: {_format_currency(session_price_cents, payment_currency)}")
-    if appointment.client_description:
-        lines.append(f"- Notes: {appointment.client_description}")
+    if reservation.client_description:
+        lines.append(f"- Notes: {reservation.client_description}")
     if receipt_url:
         lines.append(f"- Receipt: {receipt_url}")
     lines.append(f"- Manage: {manage_url}")
@@ -206,8 +206,8 @@ def send_booking_confirmation_email(
     _detail_row("Payment", f"{payment_label} ({_format_currency(charge_amount_cents, payment_currency)})")
     if session_price_cents:
         _detail_row("Service price", _format_currency(session_price_cents, payment_currency))
-    if appointment.client_description:
-        _detail_row("Notes", appointment.client_description)
+    if reservation.client_description:
+        _detail_row("Notes", reservation.client_description)
     if receipt_url:
         _detail_row("Receipt", receipt_url, link_text="View receipt")
     _detail_row("Manage", manage_url, link_text="Open your portal")
@@ -267,9 +267,9 @@ def send_booking_confirmation_email(
         "</tr>"
         "<tr>"
         "<td style=\"padding:28px 32px;color:#0f172a;font-size:15px;line-height:1.6;\">"
-        f"<p style=\"margin:0 0 12px 0;\">Hi {escape(appointment.contact_name or 'there')},</p>"
+        f"<p style=\"margin:0 0 12px 0;\">Hi {escape(reservation.contact_name or 'there')},</p>"
         f"<p style=\"margin:0 0 18px 0;\">Thank you for booking with {escape(brand)}. "
-        "Your appointment is confirmed. Here are the details:</p>"
+        "Your reservation is confirmed. Here are the details:</p>"
         "<table role=\"presentation\" cellspacing=\"0\" cellpadding=\"0\" border=\"0\" "
         "style=\"width:100%;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;\">"
         f"{detail_table}"
@@ -299,6 +299,6 @@ def send_booking_confirmation_email(
         subject=subject,
         text=text,
         html=html_document,
-        tags=("appointments", "confirmation"),
+        tags=("reservations", "confirmation"),
         attachments=attachments,
     )

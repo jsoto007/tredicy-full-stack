@@ -5,9 +5,9 @@ export default function CustomFineLine() {
   const copy = isSpanish
     ? {
         eyebrow: 'Detras del set',
-        title: 'Como se crea un set exclusivo en Melodi Nails',
+        title: 'Como se crea un set exclusivo en Tredici Social',
         intro:
-          'Un set exclusivo es mucho mas que esmalte y color. En Melodi Nails, el proceso se construye alrededor de preparacion, estructura, forma y acabado para que el resultado se vea intencional, favorecedor y duradero.',
+          'Un set exclusivo es mucho mas que esmalte y color. En Tredici Social, el proceso se construye alrededor de preparacion, estructura, forma y acabado para que el resultado se vea intencional, favorecedor y duradero.',
         sections: [
           {
             title: 'Consulta y vision creativa',
@@ -25,9 +25,9 @@ export default function CustomFineLine() {
               'Cuando la base esta lista, la aplicacion se enfoca en simetria, estructura y limpieza. El producto se coloca con atencion al equilibrio y la durabilidad, y luego se perfecciona para que el set se vea pulido desde cualquier angulo.',
           },
           {
-            title: 'Detalle y nail art',
+            title: 'Detalle y menu tasting',
             body:
-              'Si el set incluye frances, chrome, piedras, lineas o nail art personalizado, esos detalles llegan despues de tener una estructura limpia. Los mejores disenos siempre dependen de una base fuerte.',
+              'Si el set incluye frances, chrome, piedras, lineas o menu tasting personalizado, esos detalles llegan despues de tener una estructura limpia. Los mejores disenos siempre dependen de una base fuerte.',
           },
           {
             title: 'Cuidado y duracion',
@@ -37,15 +37,15 @@ export default function CustomFineLine() {
           {
             title: 'Una experiencia personalizada',
             body:
-              'Melodi Nails esta construido alrededor del detalle, el cuidado y la constancia. Eso significa un servicio personal, un proceso sin prisa y unas terminadas que se mantienen hermosas entre visitas.',
+              'Tredici Social esta construido alrededor del detalle, el cuidado y la constancia. Eso significa un servicio personal, un proceso sin prisa y unas terminadas que se mantienen hermosas entre visitas.',
           },
         ],
       }
     : {
         eyebrow: 'Behind the set',
-        title: 'How a Signature Nail Set Comes to Life at Melodi Nails',
+        title: 'How a Signature Table Set Comes to Life at Tredici Social',
         intro:
-          'A signature nail set is more than polish and color. At Melodi Nails, the process is built around prep, structure, shaping, and finish so the final look feels intentional, flattering, and wearable beyond the day of the appointment.',
+          'A signature nail set is more than polish and color. At Tredici Social, the process is built around prep, structure, shaping, and finish so the final look feels intentional, flattering, and wearable beyond the day of the reservation.',
         sections: [
           {
             title: 'Consultation and Creative Vision',
@@ -63,9 +63,9 @@ export default function CustomFineLine() {
               'Once the base is ready, the application stage is about symmetry, structure, and clean finishing. Product is placed with attention to balance and durability, then refined through filing, smoothing, and top-coat work so the set looks polished from every angle.',
           },
           {
-            title: 'Detail Work and Nail Art',
+            title: 'Detail Work and Table Art',
             body:
-              'If the set includes French tips, chrome, gems, line work, or custom nail art, those details come after the structure is clean. The best designs still depend on a strong foundation. Nail art looks better when the base shape, cuticle area, and finish are already precise.',
+              'If the set includes French tips, chrome, gems, line work, or custom menu tasting, those details come after the structure is clean. The best designs still depend on a strong foundation. Table art looks better when the base shape, cuticle area, and finish are already precise.',
           },
           {
             title: 'Aftercare and Longevity',
@@ -73,9 +73,9 @@ export default function CustomFineLine() {
               'Longevity does not come from product alone. It also depends on aftercare, daily habits, and how consistently maintenance is scheduled. Cuticle oil, gloves for chores, and timely fills can help keep the service looking polished while reducing unnecessary lifting or breakage.',
           },
           {
-            title: 'A Personalized Salon Experience',
+            title: 'A Personalized Restaurant Experience',
             body:
-              "Melodi Nails is built around detail, care, and consistency. The goal is not just a beautiful result on the day of the appointment, but a set that fits the client's style, routine, and maintenance preferences.",
+              "Tredici Social is built around detail, care, and consistency. The goal is not just a beautiful result on the day of the reservation, but a set that fits the client's style, routine, and maintenance preferences.",
           },
         ],
       };
@@ -99,7 +99,7 @@ export default function CustomFineLine() {
           <p>{section.body}</p>
           {index === copy.sections.length - 1 && !isSpanish ? (
             <p>
-              For clients looking for a nail salon in the Bronx, that means a service that feels personal, a process
+              For clients looking for a nail restaurant in the Bronx, that means a service that feels personal, a process
               that is never rushed, and finished nails that hold up beautifully between visits.
             </p>
           ) : null}

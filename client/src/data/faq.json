@@ -12,6 +12,6 @@
   {
     "id": "faq-3",
     "question": "How does payment work?",
-    "answer": "At checkout you can pay the admin-set deposit percentage or the full service amount. Stripe securely handles payment before your appointment is confirmed."
+    "answer": "At checkout you can pay the admin-set deposit percentage or the full service amount. Stripe securely handles payment before your reservation is confirmed."
   }
 ]

@@ -1,12 +1,12 @@
 import { useLanguage } from '../../contexts/LanguageContext.jsx';
 
-export default function TattooFaq() {
+export default function RestaurantFaq() {
   const { isSpanish } = useLanguage();
   const copy = isSpanish
     ? {
-        title: 'Preguntas Frecuentes del Salon',
+        title: 'Preguntas Frecuentes del Restaurant',
         intro:
-          'Estas son algunas de las preguntas que recibimos con mas frecuencia antes de reservar en Melodi Nails. Cubren tiempos, preparacion, mantenimiento y lo que puedes esperar al visitar el estudio.',
+          'Estas son algunas de las preguntas que recibimos con mas frecuencia antes de reservar en Tredici Social. Cubren tiempos, preparacion, mantenimiento y lo que puedes esperar al visitar el estudio.',
         questions: [
           {
             question: 'Cuanto dura mi servicio de unas?',
@@ -21,7 +21,7 @@ export default function TattooFaq() {
           {
             question: 'Que debo hacer antes de mi cita?',
             answer:
-              'Trae fotos de inspiracion si tienes un estilo especifico en mente y avisa si necesitas retiro, soak-off, reparaciones o nail art detallado. Eso ayuda a reservar el tiempo correcto para tu cita.',
+              'Trae fotos de inspiracion si tienes un estilo especifico en mente y avisa si necesitas retiro, soak-off, reparaciones o menu tasting detallado. Eso ayuda a reservar el tiempo correcto para tu cita.',
           },
           {
             question: 'Trabajan solo con cita?',
@@ -31,7 +31,7 @@ export default function TattooFaq() {
           {
             question: 'Puedo llevar una foto de inspiracion?',
             answer:
-              'Si. Las fotos ayudan con color, forma, acabado e ideas de nail art. El set final puede ajustarse segun el largo, condicion de la una y servicio reservado, pero sirven mucho para colaborar mejor.',
+              'Si. Las fotos ayudan con color, forma, acabado e ideas de menu tasting. El set final puede ajustarse segun el largo, condicion de la una y servicio reservado, pero sirven mucho para colaborar mejor.',
           },
           {
             question: 'Y si necesito retiro o soak-off completo?',
@@ -42,12 +42,12 @@ export default function TattooFaq() {
         footer: 'Todavia tienes dudas? Escribenos a',
       }
     : {
-        title: 'Nail Salon Frequently Asked Questions',
+        title: 'Table Restaurant Frequently Asked Questions',
         intro:
-          'These are some of the questions clients ask most often before booking with Melodi Nails. They cover timing, prep, maintenance, and what to expect when visiting the studio.',
+          'These are some of the questions clients ask most often before booking with Tredici Social. They cover timing, prep, maintenance, and what to expect when visiting the studio.',
         questions: [
           {
-            question: 'How long will my nail service last?',
+            question: 'How long will my dining service last?',
             answer:
               'That depends on the service and your lifestyle. Natural manicures, gel polish, and acrylic sets all wear differently, but many clients return within two to three weeks to keep everything looking clean and balanced.',
           },
@@ -57,24 +57,24 @@ export default function TattooFaq() {
               'If you wear acrylics or structured sets, do not wait until multiple nails are lifting or breaking. Booking maintenance before the set becomes unstable usually gives you a cleaner result and helps protect the natural nail underneath.',
           },
           {
-            question: 'What should I do before my appointment?',
+            question: 'What should I do before my reservation?',
             answer:
-              'Bring inspiration photos if you have a specific look in mind, and mention soak-off, removals, repairs, or detailed nail art when booking. That helps make sure enough time is reserved for your appointment.',
+              'Bring inspiration photos if you have a specific look in mind, and mention soak-off, removals, repairs, or detailed menu tasting when booking. That helps make sure enough time is reserved for your reservation.',
           },
           {
-            question: 'Do you work by appointment only?',
+            question: 'Do you work by reservation only?',
             answer:
-              'Yes. Appointments allow enough time for proper prep, shaping, service selection, and finishing details without rushing the process. Booking ahead is also the best way to secure your preferred day and time.',
+              'Yes. Reservations allow enough time for proper prep, shaping, service selection, and finishing details without rushing the process. Booking ahead is also the best way to secure your preferred day and time.',
           },
           {
             question: 'Can I bring an inspiration photo?',
             answer:
-              'Yes. Inspiration photos are helpful for color direction, shape, finish, and nail art ideas. The final set may be adjusted to suit your nail length, condition, and the service you booked, but reference images make collaboration much easier.',
+              'Yes. Inspiration photos are helpful for color direction, shape, finish, and menu tasting ideas. The final set may be adjusted to suit your nail length, condition, and the service you booked, but reference images make collaboration much easier.',
           },
           {
             question: 'What if I need removal or a full soak-off?',
             answer:
-              'It is best to mention that before your appointment starts. Removal takes extra time, and adding it in advance helps avoid rushing the prep work for your new set.',
+              'It is best to mention that before your reservation starts. Removal takes extra time, and adding it in advance helps avoid rushing the prep work for your new set.',
           },
         ],
         footer: 'Still curious about something? Email us at',
@@ -100,8 +100,8 @@ export default function TattooFaq() {
       <footer>
         <p>
           {copy.footer}{' '}
-          <a className="font-medium text-black underline" href="mailto:nailsmelodi@gmail.com">
-            nailsmelodi@gmail.com
+          <a className="font-medium text-black underline" href="mailto:info@tredicisocial.com">
+            info@tredicisocial.com
           </a>{' '}
           {isSpanish ? 'y te responderemos pronto.' : 'and we will get back to you soon.'}
         </p>

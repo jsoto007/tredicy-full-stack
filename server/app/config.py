@@ -129,7 +129,7 @@ def configure_app(app: Flask) -> SQLAlchemy:
     app.config["UPLOADS_S3_ACCESS_KEY_ID"] = os.getenv("R2_ACCESS_KEY_ID") or os.getenv("AWS_ACCESS_KEY_ID")
     app.config["UPLOADS_S3_SECRET_ACCESS_KEY"] = os.getenv("R2_SECRET_ACCESS_KEY") or os.getenv("AWS_SECRET_ACCESS_KEY")
     # Public base URL for gallery images (publicly readable objects only).
-    # Private appointment assets are served through the Flask proxy — leave this blank for them.
+    # Private reservation assets are served through the Flask proxy — leave this blank for them.
     app.config["UPLOADS_PUBLIC_BASE_URL"] = os.getenv("R2_PUBLIC_BASE_URL") or os.getenv("UPLOADS_PUBLIC_BASE_URL")
     # R2 does NOT support ACLs — keep this empty so boto3 doesn't send the ACL header.
     app.config["UPLOADS_S3_ACL"] = os.getenv("UPLOADS_S3_ACL", "")

@@ -30,16 +30,16 @@ class AdminAccount(TimestampMixin, db.Model):
         back_populates="uploaded_by",
         lazy="dynamic",
     )
-    appointment_assets = db.relationship(
-        "AppointmentAsset",
+    reservation_assets = db.relationship(
+        "ReservationAsset",
         back_populates="admin_uploader",
         lazy="dynamic",
     )
-    assigned_appointments = db.relationship(
-        "TattooAppointment",
+    assigned_reservations = db.relationship(
+        "RestaurantReservation",
         back_populates="assigned_admin",
         lazy="dynamic",
-        foreign_keys="TattooAppointment.assigned_admin_id",
+        foreign_keys="RestaurantReservation.assigned_admin_id",
     )
     activities = db.relationship(
         "AdminActivityLog",
@@ -76,13 +76,13 @@ class ClientAccount(TimestampMixin, db.Model):
     email_verified_at = db.Column(db.DateTime)
     last_password_change_at = db.Column(db.DateTime)
 
-    appointments = db.relationship(
-        "TattooAppointment",
+    reservations = db.relationship(
+        "RestaurantReservation",
         back_populates="client",
         lazy="dynamic",
     )
-    appointment_assets = db.relationship(
-        "AppointmentAsset",
+    reservation_assets = db.relationship(
+        "ReservationAsset",
         back_populates="client_uploader",
         lazy="dynamic",
     )
@@ -136,14 +136,14 @@ class ClientAccount(TimestampMixin, db.Model):
         return self.email or "Guest"
 
     def has_identity_documents(self) -> bool:
-        assets_query = getattr(self, "appointment_assets", None)
+        assets_query = getattr(self, "reservation_assets", None)
         if not assets_query:
             return False
         if hasattr(assets_query, "filter"):
             return (
                 assets_query.filter(
-                    AppointmentAsset.kind.in_(["id_front", "id_back"]),
-                    AppointmentAsset.file_url.isnot(None),
+                    ReservationAsset.kind.in_(["id_front", "id_back"]),
+                    ReservationAsset.file_url.isnot(None),
                 )
                 .limit(1)
                 .first()
@@ -243,8 +243,8 @@ class PasswordResetRequest(TimestampMixin, db.Model):
         self.consumed_at = when or datetime.utcnow()
 
 
-class TattooCategory(TimestampMixin, db.Model):
-    __tablename__ = "tattoo_categories"
+class GalleryCategory(TimestampMixin, db.Model):
+    __tablename__ = "gallery_categories"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
@@ -258,7 +258,7 @@ class TattooCategory(TimestampMixin, db.Model):
     )
 
     def __repr__(self) -> str:
-        return f"<TattooCategory {self.name}>"
+        return f"<GalleryCategory {self.name}>"
 
 
 class Consultation(db.Model):
@@ -289,7 +289,7 @@ class GalleryItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(
         db.Integer,
-        db.ForeignKey("tattoo_categories.id"),
+        db.ForeignKey("gallery_categories.id"),
         nullable=False,
     )
     uploaded_by_admin_id = db.Column(
@@ -303,7 +303,7 @@ class GalleryItem(db.Model):
     is_published = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-    category = db.relationship("TattooCategory", back_populates="gallery_items")
+    category = db.relationship("GalleryCategory", back_populates="gallery_items")
     uploaded_by = db.relationship("AdminAccount", back_populates="gallery_items")
 
     @property
@@ -320,13 +320,13 @@ class Testimonial(db.Model):
     rating = db.Column(db.Integer, nullable=False)
 
 
-class TattooAppointment(TimestampMixin, db.Model):
-    __tablename__ = "tattoo_appointments"
+class RestaurantReservation(TimestampMixin, db.Model):
+    __tablename__ = "restaurant_reservations"
     __table_args__ = (
-        db.Index("ix_tattoo_appointments_scheduled_start", "scheduled_start"),
-        db.Index("ix_tattoo_appointments_status", "status"),
-        db.Index("ix_tattoo_appointments_client_id", "client_id"),
-        db.Index("ix_tattoo_appointments_assigned_admin_id", "assigned_admin_id"),
+        db.Index("ix_restaurant_reservations_scheduled_start", "scheduled_start"),
+        db.Index("ix_restaurant_reservations_status", "status"),
+        db.Index("ix_restaurant_reservations_client_id", "client_id"),
+        db.Index("ix_restaurant_reservations_assigned_admin_id", "assigned_admin_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -346,9 +346,9 @@ class TattooAppointment(TimestampMixin, db.Model):
     scheduled_start = db.Column(db.DateTime)
     duration_minutes = db.Column(db.Integer)
     suggested_duration_minutes = db.Column(db.Integer)
-    tattoo_placement = db.Column(db.String(120))
-    tattoo_size = db.Column(db.String(120))
-    placement_notes = db.Column(db.Text)
+    seating_preference = db.Column(db.String(120))
+    party_size = db.Column(db.Integer)
+    special_requests = db.Column(db.Text)
     session_option_id = db.Column(
         db.Integer,
         db.ForeignKey("session_options.id", ondelete="SET NULL"),
@@ -359,23 +359,23 @@ class TattooAppointment(TimestampMixin, db.Model):
         db.ForeignKey("admin_accounts.id"),
     )
 
-    client = db.relationship("ClientAccount", back_populates="appointments")
+    client = db.relationship("ClientAccount", back_populates="reservations")
     assigned_admin = db.relationship(
         "AdminAccount",
-        back_populates="assigned_appointments",
+        back_populates="assigned_reservations",
         foreign_keys=[assigned_admin_id],
     )
     assets = db.relationship(
-        "AppointmentAsset",
-        back_populates="appointment",
+        "ReservationAsset",
+        back_populates="reservation",
         cascade="all, delete-orphan",
-        order_by="AppointmentAsset.created_at",
+        order_by="ReservationAsset.created_at",
     )
     payments = db.relationship(
-        "AppointmentPayment",
-        back_populates="appointment",
+        "ReservationPayment",
+        back_populates="reservation",
         cascade="all, delete-orphan",
-        order_by="AppointmentPayment.created_at",
+        order_by="ReservationPayment.created_at",
     )
 
     session_option = db.relationship("SessionOption", passive_deletes=True)
@@ -415,13 +415,13 @@ class TattooAppointment(TimestampMixin, db.Model):
         return self.contact_phone or (self.client.phone if self.client else None) or self.guest_phone
 
 
-class AppointmentAsset(TimestampMixin, db.Model):
-    __tablename__ = "appointment_assets"
+class ReservationAsset(TimestampMixin, db.Model):
+    __tablename__ = "reservation_assets"
 
     id = db.Column(db.Integer, primary_key=True)
-    appointment_id = db.Column(
+    reservation_id = db.Column(
         db.Integer,
-        db.ForeignKey("tattoo_appointments.id"),
+        db.ForeignKey("restaurant_reservations.id"),
         nullable=False,
     )
     uploaded_by_admin_id = db.Column(
@@ -440,15 +440,15 @@ class AppointmentAsset(TimestampMixin, db.Model):
     note_text = db.Column(db.Text)
     is_visible_to_client = db.Column(db.Boolean, default=True, nullable=False)
 
-    appointment = db.relationship("TattooAppointment", back_populates="assets")
+    reservation = db.relationship("RestaurantReservation", back_populates="assets")
     admin_uploader = db.relationship(
         "AdminAccount",
-        back_populates="appointment_assets",
+        back_populates="reservation_assets",
         foreign_keys=[uploaded_by_admin_id],
     )
     client_uploader = db.relationship(
         "ClientAccount",
-        back_populates="appointment_assets",
+        back_populates="reservation_assets",
         foreign_keys=[uploaded_by_client_id],
     )
 
@@ -456,13 +456,13 @@ class AppointmentAsset(TimestampMixin, db.Model):
         return self.kind == "note"
 
 
-class AppointmentPayment(TimestampMixin, db.Model):
-    __tablename__ = "appointment_payments"
+class ReservationPayment(TimestampMixin, db.Model):
+    __tablename__ = "reservation_payments"
 
     id = db.Column(db.Integer, primary_key=True)
-    appointment_id = db.Column(
+    reservation_id = db.Column(
         db.Integer,
-        db.ForeignKey("tattoo_appointments.id"),
+        db.ForeignKey("restaurant_reservations.id"),
         nullable=False,
     )
     provider = db.Column(db.String(40), nullable=False, default="manual")
@@ -473,7 +473,7 @@ class AppointmentPayment(TimestampMixin, db.Model):
     receipt_url = db.Column(db.String(1024))
     note = db.Column(db.String(255))
 
-    appointment = db.relationship("TattooAppointment", back_populates="payments")
+    reservation = db.relationship("RestaurantReservation", back_populates="payments")
 
 
 class SessionOption(TimestampMixin, db.Model):

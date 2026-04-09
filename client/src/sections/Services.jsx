@@ -1,5 +1,5 @@
 // MenuHighlights — featured dishes on the landing page.
-// This replaces the nail salon "Services" section.
+// This replaces the nail restaurant "Services" section.
 import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';

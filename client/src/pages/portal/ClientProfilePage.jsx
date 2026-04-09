@@ -17,7 +17,7 @@ const PREFERENCE_CONFIG = [
   {
     key: 'email_reminders',
     label: 'Email reminders',
-    description: 'Receive appointment alerts and updates via email.'
+    description: 'Receive reservation alerts and updates via email.'
   },
   {
     key: 'sms_reminders',
@@ -526,7 +526,7 @@ export default function ClientProfilePage() {
             <Button variant="ghost" onClick={() => setIsEditingProfile((prev) => !prev)}>
               {isEditingProfile ? 'Cancel edit' : 'Edit profile'}
             </Button>
-            <Button onClick={() => navigate('/appointments/new')}>Book appointment</Button>
+            <Button onClick={() => navigate('/reservations/new')}>Book reservation</Button>
           </div>
         </div>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
@@ -739,8 +739,8 @@ export default function ClientProfilePage() {
             <Button variant="ghost" onClick={focusInspirationUpload}>
               Upload files
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/appointments/new')}>
-              Book appointment
+            <Button variant="secondary" onClick={() => navigate('/reservations/new')}>
+              Book reservation
             </Button>
           </div>
         </div>

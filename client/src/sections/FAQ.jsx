@@ -43,7 +43,7 @@ export default function FAQ() {
           id: 'faq-3',
           question: 'How does payment work?',
           answer:
-            'At checkout you can pay the admin-set deposit percentage or the full service amount. Stripe securely handles payment before your appointment is confirmed.',
+            'At checkout you can pay the admin-set deposit percentage or the full service amount. Stripe securely handles payment before your reservation is confirmed.',
         },
       ];
   const copy = isSpanish
@@ -57,7 +57,7 @@ export default function FAQ() {
         eyebrow: 'FAQ',
         title: 'Before you visit',
         description:
-          'Three quick answers for booking, inspiration photos, and how payment works with the new nails appointment flow.',
+          'Three quick answers for booking, inspiration photos, and how payment works with the new nails reservation flow.',
       };
   return (
     <section id="faq" className="bg-[#ECE7E2] py-16 text-[#23301d]">

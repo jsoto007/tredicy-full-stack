@@ -327,7 +327,7 @@ export default function ShareYourIdea() {
         error.body.errors.forEach((entry) => { if (entry?.field) fieldErrors[entry.field] = entry.message; });
         setFormErrors(fieldErrors);
       }
-      setPageError(error.message || 'Unable to book appointment. Please try again.');
+      setPageError(error.message || 'Unable to book reservation. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -362,7 +362,7 @@ export default function ShareYourIdea() {
         {/* Header */}
         <FadeIn className="mb-10 text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.4em] text-[#6f7863]">Book your visit</p>
-          <h1 className="font-serif text-4xl text-[#2a3923] sm:text-5xl">Reserve your appointment</h1>
+          <h1 className="font-serif text-4xl text-[#2a3923] sm:text-5xl">Reserve your reservation</h1>
           <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#5e6755]">
             Fill in your details, choose a service and time, then pay a deposit or the full amount to secure your slot.
           </p>

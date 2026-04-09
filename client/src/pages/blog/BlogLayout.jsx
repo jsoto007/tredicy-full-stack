@@ -10,9 +10,9 @@ export default function BlogLayout() {
         { slug: 'custom-fine-line', title: 'Como se crea un set exclusivo' },
       ]
     : [
-        { slug: 'aftercare', title: 'Nail Aftercare Guide' },
-        { slug: 'faq', title: 'Nail Salon FAQ' },
-        { slug: 'custom-fine-line', title: 'How a Signature Nail Set Comes Together' },
+        { slug: 'aftercare', title: 'Table Aftercare Guide' },
+        { slug: 'faq', title: 'Table Restaurant FAQ' },
+        { slug: 'custom-fine-line', title: 'How a Signature Table Set Comes Together' },
       ];
 
   return (

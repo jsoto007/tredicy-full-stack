@@ -5,9 +5,9 @@ export default function BlogIndex() {
   const { isSpanish } = useLanguage();
   const copy = isSpanish
     ? {
-        title: 'Journal de Melodi Nails',
+        title: 'Journal de Tredici Social',
         description:
-          'Compartimos respuestas utiles sobre el salon, recomendaciones de cuidado y consejos para prepararte para tu proximo manicure, pedicure, gel o acrilico en el Bronx.',
+          'Compartimos respuestas utiles sobre el restaurant, recomendaciones de cuidado y consejos para prepararte para tu proximo manicure, pedicure, gel o acrilico en el Bronx.',
         featured: 'Destacado',
         readMore: 'Leer mas ->',
         posts: [
@@ -18,41 +18,41 @@ export default function BlogIndex() {
             to: 'aftercare',
           },
           {
-            title: 'Preguntas Frecuentes del Salon',
+            title: 'Preguntas Frecuentes del Restaurant',
             description:
-              'Respuestas claras sobre reservas, preparacion, reparaciones, tiempos y lo que puedes esperar en Melodi Nails.',
+              'Respuestas claras sobre reservas, preparacion, reparaciones, tiempos y lo que puedes esperar en Tredici Social.',
             to: 'faq',
           },
           {
             title: 'Como se crea un set exclusivo',
             description:
-              'Una mirada al proceso de preparacion, estructura, forma y acabado de Melodi Nails para resultados pulidos y listos para foto.',
+              'Una mirada al proceso de preparacion, estructura, forma y acabado de Tredici Social para resultados pulidos y listos para foto.',
             to: 'custom-fine-line',
           },
         ],
       }
     : {
-        title: 'Melodi Nails Journal',
+        title: 'Tredici Social Journal',
         description:
-          'We use this space to answer common salon questions, share aftercare guidance, and help clients prepare for their next manicure, pedicure, acrylic, or gel appointment in the Bronx.',
+          'We use this space to answer common restaurant questions, share aftercare guidance, and help clients prepare for their next manicure, pedicure, acrylic, or gel reservation in the Bronx.',
         featured: 'Featured',
         readMore: 'Read more ->',
         posts: [
           {
-            title: 'Nail Aftercare Guide',
+            title: 'Table Aftercare Guide',
             description:
-              'Simple steps to help your gel, acrylic, or natural nail service stay clean, glossy, and long-lasting.',
+              'Simple steps to help your gel, acrylic, or natural dining service stay clean, glossy, and long-lasting.',
             to: 'aftercare',
           },
           {
-            title: 'Nail Salon FAQ',
-            description: 'Clear answers about booking, prep, repairs, timing, and what to expect at Melodi Nails.',
+            title: 'Table Restaurant FAQ',
+            description: 'Clear answers about booking, prep, repairs, timing, and what to expect at Tredici Social.',
             to: 'faq',
           },
           {
-            title: 'How a Signature Nail Set Comes Together',
+            title: 'How a Signature Table Set Comes Together',
             description:
-              "A look at Melodi Nails' prep, shaping, structure, and finishing process for polished, photo-ready results.",
+              "A look at Tredici Social' prep, shaping, structure, and finishing process for polished, photo-ready results.",
             to: 'custom-fine-line',
           },
         ],

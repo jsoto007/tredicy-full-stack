@@ -9,10 +9,10 @@ from ..status_helpers import format_status_label
 NYC_TZ = ZoneInfo("America/New_York")
 
 if TYPE_CHECKING:  # pragma: no cover
-    from app.models import TattooAppointment
+    from app.models import RestaurantReservation
 
 
-def _format_appointment_datetime(dt: datetime | None, duration_minutes: int | None = None) -> str | None:
+def _format_reservation_datetime(dt: datetime | None, duration_minutes: int | None = None) -> str | None:
     if not dt:
         return None
     try:
@@ -38,32 +38,32 @@ def _format_appointment_datetime(dt: datetime | None, duration_minutes: int | No
     return dt.strftime("%A, %B %d %Y at %I:%M %p")
 
 
-def send_appointment_status_update_email(
-    appointment: "TattooAppointment",
+def send_reservation_status_update_email(
+    reservation: "RestaurantReservation",
     *,
     status_label: str | None = None,
 ) -> bool:
-    """Notify the client if their appointment status changes."""
+    """Notify the client if their reservation status changes."""
     recipient = (
-        appointment.contact_email
-        or (appointment.client.email if appointment.client else None)
+        reservation.contact_email
+        or (reservation.client.email if reservation.client else None)
     )
     if not recipient:
         return False
-    label = status_label or format_status_label(appointment.status)
+    label = status_label or format_status_label(reservation.status)
     brand = brand_name()
-    reference = appointment.reference_code or f"Appointment #{appointment.id}"
-    scheduled_label = _format_appointment_datetime(appointment.scheduled_start, appointment.duration_minutes)
+    reference = reservation.reference_code or f"Reservation #{reservation.id}"
+    scheduled_label = _format_reservation_datetime(reservation.scheduled_start, reservation.duration_minutes)
     service_name = (
-        appointment.session_option.name
-        if getattr(appointment, "session_option", None) and appointment.session_option.name
+        reservation.session_option.name
+        if getattr(reservation, "session_option", None) and reservation.session_option.name
         else "Restaurant reservation"
     )
-    manage_url = f"{client_base_url()}/portal/appointments"
+    manage_url = f"{client_base_url()}/portal/reservations"
 
     contact_name = (
-        appointment.contact_name
-        or (appointment.client.display_name if appointment.client else None)
+        reservation.contact_name
+        or (reservation.client.display_name if reservation.client else None)
         or "there"
     )
 
@@ -144,14 +144,14 @@ def send_appointment_status_update_email(
         "<tr>"
         '<td style="padding:28px 32px 12px 32px;background-color:#0b0b0b;text-align:center;">'
         f"{logo_markup}"
-        "<div style=\"color:#ffffff;font-size:18px;font-weight:700;\">Appointment update</div>"
+        "<div style=\"color:#ffffff;font-size:18px;font-weight:700;\">Reservation update</div>"
         f"<div style=\"margin-top:6px;\">{status_badge}</div>"
         "</td>"
         "</tr>"
         "<tr>"
         '<td style="padding:28px 32px;color:#0f172a;font-size:15px;line-height:1.6;">'
         f"<p style=\"margin:0 0 12px 0;\">Hi {escape(contact_name)},</p>"
-        f"<p style=\"margin:0 0 18px 0;\">Your appointment {escape(reference)} is now {escape(label.lower())}.</p>"
+        f"<p style=\"margin:0 0 18px 0;\">Your reservation {escape(reference)} is now {escape(label.lower())}.</p>"
         '<table role="presentation" cellspacing="0" cellpadding="0" border="0" '
         'style="width:100%;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">'
         f"{detail_table}"
@@ -174,8 +174,8 @@ def send_appointment_status_update_email(
 
     return mailgun_send(
         to=recipient,
-        subject=f"{brand} appointment update – {reference}",
+        subject=f"{brand} reservation update – {reference}",
         text=text,
         html=html_document,
-        tags=("appointments", "status-update"),
+        tags=("reservations", "status-update"),
     )
