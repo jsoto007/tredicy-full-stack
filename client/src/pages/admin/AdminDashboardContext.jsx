@@ -35,6 +35,7 @@ export function getAdminResourcesForPath(path) {
   if (path.includes('/dashboard/admin/gallery')) {
     resources.add('gallery');
     resources.add('categories');
+    resources.add('placements');
   }
   if (path.includes('/dashboard/admin/user/')) {
     resources.add('reservations');
@@ -101,6 +102,7 @@ export function AdminDashboardProvider({ children }) {
   const [admins, setAdmins] = useState([]);
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [placements, setPlacements] = useState({ our_story: [], homepage_taste: [] });
   const [galleryItems, setGalleryItems] = useState([]);
   const [galleryPagination, setGalleryPagination] = useState({
     page: 1,
@@ -232,6 +234,33 @@ export function AdminDashboardProvider({ children }) {
     markFetched('categories');
     return response;
   }, [markFetched]);
+
+  const refreshPlacements = useCallback(async () => {
+    const [ourStory, homepageTaste] = await Promise.all([
+      apiGet('/api/admin/placements?section=our_story'),
+      apiGet('/api/admin/placements?section=homepage_taste')
+    ]);
+    setPlacements({
+      our_story: ensureArray(ourStory),
+      homepage_taste: ensureArray(homepageTaste)
+    });
+    markFetched('placements');
+  }, [markFetched]);
+
+  const savePlacements = useCallback(
+    async (section, slots) => {
+      try {
+        const updated = await apiPut('/api/admin/placements', { section, slots });
+        setPlacements((prev) => ({ ...prev, [section]: ensureArray(updated) }));
+        showNotice({ tone: 'success', message: 'Placements saved.' });
+        return updated;
+      } catch (err) {
+        showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to save placements.') });
+        throw err;
+      }
+    },
+    [showNotice]
+  );
 
   const refreshReservations = useCallback(
     async ({ page = 1, perPage = reservationsPagination.per_page, append = false } = {}) => {
@@ -437,7 +466,8 @@ export function AdminDashboardProvider({ children }) {
       reservations: refreshReservations,
       schedule: refreshSchedule,
       pricing: refreshHourlyRate,
-      gallery: refreshGalleryItems
+      gallery: refreshGalleryItems,
+    placements: refreshPlacements
     }),
     [
       refreshDashboardMetrics,
@@ -447,7 +477,8 @@ export function AdminDashboardProvider({ children }) {
       refreshReservations,
       refreshSchedule,
       refreshHourlyRate,
-      refreshGalleryItems
+      refreshGalleryItems,
+      refreshPlacements
     ]
   );
 
@@ -1020,6 +1051,7 @@ export function AdminDashboardProvider({ children }) {
         admins,
         users,
         categories,
+        placements,
         galleryItems,
         galleryPagination,
         reservations,
@@ -1038,6 +1070,7 @@ export function AdminDashboardProvider({ children }) {
         refreshAdmins,
         refreshUsers,
         refreshCategories,
+        refreshPlacements,
         refreshReservations,
         refreshGalleryItems,
         refreshSchedule,
@@ -1051,6 +1084,7 @@ export function AdminDashboardProvider({ children }) {
         loadMoreGalleryItems,
         logout,
         updateUserRole,
+        savePlacements,
         createCategory,
         updateCategory,
         toggleCategoryVisibility,
@@ -1084,6 +1118,7 @@ export function AdminDashboardProvider({ children }) {
       admins,
       users,
       categories,
+      placements,
       galleryItems,
       galleryPagination,
       reservations,
@@ -1099,6 +1134,7 @@ export function AdminDashboardProvider({ children }) {
       refreshAdmins,
       refreshUsers,
       refreshCategories,
+      refreshPlacements,
       refreshReservations,
       refreshGalleryItems,
       refreshSchedule,
@@ -1112,6 +1148,7 @@ export function AdminDashboardProvider({ children }) {
       loadMoreGalleryItems,
       logout,
       updateUserRole,
+      savePlacements,
       createCategory,
       updateCategory,
       toggleCategoryVisibility,

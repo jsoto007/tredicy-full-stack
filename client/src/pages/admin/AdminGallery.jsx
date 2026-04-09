@@ -11,6 +11,198 @@ import {
   validateImageBeforeUpload
 } from '../../lib/uploadValidation.js';
 
+// ─── Section config ────────────────────────────────────────────────────────
+const PLACEMENT_SECTIONS = {
+  our_story: {
+    key: 'our_story',
+    label: 'Our Story',
+    description: 'Four photo panels displayed in the "Our Story" section of the homepage. Each slot has a custom label shown over the photo.',
+    slotCount: 4,
+    hasLabel: true
+  },
+  homepage_taste: {
+    key: 'homepage_taste',
+    label: 'A Taste of the Experience',
+    description: 'Six photos shown in the homepage preview gallery grid.',
+    slotCount: 6,
+    hasLabel: false
+  }
+};
+
+function buildEmptySlots(count) {
+  return Array.from({ length: count }, (_, i) => ({
+    display_order: i + 1,
+    gallery_item_id: '',
+    slot_label: ''
+  }));
+}
+
+// ─── Single slot card ──────────────────────────────────────────────────────
+function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, onChange }) {
+  const selectedItem = slot.gallery_item_id
+    ? galleryItems.find((item) => String(item.id) === String(slot.gallery_item_id))
+    : null;
+  const thumbUrl = selectedItem ? resolveUrl(selectedItem.image_url) : null;
+  const slotBaseId = `slot-${slot.display_order}`;
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+      {/* Slot number + thumbnail */}
+      <div className="flex items-start gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white">
+          {slot.display_order}
+        </span>
+        <div className="flex-1">
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt={selectedItem?.alt || 'Selected photo'}
+              className="h-28 w-full rounded-xl object-cover"
+            />
+          ) : (
+            <div className="flex h-28 w-full items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50">
+              <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400">No photo</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Photo selector */}
+      <div>
+        <label
+          htmlFor={`${slotBaseId}-photo`}
+          className="text-[10px] uppercase tracking-[0.3em] text-gray-500"
+        >
+          Photo
+        </label>
+        <select
+          id={`${slotBaseId}-photo`}
+          value={slot.gallery_item_id}
+          onChange={(e) => onChange(index, 'gallery_item_id', e.target.value)}
+          className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
+        >
+          <option value="">— Select a photo —</option>
+          {galleryItems.map((item) => (
+            <option key={item.id} value={String(item.id)}>
+              {item.alt}
+              {item.category ? ` (${item.category.name})` : ''}
+              {!item.is_published ? ' [draft]' : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Label (Our Story only) */}
+      {hasLabel && (
+        <div>
+          <label
+            htmlFor={`${slotBaseId}-label`}
+            className="text-[10px] uppercase tracking-[0.3em] text-gray-500"
+          >
+            Slot label
+          </label>
+          <input
+            id={`${slotBaseId}-label`}
+            type="text"
+            placeholder='e.g. "The Room"'
+            value={slot.slot_label}
+            onChange={(e) => onChange(index, 'slot_label', e.target.value)}
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
+          />
+        </div>
+      )}
+
+      {/* Clear button */}
+      {slot.gallery_item_id && (
+        <button
+          type="button"
+          onClick={() => onChange(index, 'gallery_item_id', '')}
+          className="text-[10px] uppercase tracking-[0.3em] text-gray-400 hover:text-rose-600 transition"
+        >
+          Clear slot
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── One section panel ─────────────────────────────────────────────────────
+function PlacementSectionPanel({ sectionConfig, currentPlacements, galleryItems, resolveUrl, onSave }) {
+  const { key, label, description, slotCount, hasLabel } = sectionConfig;
+
+  const [slots, setSlots] = useState(() => buildEmptySlots(slotCount));
+  const [saving, setSaving] = useState(false);
+
+  // Sync incoming placements into slot drafts whenever they change
+  useEffect(() => {
+    const draft = buildEmptySlots(slotCount);
+    currentPlacements.forEach((p) => {
+      const idx = p.display_order - 1;
+      if (idx >= 0 && idx < slotCount) {
+        draft[idx] = {
+          display_order: p.display_order,
+          gallery_item_id: p.gallery_item ? String(p.gallery_item.id) : '',
+          slot_label: p.slot_label || ''
+        };
+      }
+    });
+    setSlots(draft);
+  }, [currentPlacements, slotCount]);
+
+  const handleSlotChange = (index, field, value) => {
+    setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, [field]: value } : slot)));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const filledSlots = slots
+        .filter((s) => s.gallery_item_id !== '')
+        .map((s) => ({
+          display_order: s.display_order,
+          gallery_item_id: Number(s.gallery_item_id),
+          slot_label: s.slot_label.trim() || null
+        }));
+      await onSave(key, filledSlots);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const gridClass = slotCount === 4
+    ? 'grid gap-3 sm:grid-cols-2'
+    : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3';
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-sm text-gray-600">{description}</p>
+      </div>
+      <div className={gridClass}>
+        {slots.map((slot, idx) => (
+          <PlacementSlotCard
+            key={slot.display_order}
+            slot={slot}
+            index={idx}
+            hasLabel={hasLabel}
+            galleryItems={galleryItems}
+            resolveUrl={resolveUrl}
+            onChange={handleSlotChange}
+          />
+        ))}
+      </div>
+      <div className="flex items-center gap-4">
+        <Button type="button" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving…' : `Save ${label} placements`}
+        </Button>
+        <span className="text-[10px] uppercase tracking-[0.3em] text-gray-400">
+          {slots.filter((s) => s.gallery_item_id).length} / {slotCount} slots filled
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const INITIAL_CATEGORY = { name: '', description: '', is_active: true };
 const INITIAL_GALLERY_DRAFT = {
   category_id: '',
@@ -39,9 +231,10 @@ const NEW_GALLERY_FIELD_IDS = {
 
 export default function AdminGallery() {
   const {
-    state: { categories, galleryItems, galleryPagination, admins, currentAdmin },
+    state: { categories, placements, galleryItems, galleryPagination, admins, currentAdmin },
     actions: {
       setFeedback,
+      savePlacements,
       createCategory,
       updateCategory,
       toggleCategoryVisibility,
@@ -348,6 +541,38 @@ export default function AdminGallery() {
         description="Curate categories, upload new pieces, and review items before sharing them publicly."
       />
 
+      {/* ── Section placements ────────────────────────────────── */}
+      <Card className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
+            Section placements
+          </h3>
+          <p className="text-sm text-gray-600">
+            Choose which photos appear in each section of the site and set their display order.
+            The <span className="font-medium text-gray-800">/gallery</span> page automatically
+            shows all published photos grouped by category — no placement needed.
+          </p>
+        </div>
+
+        {/* Tab-style toggle between sections */}
+        {Object.values(PLACEMENT_SECTIONS).map((sectionConfig, sIdx) => (
+          <div key={sectionConfig.key} className={sIdx > 0 ? 'border-t border-gray-100 pt-6' : ''}>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-gray-700">
+              {sectionConfig.label}
+              <span className="ml-2 text-gray-400">({sectionConfig.slotCount} slots)</span>
+            </h4>
+            <PlacementSectionPanel
+              sectionConfig={sectionConfig}
+              currentPlacements={placements[sectionConfig.key] || []}
+              galleryItems={galleryItems}
+              resolveUrl={resolveApiUrl}
+              onSave={savePlacements}
+            />
+          </div>
+        ))}
+      </Card>
+
+      {/* ── Categories ────────────────────────────────────────── */}
       <Card className="space-y-6">
         <div className="space-y-2">
           <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">Categories</h3>

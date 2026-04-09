@@ -1,5 +1,16 @@
+import { useEffect, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import { apiGet, resolveApiUrl } from '../lib/api.js';
+
+// Fallback gradient panels shown when no photo is placed in a slot.
+// Ordered to match display_order 1–4 (left-col tall, left-col sq, right-col sq, right-col tall).
+const FALLBACK_PANELS = [
+  { label: 'The Room',  color: 'linear-gradient(160deg, #2E1F18 0%, #3a2218 100%)', aspectRatio: '3/4' },
+  { label: 'The Plate', color: 'linear-gradient(160deg, #6B1528 0%, #9B2335 100%)', aspectRatio: '1/1' },
+  { label: 'The Bar',   color: 'linear-gradient(160deg, #BFA882 0%, #8A6E4A 100%)', aspectRatio: '1/1' },
+  { label: 'The Pasta', color: 'linear-gradient(160deg, #1C1410 0%, #2E1F18 100%)', aspectRatio: '3/4' },
+];
 
 const HIGHLIGHTS = [
   'Inventive Italian cuisine rooted in regional tradition',
@@ -8,6 +19,32 @@ const HIGHLIGHTS = [
 ];
 
 export default function About() {
+  const [panels, setPanels] = useState(FALLBACK_PANELS);
+
+  useEffect(() => {
+    apiGet('/api/gallery/placements?section=our_story')
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        setPanels(
+          FALLBACK_PANELS.map((fallback, i) => {
+            const placement = data.find((p) => p.display_order === i + 1);
+            if (!placement?.gallery_item) return fallback;
+            return {
+              ...fallback,
+              imageUrl: resolveApiUrl(placement.gallery_item.image_url),
+              label: placement.slot_label || placement.gallery_item.alt || fallback.label,
+              alt: placement.gallery_item.alt || fallback.label
+            };
+          })
+        );
+      })
+      .catch(() => {});
+  }, []);
+
+  // Split panels into left column (indices 0,1) and right column (indices 2,3)
+  const leftPanels = panels.slice(0, 2);
+  const rightPanels = panels.slice(2, 4);
+
   return (
     <section id="about" className="bg-ts-cream py-20">
       <FadeIn
@@ -56,68 +93,65 @@ export default function About() {
           </div>
         </div>
 
-        {/* Visual side — atmospheric panels */}
-        {/* Replace the gradient tiles below with real restaurant photos */}
+        {/* Visual side — Our Story photo panels (managed via admin → Section Placements) */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-4">
-            <div
-              className="overflow-hidden rounded-2xl"
-              style={{
-                aspectRatio: '3/4',
-                background: 'linear-gradient(160deg, #2E1F18 0%, #3a2218 100%)',
-              }}
-              aria-label="Restaurant interior photo — replace with real image"
-            >
-              <div className="flex h-full items-end p-5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-gold/60">
-                  The Room
-                </span>
+            {leftPanels.map((panel) => (
+              <div
+                key={panel.label}
+                className="relative overflow-hidden rounded-2xl"
+                style={{ aspectRatio: panel.aspectRatio }}
+              >
+                {panel.imageUrl ? (
+                  <img
+                    src={panel.imageUrl}
+                    alt={panel.alt || panel.label}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className="h-full w-full"
+                    style={{ background: panel.color }}
+                    aria-hidden="true"
+                  />
+                )}
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/40 to-transparent p-5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/70">
+                    {panel.label}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div
-              className="overflow-hidden rounded-2xl"
-              style={{
-                aspectRatio: '1/1',
-                background: 'linear-gradient(160deg, #6B1528 0%, #9B2335 100%)',
-              }}
-              aria-label="Food photo — replace with real image"
-            >
-              <div className="flex h-full items-end p-5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/60">
-                  The Plate
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="space-y-4 pt-8">
-            <div
-              className="overflow-hidden rounded-2xl"
-              style={{
-                aspectRatio: '1/1',
-                background: 'linear-gradient(160deg, #BFA882 0%, #8A6E4A 100%)',
-              }}
-              aria-label="Bar photo — replace with real image"
-            >
-              <div className="flex h-full items-end p-5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-charcoal/60">
-                  The Bar
-                </span>
+            {rightPanels.map((panel) => (
+              <div
+                key={panel.label}
+                className="relative overflow-hidden rounded-2xl"
+                style={{ aspectRatio: panel.aspectRatio }}
+              >
+                {panel.imageUrl ? (
+                  <img
+                    src={panel.imageUrl}
+                    alt={panel.alt || panel.label}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    className="h-full w-full"
+                    style={{ background: panel.color }}
+                    aria-hidden="true"
+                  />
+                )}
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/40 to-transparent p-5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-white/70">
+                    {panel.label}
+                  </span>
+                </div>
               </div>
-            </div>
-            <div
-              className="overflow-hidden rounded-2xl"
-              style={{
-                aspectRatio: '3/4',
-                background: 'linear-gradient(160deg, #1C1410 0%, #2E1F18 100%)',
-              }}
-              aria-label="Pasta photo — replace with real image"
-            >
-              <div className="flex h-full items-end p-5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.4em] text-ts-gold/60">
-                  The Pasta
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </FadeIn>

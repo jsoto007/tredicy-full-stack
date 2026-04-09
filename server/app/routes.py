@@ -52,6 +52,9 @@ from .models import (
     DailySpecialItem,
     DailySpecialSection,
     GalleryItem,
+    GalleryPlacement,
+    GALLERY_PLACEMENT_SECTIONS,
+    GALLERY_PLACEMENT_LIMITS,
     MenuCategory,
     MenuItem,
     SystemSetting,
@@ -638,6 +641,16 @@ def serialize_gallery_item(item):
         "created_at": item.created_at.isoformat() if item.created_at else None,
         "category": serialize_category(item.category) if item.category else None,
         "uploaded_by": serialize_admin(item.uploaded_by) if item.uploaded_by else None,
+    }
+
+
+def serialize_placement(placement):
+    return {
+        "id": placement.id,
+        "section": placement.section,
+        "display_order": placement.display_order,
+        "slot_label": placement.slot_label,
+        "gallery_item": serialize_gallery_item(placement.gallery_item) if placement.gallery_item else None,
     }
 
 
@@ -1637,6 +1650,33 @@ def list_gallery_categories():
         query = query.filter_by(is_active=True)
     categories = query.all()
     return jsonify([serialize_category(category) for category in categories])
+
+
+@api_bp.route("/api/gallery/placements", methods=["GET"])
+def list_gallery_placements():
+    """Public endpoint — returns placements for a named section, ordered by display_order.
+    Only placements whose gallery item is published are returned.
+    """
+    section = (request.args.get("section") or "").strip()
+    if section not in GALLERY_PLACEMENT_SECTIONS:
+        return jsonify({"error": f"section must be one of: {', '.join(GALLERY_PLACEMENT_SECTIONS)}"}), 400
+
+    placements = (
+        GalleryPlacement.query
+        .options(
+            joinedload(GalleryPlacement.gallery_item)
+            .joinedload(GalleryItem.category)
+        )
+        .filter_by(section=section)
+        .order_by(GalleryPlacement.display_order.asc())
+        .all()
+    )
+    result = [
+        serialize_placement(p)
+        for p in placements
+        if p.gallery_item and p.gallery_item.is_published
+    ]
+    return jsonify(result)
 
 
 def _parse_pagination(default_per_page: int = 24):
@@ -3686,6 +3726,120 @@ def admin_delete_gallery_item(item_id):
         return jsonify({"error": "Unable to delete gallery item."}), 500
 
     return jsonify({"status": "deleted"})
+
+
+@api_bp.route("/api/admin/placements", methods=["GET"])
+@admin_required
+def admin_list_placements():
+    """Return all placements for a section (or all sections if section param omitted).
+    Includes unpublished items so the admin sees the full picture.
+    """
+    section = (request.args.get("section") or "").strip()
+    query = (
+        GalleryPlacement.query
+        .options(
+            joinedload(GalleryPlacement.gallery_item)
+            .joinedload(GalleryItem.category)
+        )
+        .order_by(GalleryPlacement.display_order.asc())
+    )
+    if section:
+        if section not in GALLERY_PLACEMENT_SECTIONS:
+            return jsonify({"error": f"section must be one of: {', '.join(GALLERY_PLACEMENT_SECTIONS)}"}), 400
+        query = query.filter_by(section=section)
+    return jsonify([serialize_placement(p) for p in query.all()])
+
+
+@api_bp.route("/api/admin/placements", methods=["PUT"])
+@admin_required
+def admin_save_placements():
+    """Atomically replace all placements for a section.
+
+    Payload:
+      { "section": "our_story" | "homepage_taste",
+        "slots": [
+          { "display_order": 1, "gallery_item_id": 5, "slot_label": "The Room" },
+          ...
+        ]
+      }
+    Omitting a slot clears that position. Sending an empty slots array clears the section.
+    """
+    payload = request.get_json(silent=True) or {}
+    section = (payload.get("section") or "").strip()
+
+    if section not in GALLERY_PLACEMENT_SECTIONS:
+        return jsonify({"error": f"section must be one of: {', '.join(GALLERY_PLACEMENT_SECTIONS)}"}), 400
+
+    slots = payload.get("slots")
+    if not isinstance(slots, list):
+        return jsonify({"error": "slots must be an array."}), 400
+
+    limit = GALLERY_PLACEMENT_LIMITS[section]
+    if len(slots) > limit:
+        return jsonify({"error": f"Section '{section}' supports at most {limit} slots."}), 400
+
+    seen_orders = set()
+    seen_item_ids = set()
+    validated = []
+
+    for idx, slot in enumerate(slots):
+        if not isinstance(slot, dict):
+            return jsonify({"error": f"Slot at index {idx} is invalid."}), 400
+
+        order = slot.get("display_order")
+        item_id = slot.get("gallery_item_id")
+        label = (slot.get("slot_label") or "").strip() or None
+
+        if not isinstance(order, int) or order < 1 or order > limit:
+            return jsonify({"error": f"display_order must be an integer between 1 and {limit}."}), 400
+        if order in seen_orders:
+            return jsonify({"error": f"Duplicate display_order {order}."}), 400
+        if not isinstance(item_id, int):
+            return jsonify({"error": f"gallery_item_id must be an integer at slot index {idx}."}), 400
+        if item_id in seen_item_ids:
+            return jsonify({"error": f"Duplicate gallery_item_id {item_id}."}), 400
+
+        seen_orders.add(order)
+        seen_item_ids.add(item_id)
+        validated.append({"display_order": order, "gallery_item_id": item_id, "slot_label": label})
+
+    if seen_item_ids:
+        found = {item.id for item in GalleryItem.query.filter(GalleryItem.id.in_(seen_item_ids)).all()}
+        missing = seen_item_ids - found
+        if missing:
+            return jsonify({"error": f"Gallery items not found: {sorted(missing)}"}), 400
+
+    try:
+        GalleryPlacement.query.filter_by(section=section).delete()
+        for slot in validated:
+            db.session.add(GalleryPlacement(
+                gallery_item_id=slot["gallery_item_id"],
+                section=section,
+                display_order=slot["display_order"],
+                slot_label=slot["slot_label"],
+            ))
+        log_admin_activity(
+            g.current_admin,
+            action=f"placements_updated",
+            details=f"Saved {len(validated)} slot(s) for section '{section}'",
+            ip_address=request.remote_addr,
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to save placements."}), 500
+
+    placements = (
+        GalleryPlacement.query
+        .options(
+            joinedload(GalleryPlacement.gallery_item)
+            .joinedload(GalleryItem.category)
+        )
+        .filter_by(section=section)
+        .order_by(GalleryPlacement.display_order.asc())
+        .all()
+    )
+    return jsonify([serialize_placement(p) for p in placements])
 
 
 @api_bp.route("/api/admin/reservations", methods=["POST"])

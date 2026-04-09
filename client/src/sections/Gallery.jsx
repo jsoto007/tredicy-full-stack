@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
+import { apiGet, resolveApiUrl } from '../lib/api.js';
 
-// Replace these with real Tredici Social food/interior/bar photography.
-// Each item: { src: string | null, alt: string, color: string (fallback gradient) }
-const GALLERY_ITEMS = [
+// Fallback placeholders shown while loading or when fewer than 6 photos are placed.
+const FALLBACK_ITEMS = [
   { src: null, alt: 'Tagliatelle al Ragù — slow-braised Wagyu', color: 'linear-gradient(135deg, #6B1528 0%, #9B2335 100%)' },
   { src: null, alt: 'Tredici Social dining room', color: 'linear-gradient(135deg, #2E1F18 0%, #1C1410 100%)' },
   { src: null, alt: 'Burrata con Prosciutto', color: 'linear-gradient(135deg, #BFA882 0%, #8A6E4A 100%)' },
@@ -119,6 +119,26 @@ function Lightbox({ index, images, onClose }) {
 
 export default function Gallery() {
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [images, setImages] = useState(FALLBACK_ITEMS);
+
+  useEffect(() => {
+    apiGet('/api/gallery/placements?section=homepage_taste')
+      .then((data) => {
+        if (!Array.isArray(data) || data.length === 0) return;
+        // Build a 6-slot array; fall back to placeholder for any empty slot
+        const slots = FALLBACK_ITEMS.map((fallback, i) => {
+          const placement = data.find((p) => p.display_order === i + 1);
+          if (!placement?.gallery_item) return fallback;
+          return {
+            src: resolveApiUrl(placement.gallery_item.image_url),
+            alt: placement.gallery_item.alt,
+            color: fallback.color
+          };
+        });
+        setImages(slots);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section id="gallery" className="bg-ts-linen py-20">
@@ -143,7 +163,7 @@ export default function Gallery() {
           childClassName="aspect-square"
           delayStep={0.08}
         >
-          {GALLERY_ITEMS.map((image, idx) => (
+          {images.map((image, idx) => (
             <button
               key={image.alt}
               type="button"
@@ -179,7 +199,7 @@ export default function Gallery() {
       {lightboxIndex !== null && (
         <Lightbox
           index={lightboxIndex}
-          images={GALLERY_ITEMS}
+          images={images}
           onClose={() => setLightboxIndex(null)}
         />
       )}

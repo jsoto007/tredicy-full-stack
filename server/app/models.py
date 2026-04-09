@@ -305,10 +305,56 @@ class GalleryItem(db.Model):
 
     category = db.relationship("GalleryCategory", back_populates="gallery_items")
     uploaded_by = db.relationship("AdminAccount", back_populates="gallery_items")
+    placements = db.relationship(
+        "GalleryPlacement",
+        back_populates="gallery_item",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def category_name(self) -> str:
         return self.category.name if self.category else None
+
+
+# Valid section slugs for GalleryPlacement.
+# 'our_story'      → 4-slot panel grid in the About / Our Story section
+# 'homepage_taste' → 6-slot preview grid in the homepage Gallery section
+GALLERY_PLACEMENT_SECTIONS = ("our_story", "homepage_taste")
+GALLERY_PLACEMENT_LIMITS = {"our_story": 4, "homepage_taste": 6}
+
+
+class GalleryPlacement(db.Model):
+    """Maps a published gallery item to a named display section with a slot order and optional label.
+
+    Each (section, display_order) pair is unique — one photo per slot.
+    Each (gallery_item_id, section) pair is unique — a photo can occupy only one slot per section.
+    A photo may appear in multiple sections (different rows in this table).
+    """
+
+    __tablename__ = "gallery_placements"
+    __table_args__ = (
+        db.UniqueConstraint("section", "display_order", name="uq_gallery_placements_section_order"),
+        db.UniqueConstraint("gallery_item_id", "section", name="uq_gallery_placements_item_section"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    gallery_item_id = db.Column(
+        db.Integer,
+        db.ForeignKey("gallery_items.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # One of GALLERY_PLACEMENT_SECTIONS
+    section = db.Column(db.String(40), nullable=False, index=True)
+    # 1-based position within the section (1–4 for our_story, 1–6 for homepage_taste)
+    display_order = db.Column(db.Integer, nullable=False, default=1)
+    # Optional label displayed over the photo (e.g. "The Room", "The Pasta")
+    slot_label = db.Column(db.String(120))
+
+    gallery_item = db.relationship("GalleryItem", back_populates="placements")
+
+    def __repr__(self) -> str:
+        return f"<GalleryPlacement section={self.section} order={self.display_order} item={self.gallery_item_id}>"
 
 
 class Testimonial(db.Model):

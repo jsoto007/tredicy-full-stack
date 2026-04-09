@@ -1,24 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
-
-// Replace these with real Tredici Social photography.
-// Add as many items as needed — the grid is responsive.
-const GALLERY_ITEMS = [
-  { src: null, alt: 'Tagliatelle al Ragù', category: 'Food', color: 'linear-gradient(135deg, #6B1528 0%, #9B2335 100%)' },
-  { src: null, alt: 'Tredici Social dining room', category: 'Interior', color: 'linear-gradient(135deg, #2E1F18 0%, #1C1410 100%)' },
-  { src: null, alt: 'Burrata con Prosciutto', category: 'Food', color: 'linear-gradient(135deg, #BFA882 0%, #8A6E4A 100%)' },
-  { src: null, alt: 'The bar at Tredici Social', category: 'Bar', color: 'linear-gradient(135deg, #1C1410 0%, #3a2218 100%)' },
-  { src: null, alt: 'Costata di Manzo — dry-aged ribeye', category: 'Food', color: 'linear-gradient(135deg, #9B2335 0%, #6B1528 100%)' },
-  { src: null, alt: 'Tiramisù della Casa', category: 'Dessert', color: 'linear-gradient(135deg, #3a2218 0%, #BFA882 100%)' },
-  { src: null, alt: 'Polpo alla Griglia', category: 'Food', color: 'linear-gradient(160deg, #2E1F18 0%, #6B1528 100%)' },
-  { src: null, alt: 'Cocktails at Tredici Social', category: 'Bar', color: 'linear-gradient(135deg, #BFA882 0%, #9B2335 100%)' },
-  { src: null, alt: 'Private dining room', category: 'Interior', color: 'linear-gradient(135deg, #1C1410 0%, #2E1F18 100%)' },
-  { src: null, alt: 'Cacio e Pepe', category: 'Food', color: 'linear-gradient(135deg, #8A6E4A 0%, #BFA882 100%)' },
-  { src: null, alt: 'Evening at Tredici Social', category: 'Interior', color: 'linear-gradient(160deg, #6B1528 0%, #1C1410 100%)' },
-  { src: null, alt: 'Panna Cotta', category: 'Dessert', color: 'linear-gradient(135deg, #BFA882 0%, #3a2218 100%)' },
-];
-
-const CATEGORIES = ['All', ...Array.from(new Set(GALLERY_ITEMS.map((i) => i.category)))];
+import { apiGet, resolveApiUrl } from '../lib/api.js';
 
 function Lightbox({ index, images, onClose }) {
   const [activeIndex, setActiveIndex] = useState(index);
@@ -77,22 +59,17 @@ function Lightbox({ index, images, onClose }) {
           </svg>
         </button>
 
-        {active.src ? (
-          <img src={active.src} alt={active.alt} className="max-h-[80vh] w-full rounded-2xl object-contain" />
-        ) : (
-          <div
-            className="flex h-[55vh] w-full items-center justify-center rounded-2xl"
-            style={{ background: active.color }}
-          >
-            <span className="font-heading text-2xl font-medium text-white/50">{active.alt}</span>
-          </div>
-        )}
+        <img
+          src={active.src}
+          alt={active.alt}
+          className="max-h-[80vh] w-full rounded-2xl object-contain"
+        />
 
         <figcaption className="mt-3 text-center">
           <span className="text-[10px] font-semibold uppercase tracking-[0.45em] text-white/40 mr-3">
             {active.category}
           </span>
-          <span className="text-sm text-white/50">{active.alt}</span>
+          <span className="text-sm text-white/50">{active.caption || active.alt}</span>
         </figcaption>
 
         <button
@@ -121,13 +98,42 @@ function Lightbox({ index, images, onClose }) {
 }
 
 export default function GalleryPage() {
+  const [allItems, setAllItems] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const filtered =
-    activeCategory === 'All'
-      ? GALLERY_ITEMS
-      : GALLERY_ITEMS.filter((i) => i.category === activeCategory);
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      apiGet('/api/gallery?per_page=100'),
+      apiGet('/api/gallery/categories')
+    ])
+      .then(([galleryData, categoryData]) => {
+        const items = (galleryData?.items || []).map((item) => ({
+          id: item.id,
+          src: resolveApiUrl(item.image_url),
+          alt: item.alt,
+          caption: item.caption,
+          category: item.category?.name || 'Other'
+        }));
+        setAllItems(items);
+        const names = Array.from(new Set(items.map((i) => i.category)));
+        const orderedNames = (Array.isArray(categoryData) ? categoryData : [])
+          .map((c) => c.name)
+          .filter((name) => names.includes(name));
+        // Include any category not in the ordered list (shouldn't happen, but safe)
+        names.forEach((name) => { if (!orderedNames.includes(name)) orderedNames.push(name); });
+        setCategories(orderedNames);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = activeCategory === 'All'
+    ? allItems
+    : allItems.filter((i) => i.category === activeCategory);
 
   return (
     <>
@@ -148,7 +154,7 @@ export default function GalleryPage() {
         {/* Category filter */}
         <div className="sticky top-[68px] z-10 border-b border-ts-stone bg-ts-linen/95 backdrop-blur-sm">
           <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-6 py-3 scrollbar-none">
-            {CATEGORIES.map((cat) => (
+            {['All', ...categories].map((cat) => (
               <button
                 key={cat}
                 type="button"
@@ -167,52 +173,56 @@ export default function GalleryPage() {
 
         {/* Masonry grid */}
         <div className="mx-auto max-w-7xl px-6 py-12">
-          <FadeIn
-            className="columns-2 gap-4 md:columns-3 lg:columns-4"
-            childClassName="mb-4 break-inside-avoid"
-            delayStep={0.06}
-          >
-            {filtered.map((image, idx) => (
-              <button
-                key={image.alt}
-                type="button"
-                onClick={() => setLightboxIndex(GALLERY_ITEMS.indexOf(image))}
-                className="group relative block w-full overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ts-crimson focus-visible:ring-offset-2"
-                style={{ aspectRatio: idx % 3 === 0 ? '3/4' : idx % 3 === 1 ? '1/1' : '4/3' }}
-                aria-label={`View: ${image.alt}`}
-              >
-                {image.src ? (
+          {loading ? (
+            <div className="flex justify-center py-24">
+              <span className="text-[11px] uppercase tracking-[0.4em] text-ts-muted">Loading…</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex justify-center py-24">
+              <span className="text-[11px] uppercase tracking-[0.4em] text-ts-muted">No photos yet.</span>
+            </div>
+          ) : (
+            <FadeIn
+              className="columns-2 gap-4 md:columns-3 lg:columns-4"
+              childClassName="mb-4 break-inside-avoid"
+              delayStep={0.06}
+            >
+              {filtered.map((image, idx) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => setLightboxIndex(allItems.indexOf(image))}
+                  className="group relative block w-full overflow-hidden rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ts-crimson focus-visible:ring-offset-2"
+                  style={{ aspectRatio: idx % 3 === 0 ? '3/4' : idx % 3 === 1 ? '1/1' : '4/3' }}
+                  aria-label={`View: ${image.alt}`}
+                >
                   <img
                     src={image.src}
                     alt={image.alt}
                     loading="lazy"
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />
-                ) : (
-                  <div
-                    className="h-full w-full transition duration-500 group-hover:scale-105"
-                    style={{ background: image.color }}
-                    aria-hidden="true"
-                  />
-                )}
-                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
-                  <div>
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.4em] text-white/70">
-                      {image.category}
-                    </p>
-                    <p className="mt-0.5 font-heading text-sm font-medium text-white">{image.alt}</p>
+                  <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
+                    <div>
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.4em] text-white/70">
+                        {image.category}
+                      </p>
+                      <p className="mt-0.5 font-heading text-sm font-medium text-white">
+                        {image.caption || image.alt}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </FadeIn>
+                </button>
+              ))}
+            </FadeIn>
+          )}
         </div>
       </main>
 
       {lightboxIndex !== null && (
         <Lightbox
           index={lightboxIndex}
-          images={GALLERY_ITEMS}
+          images={allItems}
           onClose={() => setLightboxIndex(null)}
         />
       )}
