@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
 import Lightbox from '../components/Lightbox.jsx';
+import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
 
@@ -112,11 +113,11 @@ export default function Gallery() {
               aria-label={`View photo: ${image.alt}`}
             >
               {image.src ? (
-                <img
+                <ProgressiveImage
                   src={image.src}
                   alt={image.alt}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                  className="h-full w-full"
+                  imageClassName="object-cover transition duration-500 group-hover:scale-105"
                 />
               ) : (
                 <div

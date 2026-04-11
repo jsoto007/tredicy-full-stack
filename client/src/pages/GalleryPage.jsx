@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
+import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
+import { prefetchImage } from '../lib/image.js';
 
 function Lightbox({ index, images, onClose }) {
   const [activeIndex, setActiveIndex] = useState(index);
@@ -10,16 +12,26 @@ function Lightbox({ index, images, onClose }) {
   const prev = useCallback(() => setActiveIndex((i) => (i - 1 + images.length) % images.length), [images.length]);
   const next = useCallback(() => setActiveIndex((i) => (i + 1) % images.length), [images.length]);
 
+  // Prefetch the images on either side so navigation feels instant.
   useEffect(() => {
-    const el = dialogRef.current;
-    el?.focus({ preventScroll: true });
+    if (!images.length) return;
+    prefetchImage(images[(activeIndex + 1) % images.length]?.src);
+    prefetchImage(images[(activeIndex - 1 + images.length) % images.length]?.src);
+  }, [activeIndex, images]);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    dialogRef.current?.focus({ preventScroll: true });
     const handleKey = (e) => {
       if (e.key === 'Escape') { e.preventDefault(); onClose(); }
       if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
       if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
     };
     document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+      previouslyFocused?.focus?.({ preventScroll: true });
+    };
   }, [onClose, next, prev]);
 
   const active = images[activeIndex];
@@ -63,6 +75,8 @@ function Lightbox({ index, images, onClose }) {
           src={active.src}
           alt={active.alt}
           className="max-h-[80vh] w-full rounded-2xl object-contain"
+          decoding="async"
+          fetchPriority="high"
         />
 
         <figcaption className="mt-3 text-center">
@@ -196,11 +210,11 @@ export default function GalleryPage() {
                   style={{ aspectRatio: idx % 3 === 0 ? '3/4' : idx % 3 === 1 ? '1/1' : '4/3' }}
                   aria-label={`View: ${image.alt}`}
                 >
-                  <img
+                  <ProgressiveImage
                     src={image.src}
                     alt={image.alt}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    className="h-full w-full"
+                    imageClassName="object-cover transition duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/70 via-transparent to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
                     <div>

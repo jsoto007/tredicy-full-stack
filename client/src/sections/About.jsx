@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
+import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
 
@@ -103,11 +104,11 @@ export default function About() {
                 style={{ aspectRatio: panel.aspectRatio }}
               >
                 {panel.imageUrl ? (
-                  <img
+                  <ProgressiveImage
                     src={panel.imageUrl}
                     alt={panel.alt || panel.label}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+                    className="h-full w-full"
+                    imageClassName="object-cover"
                   />
                 ) : (
                   <div
@@ -132,11 +133,11 @@ export default function About() {
                 style={{ aspectRatio: panel.aspectRatio }}
               >
                 {panel.imageUrl ? (
-                  <img
+                  <ProgressiveImage
                     src={panel.imageUrl}
                     alt={panel.alt || panel.label}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
+                    className="h-full w-full"
+                    imageClassName="object-cover"
                   />
                 ) : (
                   <div
