@@ -331,10 +331,9 @@ export function AdminDashboardProvider({ children }) {
   const refreshGalleryItems = useCallback(
     async ({ page = 1, perPage = galleryPagination.per_page, append = false } = {}) => {
       const params = new URLSearchParams();
-      params.set('include_unpublished', 'true');
       params.set('page', page);
       params.set('per_page', perPage);
-      const response = await apiGet(`/api/gallery?${params.toString()}`);
+      const response = await apiGet(`/api/admin/gallery?${params.toString()}`);
       const items = ensureArray(response?.items);
       setGalleryItems((prev) => (append && page > 1 ? [...prev, ...items] : items));
       setGalleryPagination({
@@ -685,18 +684,25 @@ export function AdminDashboardProvider({ children }) {
   const deleteCategory = useCallback(
     async (categoryId) => {
       const previousCategories = categories;
+      const previousGalleryItems = galleryItems;
       setCategories((prev) => prev.filter((category) => category.id !== categoryId));
+      // Remove gallery items that belonged to this category so the list doesn't
+      // show stale entries until the next full refresh.
+      setGalleryItems((prev) => prev.filter((item) => String(item.category?.id) !== String(categoryId)));
+      // Invalidate gallery cache so the next visit fetches fresh data.
+      delete cacheRef.current['gallery'];
       try {
         await apiDelete(`/api/admin/categories/${categoryId}`);
         showNotice({ tone: 'success', message: 'Category deleted.' });
         markFetched('categories');
       } catch (err) {
         setCategories(previousCategories);
+        setGalleryItems(previousGalleryItems);
         showNotice({ tone: 'error', message: getErrorMessage(err, 'Unable to delete category.') });
         throw err;
       }
     },
-    [categories, showNotice, markFetched]
+    [categories, galleryItems, showNotice, markFetched]
   );
 
   const uploadMedia = useCallback(async (file) => {

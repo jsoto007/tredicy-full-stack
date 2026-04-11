@@ -2431,6 +2431,16 @@ def admin_upload_media():
         current_app.logger.error("Upload failed: %s", exc)
         return jsonify({"error": "Unable to store upload."}), 500
 
+    # Commit the StoredUpload blob first — this is what survives a redeploy.
+    # A failure here rolls back the blob AND cleans up the file so nothing is orphaned.
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        _cleanup_upload_target(cleanup_target)
+        return jsonify({"error": "Unable to store upload."}), 500
+
+    # Activity logging is best-effort. A failure here must not lose the upload.
     admin: AdminAccount = g.current_admin
     try:
         log_admin_activity(
@@ -2442,8 +2452,7 @@ def admin_upload_media():
         db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
-        _cleanup_upload_target(cleanup_target)
-        return jsonify({"error": "Unable to store upload."}), 500
+        current_app.logger.warning("Activity log failed for upload %s", stored_name)
 
     return jsonify({"filename": stored_name, "url": file_url}), 201
 
@@ -3533,13 +3542,13 @@ def admin_create_category():
         db.session.rollback()
         return jsonify({"error": "Unable to create category."}), 500
 
-    return jsonify(serialize_category(category)), 201
+    return jsonify({**serialize_category(category), "gallery_item_count": 0}), 201
 
 
 @api_bp.route("/api/admin/categories/<int:category_id>", methods=["PATCH"])
 @admin_required
 def admin_update_category(category_id):
-    category = GalleryCategory.query.get_or_404(category_id)
+    category = GalleryCategory.query.options(joinedload(GalleryCategory.gallery_items)).get_or_404(category_id)
     payload = request.get_json(silent=True) or {}
 
     if "name" in payload:
@@ -3575,7 +3584,7 @@ def admin_update_category(category_id):
         db.session.rollback()
         return jsonify({"error": "Unable to update category."}), 500
 
-    return jsonify(serialize_category(category))
+    return jsonify({**serialize_category(category), "gallery_item_count": len(category.gallery_items)})
 
 
 @api_bp.route("/api/admin/categories/<int:category_id>", methods=["DELETE"])
@@ -3710,6 +3719,13 @@ def admin_update_gallery_item(item_id):
 def admin_delete_gallery_item(item_id):
     item = GalleryItem.query.get_or_404(item_id)
 
+    # Clean up the stored upload blob so deleted photos don't consume DB storage.
+    blob_name = _extract_upload_filename(item.image_url)
+    if blob_name:
+        stored_blob = StoredUpload.query.filter_by(filename=blob_name).one_or_none()
+        if stored_blob:
+            db.session.delete(stored_blob)
+
     db.session.delete(item)
     acting_admin: AdminAccount = g.current_admin
 
@@ -3726,6 +3742,54 @@ def admin_delete_gallery_item(item_id):
         return jsonify({"error": "Unable to delete gallery item."}), 500
 
     return jsonify({"status": "deleted"})
+
+
+@api_bp.route("/api/admin/gallery", methods=["GET"])
+@admin_required
+def admin_list_gallery():
+    """Admin gallery listing — always includes unpublished items.
+
+    Identical to the public /api/gallery endpoint but requires admin auth and
+    never filters out drafts. Keeps draft photos private from public callers.
+    """
+    category_id = request.args.get("category_id", type=int)
+    category_name = request.args.get("category", type=str)
+
+    base_query = GalleryItem.query
+
+    if category_id:
+        base_query = base_query.filter(GalleryItem.category_id == category_id)
+    elif category_name:
+        category_name = category_name.strip()
+        if category_name:
+            base_query = base_query.join(GalleryItem.category).filter(
+                func.lower(GalleryCategory.name) == category_name.lower()
+            )
+
+    page, per_page = _parse_pagination()
+    total = base_query.count()
+
+    items = (
+        base_query.options(joinedload(GalleryItem.category), joinedload(GalleryItem.uploaded_by))
+        .order_by(GalleryItem.created_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    total_pages = math.ceil(total / per_page) if per_page else 1
+
+    return jsonify(
+        {
+            "items": [serialize_gallery_item(item) for item in items],
+            "meta": {
+                "page": page,
+                "per_page": per_page,
+                "total": total,
+                "pages": total_pages,
+            },
+        }
+    )
 
 
 @api_bp.route("/api/admin/placements", methods=["GET"])

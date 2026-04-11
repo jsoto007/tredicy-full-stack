@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import FadeIn from '../components/FadeIn.jsx';
+import Lightbox from '../components/Lightbox.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
+
+const INSTAGRAM_URL = 'https://www.instagram.com/tredici.social/';
 
 // Fallback placeholders shown while loading or when fewer than 6 photos are placed.
 const FALLBACK_ITEMS = [
@@ -14,135 +17,72 @@ const FALLBACK_ITEMS = [
   { src: null, alt: 'Tiramisù della Casa', color: 'linear-gradient(135deg, #3a2218 0%, #BFA882 100%)' },
 ];
 
-function Lightbox({ index, images, onClose }) {
-  const [activeIndex, setActiveIndex] = useState(index);
-  const swipeStart = useRef(null);
-  const dialogRef = useRef(null);
-
-  const prev = useCallback(() => setActiveIndex((i) => (i - 1 + images.length) % images.length), [images.length]);
-  const next = useCallback(() => setActiveIndex((i) => (i + 1) % images.length), [images.length]);
-
-  useEffect(() => {
-    const previouslyFocused = document.activeElement;
-    dialogRef.current?.focus({ preventScroll: true });
-    const handleKey = (e) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-      if (e.key === 'ArrowRight') { e.preventDefault(); next(); }
-      if (e.key === 'ArrowLeft') { e.preventDefault(); prev(); }
-    };
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-      previouslyFocused?.focus?.({ preventScroll: true });
-    };
-  }, [onClose, next, prev]);
-
-  const active = images[activeIndex];
-
-  return (
-    <div
-      role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4 py-10 backdrop-blur-md"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      onPointerDown={(e) => { swipeStart.current = { x: e.clientX }; }}
-      onPointerUp={(e) => {
-        if (!swipeStart.current) return;
-        const dx = e.clientX - swipeStart.current.x;
-        swipeStart.current = null;
-        if (Math.abs(dx) > 40) dx < 0 ? next() : prev();
-      }}
-    >
-      <figure
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Gallery image"
-        className="relative w-full max-w-3xl focus:outline-none"
-      >
-        <div className="absolute left-4 top-4 z-10 text-[11px] uppercase tracking-[0.3em] text-white/50">
-          {activeIndex + 1} / {images.length}
-        </div>
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/70 transition hover:border-white/60 hover:text-white focus:outline-none"
-          aria-label="Close gallery"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        {active.src ? (
-          <img src={active.src} alt={active.alt} className="max-h-[78vh] w-full rounded-2xl object-contain" />
-        ) : (
-          <div
-            className="flex h-[50vh] w-full items-center justify-center rounded-2xl"
-            style={{ background: active.color }}
-            aria-label={active.alt}
-          >
-            <span className="text-[11px] font-semibold uppercase tracking-[0.4em] text-white/60">
-              {active.alt}
-            </span>
-          </div>
-        )}
-
-        <figcaption className="mt-3 text-center text-sm text-white/50">{active.alt}</figcaption>
-
-        <button
-          type="button"
-          onClick={prev}
-          className="absolute left-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition hover:border-white/50 hover:text-white focus:outline-none"
-          aria-label="Previous image"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-
-        <button
-          type="button"
-          onClick={next}
-          className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition hover:border-white/50 hover:text-white focus:outline-none"
-          aria-label="Next image"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </figure>
-    </div>
-  );
-}
-
 export default function Gallery() {
+  // The 6-slot grid derived from placements (what's displayed on the page)
+  const [gridItems, setGridItems] = useState(FALLBACK_ITEMS);
+  // The full published library — used as the lightbox collection
+  const [allItems, setAllItems] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(null);
-  const [images, setImages] = useState(FALLBACK_ITEMS);
 
+  // Fetch the 6 placed photos for the visual grid
   useEffect(() => {
     apiGet('/api/gallery/placements?section=homepage_taste')
       .then((data) => {
         if (!Array.isArray(data) || data.length === 0) return;
-        // Build a 6-slot array; fall back to placeholder for any empty slot
         const slots = FALLBACK_ITEMS.map((fallback, i) => {
           const placement = data.find((p) => p.display_order === i + 1);
           if (!placement?.gallery_item) return fallback;
           return {
             src: resolveApiUrl(placement.gallery_item.image_url),
             alt: placement.gallery_item.alt,
-            color: fallback.color
+            color: fallback.color,
+            // Keep the gallery item ID so we can find its position in the full library
+            galleryItemId: placement.gallery_item.id,
           };
         });
-        setImages(slots);
+        setGridItems(slots);
       })
       .catch(() => {});
   }, []);
 
+  // Fetch all published photos for the lightbox scroll-through
+  useEffect(() => {
+    apiGet('/api/gallery?per_page=100')
+      .then((data) => {
+        const items = data?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          setAllItems(items);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // When a grid photo is clicked, open the lightbox at the matching position
+  // in the full library. Falls back to grid index if the item isn't in the library yet.
+  const handlePhotoClick = (gridIdx) => {
+    const clicked = gridItems[gridIdx];
+    if (allItems.length > 0 && clicked?.galleryItemId != null) {
+      const fullIdx = allItems.findIndex((item) => item.id === clicked.galleryItemId);
+      setLightboxIndex(fullIdx >= 0 ? fullIdx : 0);
+    } else {
+      // Library not loaded yet or fallback placeholder — open at grid position
+      setLightboxIndex(gridIdx);
+    }
+  };
+
+  // The lightbox uses either the full library (if loaded) or the 6 grid items as fallback.
+  // Fallback items are shaped to match what Lightbox expects: { image_url, alt }
+  const lightboxImages =
+    allItems.length > 0
+      ? allItems
+      : gridItems
+          .filter((i) => i.src)
+          .map((i) => ({ image_url: i.src, alt: i.alt }));
+
   return (
     <section id="gallery" className="bg-ts-linen py-20">
       <div className="mx-auto flex max-w-7xl flex-col gap-10 px-6">
+        {/* Header row */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionTitle
             eyebrow="Gallery"
@@ -157,19 +97,19 @@ export default function Gallery() {
           </Link>
         </div>
 
-        {/* Grid */}
+        {/* Photo grid */}
         <FadeIn
           className="grid grid-cols-2 gap-4 md:grid-cols-3"
           childClassName="aspect-square"
           delayStep={0.08}
         >
-          {images.map((image, idx) => (
+          {gridItems.map((image, idx) => (
             <button
               key={image.alt}
               type="button"
-              onClick={() => setLightboxIndex(idx)}
-              className="group relative h-full w-full overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ts-crimson focus-visible:ring-offset-2"
-              aria-label={`View: ${image.alt}`}
+              onClick={() => handlePhotoClick(idx)}
+              className="group relative h-full w-full cursor-pointer overflow-hidden rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-ts-crimson focus-visible:ring-offset-2"
+              aria-label={`View photo: ${image.alt}`}
             >
               {image.src ? (
                 <img
@@ -185,24 +125,59 @@ export default function Gallery() {
                   aria-hidden="true"
                 />
               )}
-              {/* Overlay on hover */}
-              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/90">
+              {/* Hover overlay */}
+              <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-black/60 via-transparent to-transparent p-4 opacity-0 transition duration-300 group-hover:opacity-100">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.35em] text-white/90 line-clamp-1">
                   {image.alt}
                 </span>
+              </div>
+              {/* Expand icon hint */}
+              <div className="pointer-events-none absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/30 opacity-0 backdrop-blur-sm transition duration-300 group-hover:opacity-100">
+                <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0-4l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
               </div>
             </button>
           ))}
         </FadeIn>
+
+        {/* Instagram CTA */}
+        <div className="flex justify-center">
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="group inline-flex items-center gap-3 rounded-full border border-ts-stone bg-white px-7 py-3.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-ts-muted shadow-sm transition duration-300 hover:border-ts-crimson hover:text-ts-crimson hover:shadow-md"
+          >
+            {/* Instagram icon */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4 transition-colors duration-300 group-hover:text-ts-crimson"
+              aria-hidden="true"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="1.25" fill="currentColor" stroke="none" />
+            </svg>
+            See more on Instagram
+          </a>
+        </div>
       </div>
 
-      {lightboxIndex !== null && (
-        <Lightbox
-          index={lightboxIndex}
-          images={images}
-          onClose={() => setLightboxIndex(null)}
-        />
-      )}
+      {/* Lightbox — scrolls through the full published library */}
+      <Lightbox
+        open={lightboxIndex !== null}
+        images={lightboxImages}
+        startIndex={lightboxIndex ?? 0}
+        onClose={() => setLightboxIndex(null)}
+        instagramUrl={INSTAGRAM_URL}
+      />
     </section>
   );
 }

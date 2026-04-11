@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '../../components/Button.jsx';
 import Card from '../../components/Card.jsx';
 import ConfirmDialog from '../../components/ConfirmDialog.jsx';
+import Dialog from '../../components/Dialog.jsx';
 import SectionTitle from '../../components/SectionTitle.jsx';
 import { resolveApiUrl } from '../../lib/api.js';
 import { useAdminDashboard } from './AdminDashboardContext.jsx';
@@ -11,12 +12,20 @@ import {
   validateImageBeforeUpload
 } from '../../lib/uploadValidation.js';
 
-// ─── Section config ────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { key: 'photos', label: 'Photos' },
+  { key: 'placements', label: 'Placements' },
+  { key: 'categories', label: 'Categories' }
+];
+
 const PLACEMENT_SECTIONS = {
   our_story: {
     key: 'our_story',
     label: 'Our Story',
-    description: 'Four photo panels displayed in the "Our Story" section of the homepage. Each slot has a custom label shown over the photo.',
+    description:
+      'Four photo panels displayed in the "Our Story" section of the homepage. Each slot has a custom label shown over the photo.',
     slotCount: 4,
     hasLabel: true
   },
@@ -29,6 +38,12 @@ const PLACEMENT_SECTIONS = {
   }
 };
 
+const INPUT_CLS =
+  'w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0';
+const LABEL_CLS = 'block text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function buildEmptySlots(count) {
   return Array.from({ length: count }, (_, i) => ({
     display_order: i + 1,
@@ -37,7 +52,8 @@ function buildEmptySlots(count) {
   }));
 }
 
-// ─── Single slot card ──────────────────────────────────────────────────────
+// ─── Placement slot card (unchanged logic, improved visual) ───────────────────
+
 function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, onChange }) {
   const selectedItem = slot.gallery_item_id
     ? galleryItems.find((item) => String(item.id) === String(slot.gallery_item_id))
@@ -47,7 +63,6 @@ function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, on
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
-      {/* Slot number + thumbnail */}
       <div className="flex items-start gap-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white">
           {slot.display_order}
@@ -67,19 +82,15 @@ function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, on
         </div>
       </div>
 
-      {/* Photo selector */}
       <div>
-        <label
-          htmlFor={`${slotBaseId}-photo`}
-          className="text-[10px] uppercase tracking-[0.3em] text-gray-500"
-        >
+        <label htmlFor={`${slotBaseId}-photo`} className={LABEL_CLS}>
           Photo
         </label>
         <select
           id={`${slotBaseId}-photo`}
           value={slot.gallery_item_id}
           onChange={(e) => onChange(index, 'gallery_item_id', e.target.value)}
-          className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
+          className={`mt-1 ${INPUT_CLS}`}
         >
           <option value="">— Select a photo —</option>
           {galleryItems.map((item) => (
@@ -92,13 +103,9 @@ function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, on
         </select>
       </div>
 
-      {/* Label (Our Story only) */}
       {hasLabel && (
         <div>
-          <label
-            htmlFor={`${slotBaseId}-label`}
-            className="text-[10px] uppercase tracking-[0.3em] text-gray-500"
-          >
+          <label htmlFor={`${slotBaseId}-label`} className={LABEL_CLS}>
             Slot label
           </label>
           <input
@@ -107,12 +114,11 @@ function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, on
             placeholder='e.g. "The Room"'
             value={slot.slot_label}
             onChange={(e) => onChange(index, 'slot_label', e.target.value)}
-            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
+            className={`mt-1 ${INPUT_CLS}`}
           />
         </div>
       )}
 
-      {/* Clear button */}
       {slot.gallery_item_id && (
         <button
           type="button"
@@ -126,14 +132,13 @@ function PlacementSlotCard({ slot, index, hasLabel, galleryItems, resolveUrl, on
   );
 }
 
-// ─── One section panel ─────────────────────────────────────────────────────
+// ─── Placement section panel ──────────────────────────────────────────────────
+
 function PlacementSectionPanel({ sectionConfig, currentPlacements, galleryItems, resolveUrl, onSave }) {
   const { key, label, description, slotCount, hasLabel } = sectionConfig;
-
   const [slots, setSlots] = useState(() => buildEmptySlots(slotCount));
   const [saving, setSaving] = useState(false);
 
-  // Sync incoming placements into slot drafts whenever they change
   useEffect(() => {
     const draft = buildEmptySlots(slotCount);
     currentPlacements.forEach((p) => {
@@ -169,15 +174,12 @@ function PlacementSectionPanel({ sectionConfig, currentPlacements, galleryItems,
     }
   };
 
-  const gridClass = slotCount === 4
-    ? 'grid gap-3 sm:grid-cols-2'
-    : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3';
+  const gridClass =
+    slotCount === 4 ? 'grid gap-3 sm:grid-cols-2' : 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3';
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <p className="text-sm text-gray-600">{description}</p>
-      </div>
+      <p className="text-sm text-gray-600">{description}</p>
       <div className={gridClass}>
         {slots.map((slot, idx) => (
           <PlacementSlotCard
@@ -203,41 +205,615 @@ function PlacementSectionPanel({ sectionConfig, currentPlacements, galleryItems,
   );
 }
 
-const INITIAL_CATEGORY = { name: '', description: '', is_active: true };
-const INITIAL_GALLERY_DRAFT = {
-  category_id: '',
-  label: '',
-  caption: '',
-  is_published: true,
-  uploaded_by_admin_id: '',
+// ─── Gallery photo card (view mode) ──────────────────────────────────────────
+
+function GalleryPhotoCard({ item, onEdit, onDelete }) {
+  const imageUrl = resolveApiUrl(item.image_url);
+  return (
+    <div className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow duration-200 hover:shadow-md">
+      {/* Thumbnail */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+        <img
+          src={imageUrl}
+          alt={item.alt}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+        />
+        {!item.is_published && (
+          <span className="absolute left-2 top-2 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+            Draft
+          </span>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex flex-1 flex-col gap-1 px-3 pt-2 pb-1">
+        <p className="truncate text-xs font-medium text-gray-900" title={item.alt}>
+          {item.alt}
+        </p>
+        <p className="truncate text-[10px] uppercase tracking-[0.25em] text-gray-400">
+          {item.category?.name ?? 'Uncategorised'}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 border-t border-gray-100 px-3 py-2">
+        <button
+          type="button"
+          onClick={() => onEdit(item)}
+          className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 transition hover:text-gray-900"
+        >
+          Edit
+        </button>
+        <span className="text-gray-200" aria-hidden>|</span>
+        <button
+          type="button"
+          onClick={() => onDelete(item)}
+          className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 transition hover:text-rose-600"
+        >
+          Delete
+        </button>
+        <a
+          href={imageUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-300 transition hover:text-gray-600"
+          title="Open full image"
+        >
+          ↗
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ─── Edit item dialog ─────────────────────────────────────────────────────────
+
+function EditItemDialog({ item, categories, onSave, onDelete, onClose }) {
+  const [draft, setDraft] = useState({
+    category_id: item.category?.id ? String(item.category.id) : '',
+    alt: item.alt || '',
+    caption: item.caption || '',
+    is_published: Boolean(item.is_published)
+  });
+  const [saving, setSaving] = useState(false);
+  const altRef = useRef(null);
+
+  useEffect(() => {
+    altRef.current?.focus();
+  }, []);
+
+  const handleChange = (field, value) => {
+    setDraft((prev) => ({ ...prev, [field]: field === 'is_published' ? Boolean(value) : value }));
+  };
+
+  const handleSave = async () => {
+    if (!draft.alt.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(item.id, {
+        category_id: draft.category_id ? Number(draft.category_id) : undefined,
+        alt: draft.alt.trim(),
+        caption: draft.caption.trim() || null,
+        is_published: draft.is_published
+      });
+      onClose();
+    } catch {
+      // error surfaced via notice in context
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={saving ? undefined : onClose}
+      title="Edit photo"
+      footer={[
+        <Button key="delete" type="button" variant="ghost" onClick={() => onDelete(item)} disabled={saving}>
+          Delete
+        </Button>,
+        <Button key="cancel" type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>,
+        <Button key="save" type="button" onClick={handleSave} disabled={saving || !draft.alt.trim()}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </Button>
+      ]}
+    >
+      {/* Preview */}
+      <img
+        src={resolveApiUrl(item.image_url)}
+        alt={item.alt}
+        className="w-full rounded-xl object-cover"
+        style={{ maxHeight: '180px' }}
+      />
+
+      <div className="space-y-4">
+        {/* Alt text */}
+        <div>
+          <label htmlFor="edit-item-alt" className={LABEL_CLS}>
+            Alt text <span className="text-rose-500">*</span>
+          </label>
+          <input
+            ref={altRef}
+            id="edit-item-alt"
+            type="text"
+            value={draft.alt}
+            onChange={(e) => handleChange('alt', e.target.value)}
+            className={`mt-1 ${INPUT_CLS}`}
+            placeholder="Describe the photo for accessibility"
+          />
+        </div>
+
+        {/* Caption */}
+        <div>
+          <label htmlFor="edit-item-caption" className={LABEL_CLS}>
+            Caption
+          </label>
+          <textarea
+            id="edit-item-caption"
+            rows={2}
+            value={draft.caption}
+            onChange={(e) => handleChange('caption', e.target.value)}
+            className={`mt-1 ${INPUT_CLS} resize-none`}
+            placeholder="Optional display caption"
+          />
+        </div>
+
+        {/* Category + Published row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="edit-item-category" className={LABEL_CLS}>
+              Category
+            </label>
+            <select
+              id="edit-item-category"
+              value={draft.category_id}
+              onChange={(e) => handleChange('category_id', e.target.value)}
+              className={`mt-1 ${INPUT_CLS}`}
+            >
+              <option value="">Uncategorised</option>
+              {categories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col justify-end pb-1">
+            <label htmlFor="edit-item-published" className="flex cursor-pointer items-center gap-2 select-none">
+              <div className="relative">
+                <input
+                  id="edit-item-published"
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={draft.is_published}
+                  onChange={(e) => handleChange('is_published', e.target.checked)}
+                />
+                <div className="h-5 w-9 rounded-full border border-gray-300 bg-gray-200 transition peer-checked:border-gray-900 peer-checked:bg-gray-900" />
+                <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+              </div>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 peer-checked:text-gray-900">
+                {draft.is_published ? 'Live' : 'Draft'}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Upload date */}
+        {item.created_at && (
+          <p className="text-[10px] text-gray-400">
+            Uploaded {new Date(item.created_at).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+// ─── Upload dialog ────────────────────────────────────────────────────────────
+
+const INITIAL_UPLOAD = {
   file: null,
-  previewUrl: ''
+  previewUrl: '',
+  alt: '',
+  caption: '',
+  category_id: '',
+  uploaded_by_admin_id: '',
+  is_published: true
 };
 
-const NEW_CATEGORY_FIELD_IDS = {
-  name: 'new-category-name',
-  description: 'new-category-description',
-  active: 'new-category-active'
-};
+function UploadDialog({ categories, admins, currentAdmin, onUpload, onClose }) {
+  const [form, setForm] = useState(() => ({
+    ...INITIAL_UPLOAD,
+    category_id: categories[0]?.id ? String(categories[0].id) : '',
+    uploaded_by_admin_id: currentAdmin?.id ? String(currentAdmin.id) : ''
+  }));
+  const [uploadError, setUploadError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
-const NEW_GALLERY_FIELD_IDS = {
-  file: 'new-gallery-file',
-  category: 'new-gallery-category',
-  uploader: 'new-gallery-uploader',
-  isPublished: 'new-gallery-published',
-  alt: 'new-gallery-alt',
-  caption: 'new-gallery-caption'
-};
+  // Revoke object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (form.previewUrl) URL.revokeObjectURL(form.previewUrl);
+    };
+  }, [form.previewUrl]);
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const validation = validateImageBeforeUpload(file);
+    if (!validation.isValid) {
+      setUploadError(getClientSideUploadError(validation.reason));
+      return;
+    }
+    setUploadError(null);
+    setForm((prev) => {
+      if (prev.previewUrl) URL.revokeObjectURL(prev.previewUrl);
+      return { ...prev, file, previewUrl: URL.createObjectURL(file) };
+    });
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: field === 'is_published' ? Boolean(value) : value }));
+  };
+
+  const canSubmit = form.file && form.alt.trim() && form.category_id && !uploading;
+
+  const handleUpload = async () => {
+    if (!canSubmit) return;
+    setUploading(true);
+    try {
+      await onUpload({
+        file: form.file,
+        alt: form.alt.trim(),
+        caption: form.caption.trim() || null,
+        category_id: Number(form.category_id),
+        uploaded_by_admin_id: form.uploaded_by_admin_id
+          ? Number(form.uploaded_by_admin_id)
+          : currentAdmin?.id,
+        is_published: form.is_published
+      });
+      onClose();
+    } catch (err) {
+      const msg = getUploadErrorMessage(err);
+      setUploadError(msg || 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={uploading ? undefined : onClose}
+      title="Upload new photo"
+      footer={[
+        <Button key="cancel" type="button" variant="ghost" onClick={onClose} disabled={uploading}>
+          Cancel
+        </Button>,
+        <Button key="upload" type="button" onClick={handleUpload} disabled={!canSubmit}>
+          {uploading ? 'Uploading…' : 'Upload photo'}
+        </Button>
+      ]}
+    >
+      <div className="space-y-4">
+        {/* File picker */}
+        <div>
+          <label className={LABEL_CLS}>Image file</label>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-1 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center transition hover:border-gray-400 hover:bg-gray-100"
+          >
+            {form.previewUrl ? (
+              <img
+                src={form.previewUrl}
+                alt="Preview"
+                className="mb-3 max-h-40 rounded-lg object-contain"
+              />
+            ) : (
+              <svg
+                className="mb-2 h-8 w-8 text-gray-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            )}
+            <span className="text-xs text-gray-500">
+              {form.file ? form.file.name : 'Click to choose a photo'}
+            </span>
+            <span className="mt-0.5 text-[10px] text-gray-400">JPG, PNG or WebP · max 10 MB</span>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={handleFileChange}
+          />
+          {uploadError && (
+            <p className="mt-1.5 text-xs uppercase tracking-[0.2em] text-rose-600">{uploadError}</p>
+          )}
+        </div>
+
+        {/* Alt text */}
+        <div>
+          <label htmlFor="upload-alt" className={LABEL_CLS}>
+            Alt text <span className="text-rose-500">*</span>
+          </label>
+          <input
+            id="upload-alt"
+            type="text"
+            value={form.alt}
+            onChange={(e) => handleChange('alt', e.target.value)}
+            placeholder="Describe the photo for accessibility"
+            className={`mt-1 ${INPUT_CLS}`}
+          />
+        </div>
+
+        {/* Caption */}
+        <div>
+          <label htmlFor="upload-caption" className={LABEL_CLS}>
+            Caption
+          </label>
+          <input
+            id="upload-caption"
+            type="text"
+            value={form.caption}
+            onChange={(e) => handleChange('caption', e.target.value)}
+            placeholder="Optional display caption"
+            className={`mt-1 ${INPUT_CLS}`}
+          />
+        </div>
+
+        {/* Category + Admin row */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="upload-category" className={LABEL_CLS}>
+              Category <span className="text-rose-500">*</span>
+            </label>
+            <select
+              id="upload-category"
+              value={form.category_id}
+              onChange={(e) => handleChange('category_id', e.target.value)}
+              className={`mt-1 ${INPUT_CLS}`}
+            >
+              <option value="">Select category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="upload-uploader" className={LABEL_CLS}>
+              Uploaded by
+            </label>
+            <select
+              id="upload-uploader"
+              value={form.uploaded_by_admin_id}
+              onChange={(e) => handleChange('uploaded_by_admin_id', e.target.value)}
+              className={`mt-1 ${INPUT_CLS}`}
+            >
+              {admins.map((a) => (
+                <option key={a.id} value={String(a.id)}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Published toggle */}
+        <label htmlFor="upload-published" className="flex cursor-pointer items-center gap-3 select-none">
+          <div className="relative">
+            <input
+              id="upload-published"
+              type="checkbox"
+              className="sr-only peer"
+              checked={form.is_published}
+              onChange={(e) => handleChange('is_published', e.target.checked)}
+            />
+            <div className="h-5 w-9 rounded-full border border-gray-300 bg-gray-200 transition peer-checked:border-gray-900 peer-checked:bg-gray-900" />
+            <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500">
+            {form.is_published ? 'Publish immediately' : 'Save as draft'}
+          </span>
+        </label>
+      </div>
+    </Dialog>
+  );
+}
+
+// ─── Edit category dialog ─────────────────────────────────────────────────────
+
+function EditCategoryDialog({ category, onSave, onClose }) {
+  const [draft, setDraft] = useState({
+    name: category.name,
+    description: category.description || '',
+    is_active: Boolean(category.is_active)
+  });
+  const [saving, setSaving] = useState(false);
+  const nameRef = useRef(null);
+
+  useEffect(() => {
+    nameRef.current?.focus();
+  }, []);
+
+  const handleChange = (field, value) => {
+    setDraft((prev) => ({ ...prev, [field]: field === 'is_active' ? Boolean(value) : value }));
+  };
+
+  const handleSave = async () => {
+    if (!draft.name.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(category.id, {
+        name: draft.name.trim(),
+        description: draft.description.trim() || null,
+        is_active: draft.is_active
+      });
+      onClose();
+    } catch {
+      // error surfaced via notice
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={saving ? undefined : onClose}
+      title="Edit category"
+      footer={[
+        <Button key="cancel" type="button" variant="ghost" onClick={onClose} disabled={saving}>
+          Cancel
+        </Button>,
+        <Button key="save" type="button" onClick={handleSave} disabled={saving || !draft.name.trim()}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </Button>
+      ]}
+    >
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="edit-cat-name" className={LABEL_CLS}>
+            Name <span className="text-rose-500">*</span>
+          </label>
+          <input
+            ref={nameRef}
+            id="edit-cat-name"
+            type="text"
+            value={draft.name}
+            onChange={(e) => handleChange('name', e.target.value)}
+            className={`mt-1 ${INPUT_CLS}`}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="edit-cat-description" className={LABEL_CLS}>
+            Description
+          </label>
+          <input
+            id="edit-cat-description"
+            type="text"
+            value={draft.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            placeholder="Optional description"
+            className={`mt-1 ${INPUT_CLS}`}
+          />
+        </div>
+
+        <label htmlFor="edit-cat-active" className="flex cursor-pointer items-center gap-3 select-none">
+          <div className="relative">
+            <input
+              id="edit-cat-active"
+              type="checkbox"
+              className="sr-only peer"
+              checked={draft.is_active}
+              onChange={(e) => handleChange('is_active', e.target.checked)}
+            />
+            <div className="h-5 w-9 rounded-full border border-gray-300 bg-gray-200 transition peer-checked:border-gray-900 peer-checked:bg-gray-900" />
+            <div className="absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500">
+            {draft.is_active ? 'Active — visible on site' : 'Hidden — not shown publicly'}
+          </span>
+        </label>
+      </div>
+    </Dialog>
+  );
+}
+
+// ─── Create category inline form ──────────────────────────────────────────────
+
+const INITIAL_CATEGORY = { name: '', description: '', is_active: true };
+
+function CreateCategoryForm({ onSubmit }) {
+  const [form, setForm] = useState(INITIAL_CATEGORY);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: field === 'is_active' ? Boolean(value) : value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        is_active: form.is_active
+      });
+      setForm(INITIAL_CATEGORY);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
+      <p className={`mb-3 ${LABEL_CLS}`}>New category</p>
+      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+        <input
+          type="text"
+          placeholder="Category name *"
+          value={form.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          required
+          className={INPUT_CLS}
+        />
+        <input
+          type="text"
+          placeholder="Description (optional)"
+          value={form.description}
+          onChange={(e) => handleChange('description', e.target.value)}
+          className={INPUT_CLS}
+        />
+        <label className="flex cursor-pointer items-center gap-2 self-center whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 select-none">
+          <input
+            type="checkbox"
+            checked={form.is_active}
+            onChange={(e) => handleChange('is_active', e.target.checked)}
+            className="h-4 w-4 rounded border border-gray-400"
+          />
+          Active
+        </label>
+        <Button type="submit" disabled={!form.name.trim() || submitting} className="self-start">
+          {submitting ? 'Creating…' : 'Create'}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AdminGallery() {
   const {
     state: { categories, placements, galleryItems, galleryPagination, admins, currentAdmin },
     actions: {
-      setFeedback,
       savePlacements,
       createCategory,
       updateCategory,
-      toggleCategoryVisibility,
       deleteCategory,
       uploadMedia,
       createGalleryItem,
@@ -247,773 +823,342 @@ export default function AdminGallery() {
     }
   } = useAdminDashboard();
 
-  const [categoryDrafts, setCategoryDrafts] = useState({});
-  const [newCategory, setNewCategory] = useState(INITIAL_CATEGORY);
+  const [activeTab, setActiveTab] = useState('photos');
+  const [filterCategory, setFilterCategory] = useState('');
 
-  const [galleryDrafts, setGalleryDrafts] = useState({});
-  const [newItemDraft, setNewItemDraft] = useState(INITIAL_GALLERY_DRAFT);
+  // Dialog states
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  // Confirmation dialog state
   const [confirmation, setConfirmation] = useState(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
 
+  // Sync editingItem with latest data (in case optimistic update changes the item)
   useEffect(() => {
-    const drafts = {};
-    categories.forEach((category) => {
-      drafts[category.id] = {
-        name: category.name,
-        description: category.description || '',
-        is_active: Boolean(category.is_active)
-      };
-    });
-    setCategoryDrafts(drafts);
-  }, [categories]);
+    if (!editingItem) return;
+    const latest = galleryItems.find((i) => i.id === editingItem.id);
+    if (latest && latest !== editingItem) setEditingItem(latest);
+  }, [galleryItems, editingItem]);
 
-  useEffect(() => {
-    const drafts = {};
-    galleryItems.forEach((item) => {
-      drafts[item.id] = {
-        category_id: item.category?.id ? String(item.category.id) : '',
-        alt: item.alt || '',
-        caption: item.caption || '',
-        is_published: Boolean(item.is_published)
-      };
-    });
-    setGalleryDrafts(drafts);
-  }, [galleryItems]);
+  // ── Derived ────────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    setNewItemDraft((prev) => ({
-      ...prev,
-      category_id: prev.category_id || (categories[0]?.id ? String(categories[0].id) : ''),
-      uploaded_by_admin_id: prev.uploaded_by_admin_id || (currentAdmin?.id ? String(currentAdmin.id) : '')
-    }));
-  }, [categories, currentAdmin]);
+  const filteredItems = useMemo(() => {
+    if (!filterCategory) return galleryItems;
+    return galleryItems.filter((item) => String(item.category?.id) === filterCategory);
+  }, [galleryItems, filterCategory]);
 
-  useEffect(() => {
-    return () => {
-      if (newItemDraft.previewUrl) {
-        URL.revokeObjectURL(newItemDraft.previewUrl);
-      }
-    };
-  }, [newItemDraft.previewUrl]);
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const adminOptions = useMemo(
-    () => admins.map((admin) => ({ value: String(admin.id), label: admin.name })),
-    [admins]
-  );
-
-  const categoryOptions = useMemo(
-    () => categories.map((category) => ({ value: String(category.id), label: category.name })),
-    [categories]
-  );
-
-  const handleNewCategoryChange = (field, value) => {
-    setNewCategory((prev) => ({
-      ...prev,
-      [field]: field === 'is_active' ? Boolean(value) : value
-    }));
-  };
-
-  const handleCategoryDraftChange = (categoryId, field, value) => {
-    setCategoryDrafts((prev) => ({
-      ...prev,
-      [categoryId]: {
-        ...prev[categoryId],
-        [field]: field === 'is_active' ? Boolean(value) : value
-      }
-    }));
-  };
-
-  const handleGalleryDraftChange = (itemId, field, value) => {
-    setGalleryDrafts((prev) => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        [field]: field === 'is_published' ? Boolean(value) : value
-      }
-    }));
-  };
-
-  const handleNewItemDraftChange = (field, value) => {
-    setNewItemDraft((prev) => ({
-      ...prev,
-      [field]: field === 'is_published' ? Boolean(value) : value
-    }));
-  };
-
-  const handleFileChange = (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) {
-      return;
-    }
-    const validation = validateImageBeforeUpload(file);
-    if (!validation.isValid) {
-      setUploadError(getClientSideUploadError(validation.reason));
-      return;
-    }
-    setUploadError(null);
-    setNewItemDraft((prev) => {
-      if (prev.previewUrl) {
-        URL.revokeObjectURL(prev.previewUrl);
-      }
-      return {
-        ...prev,
-        file,
-        previewUrl: URL.createObjectURL(file)
-      };
+  const handleUpload = async (payload) => {
+    const upload = await uploadMedia(payload.file);
+    await createGalleryItem({
+      category_id: payload.category_id,
+      uploaded_by_admin_id: payload.uploaded_by_admin_id ?? currentAdmin?.id,
+      image_url: upload.url,
+      alt: payload.alt,
+      caption: payload.caption,
+      is_published: payload.is_published
     });
   };
 
-  const resetNewItemDraft = () => {
-    setUploadError(null);
-    setNewItemDraft((prev) => {
-      if (prev.previewUrl) {
-        URL.revokeObjectURL(prev.previewUrl);
-      }
-      return {
-        ...INITIAL_GALLERY_DRAFT,
-        category_id: categories[0]?.id ? String(categories[0].id) : '',
-        uploaded_by_admin_id: currentAdmin?.id ? String(currentAdmin.id) : ''
-      };
-    });
-  };
-
-  const handleCategoryCreate = async (event) => {
-    event.preventDefault();
-    if (!newCategory.name.trim()) {
-      setFeedback({ tone: 'offline', message: 'Category name is required.' });
-      return;
-    }
-    await createCategory({
-      name: newCategory.name.trim(),
-      description: newCategory.description.trim() || null,
-      is_active: newCategory.is_active
-    });
-    setNewCategory(INITIAL_CATEGORY);
-  };
-
-  const handleCategorySave = async (categoryId) => {
-    const draft = categoryDrafts[categoryId];
-    if (!draft || !draft.name.trim()) {
-      setFeedback({ tone: 'offline', message: 'Category name cannot be empty.' });
-      return;
-    }
-    await updateCategory(categoryId, {
-      name: draft.name.trim(),
-      description: draft.description.trim() || null,
-      is_active: draft.is_active
-    });
-  };
-
-  const handleCategoryToggle = async (categoryId, isActive) => {
-    await toggleCategoryVisibility(categoryId, isActive);
-  };
-
-  const requestCategoryDelete = (categoryId) => {
-    setConfirmation({
-      type: 'delete-category',
-      categoryId,
-      title: 'Delete category',
-      description: 'Deleting a category also removes associated gallery items. Proceed?'
-    });
-  };
-
-  const requestNewItemPreview = (event) => {
-    event.preventDefault();
-    if (!newItemDraft.file) {
-      setFeedback({ tone: 'offline', message: 'Select an image before previewing.' });
-      return;
-    }
-    const validation = validateImageBeforeUpload(newItemDraft.file);
-    if (!validation.isValid) {
-      const message = getClientSideUploadError(validation.reason);
-      setUploadError(message);
-      setFeedback({ tone: 'offline', message });
-      return;
-    }
-    setUploadError(null);
-    if (!newItemDraft.label.trim()) {
-      setFeedback({ tone: 'offline', message: 'Provide alt text for accessibility.' });
-      return;
-    }
-    if (!newItemDraft.category_id) {
-      setFeedback({ tone: 'offline', message: 'Choose a category.' });
-      return;
-    }
-    setConfirmation({
-      type: 'publish',
-      title: 'Publish gallery item',
-      description: 'Review the new gallery item before publishing it publicly.',
-      payload: {
-        file: newItemDraft.file,
-        label: newItemDraft.label.trim(),
-        caption: newItemDraft.caption.trim(),
-        category_id: Number(newItemDraft.category_id),
-        uploaded_by_admin_id: newItemDraft.uploaded_by_admin_id
-          ? Number(newItemDraft.uploaded_by_admin_id)
-          : currentAdmin?.id,
-        is_published: newItemDraft.is_published
-      },
-      previewUrl: newItemDraft.previewUrl
-    });
-  };
-
-  const requestGalleryUpdate = (itemId) => {
-    const draft = galleryDrafts[itemId];
-    if (!draft || !draft.alt.trim()) {
-      setFeedback({ tone: 'offline', message: 'Alt text cannot be empty.' });
-      return;
-    }
-    setConfirmation({
-      type: 'update-gallery',
-      itemId,
-      title: 'Update gallery item',
-      description: 'Apply the edited details to this gallery entry?',
-      payload: {
-        category_id: draft.category_id ? Number(draft.category_id) : undefined,
-        alt: draft.alt.trim(),
-        caption: draft.caption.trim() || null,
-        is_published: draft.is_published
-      }
-    });
-  };
-
-  const requestGalleryDelete = (itemId) => {
+  const handleRequestItemDelete = (item) => {
+    setEditingItem(null); // close edit dialog if open
     setConfirmation({
       type: 'delete-gallery',
-      itemId,
-      title: 'Remove gallery item',
-      description: 'This image will no longer appear in the public gallery. Continue?'
+      itemId: item.id,
+      title: 'Remove photo',
+      description: 'This photo will be removed from the gallery and any section placements. This cannot be undone.'
+    });
+  };
+
+  const handleRequestCategoryDelete = (category) => {
+    setEditingCategory(null);
+    setConfirmation({
+      type: 'delete-category',
+      categoryId: category.id,
+      title: 'Delete category',
+      description: `Deleting "${category.name}" will also remove all photos in this category. This cannot be undone.`
     });
   };
 
   const handleConfirm = async () => {
-    if (!confirmation) {
-      return;
-    }
+    if (!confirmation) return;
     setConfirmBusy(true);
     try {
-      if (confirmation.type === 'publish') {
-        const upload = await uploadMedia(confirmation.payload.file);
-        await createGalleryItem({
-          category_id: confirmation.payload.category_id,
-          uploaded_by_admin_id: confirmation.payload.uploaded_by_admin_id ?? currentAdmin?.id,
-          image_url: upload.url,
-          alt: confirmation.payload.label,
-          caption: confirmation.payload.caption || null,
-          is_published: confirmation.payload.is_published
-        });
-        resetNewItemDraft();
-      } else if (confirmation.type === 'update-gallery') {
-        await updateGalleryItem(confirmation.itemId, confirmation.payload);
-      } else if (confirmation.type === 'delete-gallery') {
+      if (confirmation.type === 'delete-gallery') {
         await deleteGalleryItem(confirmation.itemId);
       } else if (confirmation.type === 'delete-category') {
         await deleteCategory(confirmation.categoryId);
       }
       setConfirmation(null);
-    } catch (err) {
-      const uploadMessage = getUploadErrorMessage(err);
-      const fallbackMessage =
-        confirmation.type === 'publish'
-          ? 'Unable to publish gallery item.'
-          : confirmation.type === 'update-gallery'
-          ? 'Unable to update gallery item.'
-          : confirmation.type === 'delete-gallery'
-          ? 'Unable to delete gallery item.'
-          : 'Unable to delete category.';
-      const finalMessage = uploadMessage || fallbackMessage;
-      setFeedback({ tone: 'offline', message: finalMessage });
-      if (uploadMessage) {
-        setUploadError(uploadMessage);
-      }
     } finally {
       setConfirmBusy(false);
     }
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <SectionTitle
         eyebrow="Admin"
         title="Gallery management"
-        description="Curate categories, upload new pieces, and review items before sharing them publicly."
+        description="Upload photos, organise categories, and control which images appear on each page section."
       />
 
-      {/* ── Section placements ────────────────────────────────── */}
-      <Card className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
-            Section placements
-          </h3>
-          <p className="text-sm text-gray-600">
-            Choose which photos appear in each section of the site and set their display order.
-            The <span className="font-medium text-gray-800">/gallery</span> page automatically
-            shows all published photos grouped by category — no placement needed.
-          </p>
-        </div>
-
-        {/* Tab-style toggle between sections */}
-        {Object.values(PLACEMENT_SECTIONS).map((sectionConfig, sIdx) => (
-          <div key={sectionConfig.key} className={sIdx > 0 ? 'border-t border-gray-100 pt-6' : ''}>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-gray-700">
-              {sectionConfig.label}
-              <span className="ml-2 text-gray-400">({sectionConfig.slotCount} slots)</span>
-            </h4>
-            <PlacementSectionPanel
-              sectionConfig={sectionConfig}
-              currentPlacements={placements[sectionConfig.key] || []}
-              galleryItems={galleryItems}
-              resolveUrl={resolveApiUrl}
-              onSave={savePlacements}
-            />
-          </div>
+      {/* ── Tab bar ─────────────────────────────────────────────────────── */}
+      <div className="flex items-end gap-1 border-b border-gray-200">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={[
+              'px-4 py-2.5 -mb-px text-[11px] font-semibold uppercase tracking-[0.3em] transition border-b-2',
+              activeTab === tab.key
+                ? 'border-gray-900 text-gray-900'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
+            ].join(' ')}
+          >
+            {tab.label}
+            {tab.key === 'photos' && galleryItems.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-500">
+                {galleryPagination.total}
+              </span>
+            )}
+            {tab.key === 'categories' && categories.length > 0 && (
+              <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] text-gray-500">
+                {categories.length}
+              </span>
+            )}
+          </button>
         ))}
-      </Card>
+      </div>
 
-      {/* ── Categories ────────────────────────────────────────── */}
-      <Card className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">Categories</h3>
-          <p className="text-sm text-gray-600">Organise artwork into curated collections.</p>
-        </div>
-        <form onSubmit={handleCategoryCreate} className="grid gap-3 md:grid-cols-3">
-          <div>
-            <label
-              htmlFor={NEW_CATEGORY_FIELD_IDS.name}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500"
-            >
-              Category name
-            </label>
-            <input
-              id={NEW_CATEGORY_FIELD_IDS.name}
-              type="text"
-              placeholder="Category name"
-              value={newCategory.name}
-              onChange={(event) => handleNewCategoryChange('name', event.target.value)}
-              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor={NEW_CATEGORY_FIELD_IDS.description}
-              className="text-xs uppercase tracking-[0.3em] text-gray-500"
-            >
-              Description
-            </label>
-            <input
-              id={NEW_CATEGORY_FIELD_IDS.description}
-              type="text"
-              placeholder="Description (optional)"
-              value={newCategory.description}
-              onChange={(event) => handleNewCategoryChange('description', event.target.value)}
-              className="mt-2 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-            />
-          </div>
-          <label
-            htmlFor={NEW_CATEGORY_FIELD_IDS.active}
-            className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500"
-          >
-            <input
-              id={NEW_CATEGORY_FIELD_IDS.active}
-              type="checkbox"
-              checked={newCategory.is_active}
-              onChange={(event) => handleNewCategoryChange('is_active', event.target.checked)}
-              className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
-            />
-            Active
-          </label>
-          <div className="md:col-span-3">
-            <Button type="submit">Create category</Button>
-          </div>
-        </form>
-        <div className="space-y-3">
-          {categories.map((category) => {
-            const draft = categoryDrafts[category.id] || {
-              name: category.name,
-              description: category.description || '',
-              is_active: Boolean(category.is_active)
-            };
-            const baseId = `category-${category.id}`;
-            const nameId = `${baseId}-name`;
-            const descriptionId = `${baseId}-description`;
-            const activeId = `${baseId}-active`;
-            return (
-              <div
-                key={category.id}
-                className="grid gap-3 rounded-2xl border border-gray-200 p-4 md:grid-cols-4"
-              >
-                <div>
-                  <label
-                    htmlFor={nameId}
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                  >
-                    Name
-                  </label>
-                  <input
-                    id={nameId}
-                    type="text"
-                    value={draft.name}
-                    onChange={(event) => handleCategoryDraftChange(category.id, 'name', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor={descriptionId}
-                    className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                  >
-                    Description
-                  </label>
-                  <input
-                    id={descriptionId}
-                    type="text"
-                    value={draft.description}
-                    onChange={(event) => handleCategoryDraftChange(category.id, 'description', event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                  />
-                </div>
-                <div className="flex flex-col justify-between gap-3">
-                  <span className="text-xs uppercase tracking-[0.3em] text-gray-500">Visibility</span>
-                  <div className="inline-flex items-center gap-2 text-sm text-gray-700">
-                    <input
-                      id={activeId}
-                      type="checkbox"
-                      checked={draft.is_active}
-                      onChange={(event) => handleCategoryDraftChange(category.id, 'is_active', event.target.checked)}
-                      className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
-                    />
-                    <label htmlFor={activeId}>Active</label>
-                  </div>
-                  <p className="text-xs text-gray-500">{category.gallery_item_count} items</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button type="button" onClick={() => handleCategorySave(category.id)}>
-                    Save
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => handleCategoryToggle(category.id, !draft.is_active)}
-                  >
-                    {draft.is_active ? 'Hide' : 'Activate'}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => requestCategoryDelete(category.id)}>
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-          {!categories.length ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
-              Categories will appear here once created.
-            </div>
-          ) : null}
-        </div>
-      </Card>
-
-      <Card className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
-            Upload new artwork
-          </h3>
-          <p className="text-sm text-gray-600">
-            Drag a new piece into the spotlight. Preview the post to double-check metadata before you publish.
-          </p>
-        </div>
-        <form onSubmit={requestNewItemPreview} className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label
-                htmlFor={NEW_GALLERY_FIELD_IDS.file}
-                className="text-xs uppercase tracking-[0.3em] text-gray-500"
-              >
-                Upload
-              </label>
-              <input
-                id={NEW_GALLERY_FIELD_IDS.file}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="mt-2 block w-full text-sm text-gray-700 file:mr-4 file:rounded-full file:border-0 file:bg-gray-900 file:px-4 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-[0.3em] file:text-white hover:file:bg-gray-800"
-              />
-              {uploadError ? (
-                <p className="mt-2 text-xs uppercase tracking-[0.3em] text-rose-600">{uploadError}</p>
-              ) : null}
-              {newItemDraft.previewUrl ? (
-                <img
-                  src={newItemDraft.previewUrl}
-                  alt="Preview"
-                  className="mt-3 h-40 w-full rounded-xl object-cover"
-                />
-              ) : null}
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label
-                  htmlFor={NEW_GALLERY_FIELD_IDS.category}
-                  className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                >
-                  Category
-                </label>
-                <select
-                  id={NEW_GALLERY_FIELD_IDS.category}
-                  value={newItemDraft.category_id}
-                  onChange={(event) => handleNewItemDraftChange('category_id', event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                >
-                  <option value="">Select category</option>
-                  {categoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  htmlFor={NEW_GALLERY_FIELD_IDS.uploader}
-                  className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                >
-                  Uploaded by
-                </label>
-                <select
-                  id={NEW_GALLERY_FIELD_IDS.uploader}
-                  value={newItemDraft.uploaded_by_admin_id}
-                  onChange={(event) => handleNewItemDraftChange('uploaded_by_admin_id', event.target.value)}
-                  className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                >
-                  <option value="">Select admin</option>
-                  {adminOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-gray-500">
-                <input
-                  id={NEW_GALLERY_FIELD_IDS.isPublished}
-                  type="checkbox"
-                  checked={newItemDraft.is_published}
-                  onChange={(event) => handleNewItemDraftChange('is_published', event.target.checked)}
-                  className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
-                />
-                <label htmlFor={NEW_GALLERY_FIELD_IDS.isPublished}>Publish immediately</label>
-              </div>
-            </div>
-          </div>
-          <label
-            htmlFor={NEW_GALLERY_FIELD_IDS.alt}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500"
-          >
-            Alt text
-          </label>
-          <input
-            id={NEW_GALLERY_FIELD_IDS.alt}
-            type="text"
-            placeholder="Alt text (required for accessibility)"
-            value={newItemDraft.label}
-            onChange={(event) => handleNewItemDraftChange('label', event.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-          />
-          <label
-            htmlFor={NEW_GALLERY_FIELD_IDS.caption}
-            className="text-xs uppercase tracking-[0.3em] text-gray-500"
-          >
-            Caption
-          </label>
-          <textarea
-            id={NEW_GALLERY_FIELD_IDS.caption}
-            rows={3}
-            placeholder="Caption (optional)"
-            value={newItemDraft.caption}
-            onChange={(event) => handleNewItemDraftChange('caption', event.target.value)}
-            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-          />
-          <Button type="submit" disabled={confirmBusy}>
-            {confirmBusy ? 'Uploading…' : 'Preview upload'}
-          </Button>
-        </form>
-      </Card>
-
-      <Card className="space-y-6">
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
-            Gallery items
-          </h3>
-          <p className="text-sm text-gray-600">Edit published pieces, toggle visibility, or remove items.</p>
-        </div>
+      {/* ── Photos tab ──────────────────────────────────────────────────── */}
+      {activeTab === 'photos' && (
         <div className="space-y-4">
-        {galleryItems.map((item) => {
-          const draft = galleryDrafts[item.id] || {
-            category_id: item.category?.id ? String(item.category.id) : '',
-            alt: item.alt || '',
-            caption: item.caption || '',
-            is_published: Boolean(item.is_published)
-          };
-            const itemBaseId = `gallery-${item.id}`;
-            const categoryId = `${itemBaseId}-category`;
-            const publishedId = `${itemBaseId}-published`;
-            const altId = `${itemBaseId}-alt`;
-            const captionId = `${itemBaseId}-caption`;
-            const imageUrl = resolveApiUrl(item.image_url);
-            return (
-              <div
-                key={item.id}
-                className="grid gap-4 rounded-2xl border border-gray-200 p-4 md:grid-cols-[200px_1fr]"
+          {/* Toolbar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" onClick={() => setUploadOpen(true)}>
+              + Upload new photo
+            </Button>
+
+            {categories.length > 0 && (
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs text-gray-700 focus:border-gray-900 focus:outline-none"
               >
-                <div>
-                  <img
-                    src={imageUrl}
-                    alt={item.alt}
-                    className="h-40 w-full rounded-xl object-cover"
-                  />
-                  <p className="mt-2 text-xs text-gray-500">
-                    Uploaded {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Unknown'}
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <label
-                        htmlFor={categoryId}
-                        className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                      >
-                        Category
-                      </label>
-                      <select
-                        id={categoryId}
-                        value={draft.category_id}
-                        onChange={(event) => handleGalleryDraftChange(item.id, 'category_id', event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                      >
-                        <option value="">Uncategorised</option>
-                        {categoryOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <span className="text-xs uppercase tracking-[0.3em] text-gray-500">
-                        Published
-                      </span>
-                      <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-700">
-                        <input
-                          id={publishedId}
-                          type="checkbox"
-                          checked={draft.is_published}
-                          onChange={(event) => handleGalleryDraftChange(item.id, 'is_published', event.target.checked)}
-                          className="h-4 w-4 rounded border border-gray-400 text-gray-900 focus:ring-gray-900"
-                        />
-                        <label htmlFor={publishedId}>Visible</label>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={altId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                    >
-                      Alt text
-                    </label>
-                    <input
-                      id={altId}
-                      type="text"
-                      value={draft.alt}
-                      onChange={(event) => handleGalleryDraftChange(item.id, 'alt', event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor={captionId}
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500"
-                    >
-                      Caption
-                    </label>
-                    <textarea
-                      id={captionId}
-                      rows={2}
-                      value={draft.caption}
-                      onChange={(event) => handleGalleryDraftChange(item.id, 'caption', event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-900 focus:outline-none focus:ring-0"
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button type="button" onClick={() => requestGalleryUpdate(item.id)}>
-                      Save changes
-                    </Button>
-                    <Button type="button" variant="ghost" onClick={() => requestGalleryDelete(item.id)}>
-                      Delete
-                    </Button>
-                    <a
-                      href={imageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs uppercase tracking-[0.3em] text-gray-500 underline hover:text-gray-900"
-                    >
-                      Open image
-                    </a>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {!galleryItems.length ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-sm text-gray-500">
-              Gallery items will appear here as soon as they are published.
+                <option value="">All categories</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {filterCategory && (
+              <button
+                type="button"
+                onClick={() => setFilterCategory('')}
+                className="text-[10px] uppercase tracking-[0.3em] text-gray-400 hover:text-gray-900 transition"
+              >
+                Clear filter
+              </button>
+            )}
+          </div>
+
+          {/* Grid */}
+          {filteredItems.length > 0 ? (
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+              {filteredItems.map((item) => (
+                <GalleryPhotoCard
+                  key={item.id}
+                  item={item}
+                  onEdit={setEditingItem}
+                  onDelete={handleRequestItemDelete}
+                />
+              ))}
             </div>
-          ) : null}
-          {galleryItems.length > 0 && galleryPagination.page < galleryPagination.pages ? (
+          ) : (
+            <Card className="flex flex-col items-center justify-center py-16 text-center">
+              <svg
+                className="mb-4 h-10 w-10 text-gray-200"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p className="text-sm text-gray-500">
+                {filterCategory ? 'No photos in this category.' : 'No photos yet.'}
+              </p>
+              {!filterCategory && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  Upload your first photo
+                </Button>
+              )}
+            </Card>
+          )}
+
+          {/* Load more */}
+          {galleryPagination.page < galleryPagination.pages && (
             <div className="flex justify-center">
-              <Button type="button" variant="ghost" onClick={() => loadMoreGalleryItems()}>
-                Load more items
+              <Button type="button" variant="ghost" onClick={loadMoreGalleryItems}>
+                Load more photos
               </Button>
             </div>
-          ) : null}
+          )}
         </div>
-      </Card>
+      )}
+
+      {/* ── Placements tab ──────────────────────────────────────────────── */}
+      {activeTab === 'placements' && (
+        <div className="space-y-6">
+          <p className="text-sm text-gray-600">
+            Assign photos to specific slots on the homepage. The{' '}
+            <span className="font-medium text-gray-800">/gallery</span> page shows all published photos
+            automatically — no placement needed.
+          </p>
+          {Object.values(PLACEMENT_SECTIONS).map((sectionConfig, sIdx) => (
+            <Card key={sectionConfig.key} className="space-y-4">
+              <div className={sIdx > 0 ? '' : ''}>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-700">
+                  {sectionConfig.label}
+                  <span className="ml-2 font-normal text-gray-400">
+                    ({sectionConfig.slotCount} slots)
+                  </span>
+                </h3>
+              </div>
+              <PlacementSectionPanel
+                sectionConfig={sectionConfig}
+                currentPlacements={placements[sectionConfig.key] || []}
+                galleryItems={galleryItems}
+                resolveUrl={resolveApiUrl}
+                onSave={savePlacements}
+              />
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* ── Categories tab ──────────────────────────────────────────────── */}
+      {activeTab === 'categories' && (
+        <div className="space-y-4">
+          <CreateCategoryForm onSubmit={createCategory} />
+
+          {categories.length > 0 ? (
+            <div className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition"
+                >
+                  {/* Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900">{category.name}</span>
+                      {!category.is_active && (
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+                          Hidden
+                        </span>
+                      )}
+                    </div>
+                    {category.description && (
+                      <p className="mt-0.5 truncate text-xs text-gray-500">{category.description}</p>
+                    )}
+                  </div>
+
+                  {/* Count badge */}
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-600">
+                    {category.gallery_item_count ?? 0} photos
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategory(category)}
+                      className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-500 transition hover:text-gray-900"
+                    >
+                      Edit
+                    </button>
+                    <span className="text-gray-200" aria-hidden>|</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRequestCategoryDelete(category)}
+                      className="text-[10px] font-semibold uppercase tracking-[0.3em] text-gray-400 transition hover:text-rose-600"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">
+              No categories yet. Create one above to start organising your photos.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Dialogs ─────────────────────────────────────────────────────── */}
+
+      {uploadOpen && (
+        <UploadDialog
+          categories={categories}
+          admins={admins}
+          currentAdmin={currentAdmin}
+          onUpload={handleUpload}
+          onClose={() => setUploadOpen(false)}
+        />
+      )}
+
+      {editingItem && (
+        <EditItemDialog
+          item={editingItem}
+          categories={categories}
+          onSave={updateGalleryItem}
+          onDelete={handleRequestItemDelete}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
+
+      {editingCategory && (
+        <EditCategoryDialog
+          category={editingCategory}
+          onSave={updateCategory}
+          onClose={() => setEditingCategory(null)}
+        />
+      )}
 
       <ConfirmDialog
         open={Boolean(confirmation)}
         title={confirmation?.title ?? 'Confirm'}
         description={confirmation?.description ?? ''}
-        confirmLabel={
-          confirmBusy
-            ? 'Uploading…'
-            : confirmation?.type === 'delete-gallery' || confirmation?.type === 'delete-category'
-            ? 'Delete'
-            : confirmation?.type === 'publish'
-            ? 'Publish'
-            : 'Save'
-        }
+        confirmLabel={confirmBusy ? 'Deleting…' : 'Delete'}
         onConfirm={handleConfirm}
         onClose={() => {
-          if (!confirmBusy) {
-            setConfirmation(null);
-          }
+          if (!confirmBusy) setConfirmation(null);
         }}
         busy={confirmBusy}
-      >
-        {confirmation?.type === 'publish' && confirmation?.previewUrl ? (
-          <img
-            src={confirmation.previewUrl}
-            alt="Gallery preview"
-            className="max-h-64 w-full rounded-xl object-cover"
-          />
-        ) : null}
-        {confirmation?.type === 'publish' ? (
-          <p className="text-sm text-gray-600">
-            Category ID {confirmation.payload.category_id} · {' '}
-            {confirmation.payload.is_published ? 'Visible immediately.' : 'Saved as draft.'}
-          </p>
-        ) : null}
-      </ConfirmDialog>
+      />
     </div>
   );
 }

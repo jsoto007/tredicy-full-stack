@@ -18,7 +18,9 @@ function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
-export default function Lightbox({ open, image, images = [], startIndex = 0, onClose }) {
+const INSTAGRAM_URL = 'https://www.instagram.com/tredici.social/';
+
+export default function Lightbox({ open, image, images = [], startIndex = 0, onClose, instagramUrl = INSTAGRAM_URL }) {
   const overlayRef = useRef(null);
   const dialogRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(startIndex || 0);
@@ -181,7 +183,7 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
 
         <div className="mt-6 flex justify-center">
           <a
-            href="https://www.instagram.com/_melodinails_?igsh=dWV5Y2VoOGd2dzI2&utm_source=qr"
+            href={instagramUrl}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-2 rounded-full border border-gray-700 bg-black/40 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-300 backdrop-blur transition hover:border-gray-500 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
