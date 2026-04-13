@@ -5,6 +5,7 @@ import Lightbox from '../components/Lightbox.jsx';
 import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
+import { thumbUrl } from '../lib/image.js';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/tredici.social/';
 
@@ -114,7 +115,7 @@ export default function Gallery() {
             >
               {image.src ? (
                 <ProgressiveImage
-                  src={image.src}
+                  src={thumbUrl(image.src, 800)}
                   alt={image.alt}
                   className="h-full w-full"
                   imageClassName="object-cover transition duration-500 group-hover:scale-105"

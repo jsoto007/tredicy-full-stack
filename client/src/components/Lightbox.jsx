@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { resolveApiUrl } from '../lib/api.js';
 import { shouldIgnoreHotkeys } from '../lib/hotkeys.js';
 import { prefetchImage } from '../lib/image.js';
-import ProgressiveImage from './ProgressiveImage.jsx';
 
 const FOCUSABLE_SELECTORS =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -24,6 +23,7 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
   const overlayRef = useRef(null);
   const dialogRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(startIndex || 0);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const swipeStart = useRef(null);
 
   const hasCollection = images && images.length > 0;
@@ -49,6 +49,13 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
       setActiveIndex(startIndex || 0);
     }
   }, [open, startIndex]);
+
+  const imageUrl = open && activeImage ? resolveApiUrl(activeImage.image_url) : null;
+
+  // Reset loaded state whenever the displayed image changes.
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [imageUrl]);
 
   useEffect(() => {
     if (!open || !hasCollection || !images.length) {
@@ -127,8 +134,6 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
     return null;
   }
 
-  const imageUrl = resolveApiUrl(activeImage.image_url);
-
   return (
     <div
       ref={overlayRef}
@@ -165,28 +170,80 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
         role="dialog"
         aria-modal="true"
         aria-label="Expanded gallery image"
-        className="relative w-full max-w-4xl focus:outline-none"
+        className="relative flex w-full max-w-4xl flex-col items-center gap-3 focus:outline-none"
       >
+        {/* Counter */}
         {hasCollection ? (
-          <div className="absolute left-4 top-4 text-xs uppercase tracking-[0.3em] text-gray-400">
+          <div className="self-start text-[11px] uppercase tracking-[0.3em] text-white/40">
             {normalizedIndex + 1} / {images.length}
           </div>
         ) : null}
-        <ProgressiveImage
-          src={imageUrl}
-          alt={activeImage.alt}
-          priority
-          className="max-h-[80vh] w-full rounded-2xl border border-gray-800 bg-black"
-          imageClassName="object-contain"
-        />
-        <figcaption className="mt-3 text-center text-sm text-gray-300">{activeImage.alt}</figcaption>
 
-        <div className="mt-6 flex justify-center">
+        {/* Image container — sizes naturally, capped by the viewport */}
+        <div className="relative flex w-full items-center justify-center">
+          {/* Loading spinner */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="h-8 w-8 animate-spin text-white/30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            </div>
+          )}
+          <img
+            key={imageUrl}
+            src={imageUrl}
+            alt={activeImage.alt}
+            fetchPriority="high"
+            decoding="async"
+            onLoad={() => setImageLoaded(true)}
+            className={classNames(
+              'max-h-[80vh] w-auto max-w-full rounded-2xl object-contain transition-opacity duration-300',
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+
+          {/* Navigation arrows — centered on the image area */}
+          {hasCollection ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setActiveIndex((current) => (current - 1 + images.length) % images.length)}
+                className={classNames(
+                  'absolute left-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition',
+                  'hover:border-white/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40'
+                )}
+                aria-label="Previous image"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveIndex((current) => (current + 1) % images.length)}
+                className={classNames(
+                  'absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white/80 backdrop-blur transition',
+                  'hover:border-white/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40'
+                )}
+                aria-label="Next image"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        <figcaption className="text-center text-sm text-white/50">{activeImage.alt}</figcaption>
+
+        <div className="flex justify-center">
           <a
             href={instagramUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 rounded-full border border-gray-700 bg-black/40 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-gray-300 backdrop-blur transition hover:border-gray-500 hover:bg-black/60 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+            className="flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-5 py-2 text-[11px] font-semibold uppercase tracking-widest text-white/50 backdrop-blur transition hover:border-white/40 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
             aria-label="View more on Instagram"
           >
             <svg
@@ -206,40 +263,11 @@ export default function Lightbox({ open, image, images = [], startIndex = 0, onC
           </a>
         </div>
 
-        {hasCollection ? (
-          <>
-            <button
-              type="button"
-              onClick={() => setActiveIndex((current) => (current - 1 + images.length) % images.length)}
-              className={classNames(
-                'absolute left-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-700 bg-black/50 text-gray-200 shadow-soft backdrop-blur transition',
-                'hover:border-gray-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black'
-              )}
-              aria-label="Previous image"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M15 6l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveIndex((current) => (current + 1) % images.length)}
-              className={classNames(
-                'absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-gray-700 bg-black/50 text-gray-200 shadow-soft backdrop-blur transition',
-                'hover:border-gray-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black'
-              )}
-              aria-label="Next image"
-            >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </>
-        ) : null}
+        {/* Close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-700 text-gray-200 transition hover:border-gray-400 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          className="absolute -right-2 -top-2 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 text-white/60 transition hover:border-white/50 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           aria-label="Close lightbox"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">

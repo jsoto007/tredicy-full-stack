@@ -327,6 +327,32 @@ def _optimize_image_bytes(raw_bytes: bytes, filename: str, content_type: str | N
         return raw_bytes, content_type
 
 
+def _resize_image_bytes(raw_bytes: bytes, content_type: str, width: int) -> tuple[bytes, str]:
+    """Resize image to the given pixel width (maintaining aspect ratio). Returns original on failure."""
+    if not raw_bytes or width <= 0:
+        return raw_bytes, content_type
+    try:
+        with Image.open(BytesIO(raw_bytes)) as img:
+            if img.width <= width:
+                return raw_bytes, content_type
+            new_height = max(1, round(img.height * width / img.width))
+            resized = img.resize((width, new_height), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            if content_type == "image/webp":
+                resized.save(buffer, format="WEBP", quality=80, method=4)
+                return buffer.getvalue(), "image/webp"
+            elif content_type == "image/png":
+                resized.save(buffer, format="PNG", optimize=True)
+                return buffer.getvalue(), "image/png"
+            else:
+                if resized.mode not in ("RGB", "L"):
+                    resized = resized.convert("RGB")
+                resized.save(buffer, format="JPEG", optimize=True, progressive=True, quality=82)
+                return buffer.getvalue(), "image/jpeg"
+    except Exception:
+        return raw_bytes, content_type
+
+
 def _prepare_upload_payload(file_storage, safe_name: str) -> tuple[bytes, str]:
     file_storage.stream.seek(0)
     raw_payload = file_storage.read()
@@ -2324,12 +2350,21 @@ def serve_uploaded_file(filename):
             ):
                 return jsonify({"error": "File not found."}), 404
 
+    # Optional thumbnail width — clamp to a sane range so we never upscale.
+    thumb_width = request.args.get("w", type=int)
+    if thumb_width is not None and not (32 <= thumb_width <= 1600):
+        thumb_width = None
+
     stored = StoredUpload.query.filter_by(filename=safe_name).one_or_none()
     if stored:
+        data = stored.data
+        content_type = stored.content_type or "application/octet-stream"
+        if thumb_width and content_type.startswith("image/"):
+            data, content_type = _resize_image_bytes(data, content_type, thumb_width)
         return _with_cache_headers(
             send_file(
-                BytesIO(stored.data),
-                mimetype=stored.content_type or "application/octet-stream",
+                BytesIO(data),
+                mimetype=content_type,
                 download_name=safe_name,
                 as_attachment=False,
             )
@@ -2346,16 +2381,24 @@ def serve_uploaded_file(filename):
         return jsonify({"error": "File not found."}), 404
 
     # Backfill locally stored uploads into the database so future deployments keep them.
+    guessed_type = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
     try:
         payload = target_resolved.read_bytes()
-        guessed_type = mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
         if _persist_upload_record(safe_name, payload, guessed_type):
             db.session.commit()
     except SQLAlchemyError:
         db.session.rollback()
         current_app.logger.warning("Unable to persist upload %s into database cache.", safe_name)
+        payload = None
     except OSError:
         current_app.logger.warning("Unable to read upload %s for persistence.", safe_name)
+        payload = None
+
+    if thumb_width and guessed_type.startswith("image/") and payload is not None:
+        data, content_type = _resize_image_bytes(payload, guessed_type, thumb_width)
+        return _with_cache_headers(
+            send_file(BytesIO(data), mimetype=content_type, download_name=safe_name, as_attachment=False)
+        )
 
     return _with_cache_headers(send_from_directory(str(upload_dir), safe_name, as_attachment=False))
 

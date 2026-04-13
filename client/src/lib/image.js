@@ -1,5 +1,15 @@
 const inFlight = new Map();
 
+/**
+ * Append a ?w= width hint to an upload URL so the server can serve a
+ * resized thumbnail. Falls back to the original URL for non-upload paths.
+ */
+export function thumbUrl(src, width) {
+  if (!src || !width) return src;
+  const sep = src.includes('?') ? '&' : '?';
+  return `${src}${sep}w=${width}`;
+}
+
 export function prefetchImage(url, { priority = false } = {}) {
   if (!url) {
     return Promise.resolve();

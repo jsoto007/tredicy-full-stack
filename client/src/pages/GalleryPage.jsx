@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
 import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
-import { prefetchImage } from '../lib/image.js';
+import { prefetchImage, thumbUrl } from '../lib/image.js';
 
 function Lightbox({ index, images, onClose }) {
   const [activeIndex, setActiveIndex] = useState(index);
@@ -211,7 +211,7 @@ export default function GalleryPage() {
                   aria-label={`View: ${image.alt}`}
                 >
                   <ProgressiveImage
-                    src={image.src}
+                    src={thumbUrl(image.src, 600)}
                     alt={image.alt}
                     className="h-full w-full"
                     imageClassName="object-cover transition duration-500 group-hover:scale-105"

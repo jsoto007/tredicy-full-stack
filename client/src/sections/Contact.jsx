@@ -110,10 +110,15 @@ const CONTACT_POINTS = [
     id: 'location',
     heading: 'Location',
     value: (
-      <div className="font-['Times_New_Roman',serif] text-2xl text-ts-charcoal leading-tight">
+      <a
+        href="https://maps.google.com/?q=104+Kraft+Ave+Bronxville+NY+10708"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-heading text-xl font-medium text-ts-charcoal leading-tight hover:text-ts-crimson transition-colors duration-200"
+      >
         <span className="block">104 Kraft Ave</span>
-        <span className="block text-ts-charcoal/80 mt-1">Bronxville, NY 10708</span>
-      </div>
+        <span className="block text-ts-charcoal/70 mt-0.5">Bronxville, NY 10708</span>
+      </a>
     ),
     body: 'Located in the heart of Bronxville village. Metered street parking available; Metro-North accessible (Bronxville station, 5 min walk).',
     href: 'https://maps.google.com/?q=104+Kraft+Ave+Bronxville+NY+10708',
@@ -130,11 +135,12 @@ const CONTACT_POINTS = [
     id: 'contact',
     heading: 'Contact',
     value: (
-      <div className="font-['Times_New_Roman',serif] text-[1.75rem] text-ts-charcoal">
-        <a href="tel:+19145550013" className="hover:text-ts-crimson transition-colors duration-200">
-          (914) 555-0013
-        </a>
-      </div>
+      <a
+        href="tel:+19145550013"
+        className="font-heading text-xl font-medium text-ts-charcoal hover:text-ts-crimson transition-colors duration-200"
+      >
+        (914) 555-0013
+      </a>
     ),
     body: 'Call for same-day reservations, large party inquiries, or general questions. Email us at hello@tredicisocial.com.',
     href: 'tel:+19145550013',
@@ -190,22 +196,20 @@ export default function Visit() {
                 {point.heading}
               </p>
               {point.id === 'hours' ? (
-                <div className="flex flex-col gap-1 font-heading text-lg font-medium text-ts-charcoal leading-snug">
+                <div className="flex flex-col gap-1">
                   {summaryRows.length > 0 ? (
                     summaryRows.filter(r => r.timeLabel !== 'Closed').map((r) => (
                       <div key={r.dayLabel} className="flex justify-between items-center text-base py-0.5 border-b border-black/5 last:border-0">
-                        <span className="text-ts-charcoal/80 font-normal">{r.dayLabel}</span>
-                        <span className="text-ts-crimson">{r.timeLabel}</span>
+                        <span className="text-ts-charcoal/80 font-normal text-sm">{r.dayLabel}</span>
+                        <span className="font-heading text-base font-medium text-ts-crimson">{r.timeLabel}</span>
                       </div>
                     ))
                   ) : (
-                    <p>{point.defaultText}</p>
+                    <p className="text-sm text-ts-muted">{point.defaultText}</p>
                   )}
                 </div>
               ) : (
-                <div className="font-heading text-[1.15rem] font-medium text-ts-charcoal leading-snug">
-                  {point.value}
-                </div>
+                point.value
               )}
               <p className="text-sm leading-relaxed text-ts-muted">{point.body}</p>
               {point.href && (
