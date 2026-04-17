@@ -10,6 +10,8 @@ export default function ProgressiveImage({
   priority = false,
   className = '',
   imageClassName = '',
+  srcSet,
+  sizes,
   onLoad,
   ...rest
 }) {
@@ -30,6 +32,8 @@ export default function ProgressiveImage({
       />
       <img
         src={src}
+        srcSet={srcSet}
+        sizes={sizes}
         alt={alt}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"

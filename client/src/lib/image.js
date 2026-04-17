@@ -10,6 +10,22 @@ export function thumbUrl(src, width) {
   return `${src}${sep}w=${width}`;
 }
 
+/**
+ * Generate a srcset string listing multiple width variants of an upload URL.
+ * Strips any existing ?w= param before building descriptors so callers can
+ * pass either a bare URL or one already processed by thumbUrl().
+ */
+export function thumbSrcSet(src, widths) {
+  if (!src || !Array.isArray(widths) || widths.length === 0) return '';
+  const clean = src.replace(/([?&])w=\d+(&|$)/, (_, sep, tail) => tail ? sep : '');
+  return widths
+    .map((w) => {
+      const sep = clean.includes('?') ? '&' : '?';
+      return `${clean}${sep}w=${w} ${w}w`;
+    })
+    .join(', ');
+}
+
 export function prefetchImage(url, { priority = false } = {}) {
   if (!url) {
     return Promise.resolve();

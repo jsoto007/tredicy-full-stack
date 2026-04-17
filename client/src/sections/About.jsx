@@ -3,6 +3,7 @@ import FadeIn from '../components/FadeIn.jsx';
 import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
+import { thumbSrcSet, thumbUrl } from '../lib/image.js';
 
 // Fallback gradient panels shown when no photo is placed in a slot.
 // Ordered to match display_order 1–4 (left-col tall, left-col sq, right-col sq, right-col tall).
@@ -105,7 +106,9 @@ export default function About() {
               >
                 {panel.imageUrl ? (
                   <ProgressiveImage
-                    src={panel.imageUrl}
+                    src={thumbUrl(panel.imageUrl, 600)}
+                    srcSet={thumbSrcSet(panel.imageUrl, [400, 800, 1200])}
+                    sizes="(max-width: 640px) 100vw, 40vw"
                     alt={panel.alt || panel.label}
                     className="h-full w-full"
                     imageClassName="object-cover"
@@ -134,7 +137,9 @@ export default function About() {
               >
                 {panel.imageUrl ? (
                   <ProgressiveImage
-                    src={panel.imageUrl}
+                    src={thumbUrl(panel.imageUrl, 600)}
+                    srcSet={thumbSrcSet(panel.imageUrl, [400, 800, 1200])}
+                    sizes="(max-width: 640px) 100vw, 40vw"
                     alt={panel.alt || panel.label}
                     className="h-full w-full"
                     imageClassName="object-cover"

@@ -5,7 +5,7 @@ import Lightbox from '../components/Lightbox.jsx';
 import ProgressiveImage from '../components/ProgressiveImage.jsx';
 import SectionTitle from '../components/SectionTitle.jsx';
 import { apiGet, resolveApiUrl } from '../lib/api.js';
-import { thumbUrl } from '../lib/image.js';
+import { thumbSrcSet, thumbUrl } from '../lib/image.js';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/tredici.social/';
 
@@ -47,29 +47,33 @@ export default function Gallery() {
       .catch(() => {});
   }, []);
 
-  // Fetch all published photos for the lightbox scroll-through
-  useEffect(() => {
+  // When a grid photo is clicked, open the lightbox. The full library is fetched
+  // lazily on the first click so it doesn't compete with the visible grid on load.
+  const handlePhotoClick = (gridIdx) => {
+    const clicked = gridItems[gridIdx];
+
+    const openLightbox = (items) => {
+      if (items.length > 0 && clicked?.galleryItemId != null) {
+        const fullIdx = items.findIndex((item) => item.id === clicked.galleryItemId);
+        setLightboxIndex(fullIdx >= 0 ? fullIdx : 0);
+      } else {
+        setLightboxIndex(gridIdx);
+      }
+    };
+
+    if (allItems.length > 0) { openLightbox(allItems); return; }
+
     apiGet('/api/gallery?per_page=100')
       .then((data) => {
         const items = data?.items;
         if (Array.isArray(items) && items.length > 0) {
           setAllItems(items);
+          openLightbox(items);
+        } else {
+          openLightbox([]);
         }
       })
-      .catch(() => {});
-  }, []);
-
-  // When a grid photo is clicked, open the lightbox at the matching position
-  // in the full library. Falls back to grid index if the item isn't in the library yet.
-  const handlePhotoClick = (gridIdx) => {
-    const clicked = gridItems[gridIdx];
-    if (allItems.length > 0 && clicked?.galleryItemId != null) {
-      const fullIdx = allItems.findIndex((item) => item.id === clicked.galleryItemId);
-      setLightboxIndex(fullIdx >= 0 ? fullIdx : 0);
-    } else {
-      // Library not loaded yet or fallback placeholder — open at grid position
-      setLightboxIndex(gridIdx);
-    }
+      .catch(() => openLightbox([]));
   };
 
   // The lightbox uses either the full library (if loaded) or the 6 grid items as fallback.
@@ -115,7 +119,9 @@ export default function Gallery() {
             >
               {image.src ? (
                 <ProgressiveImage
-                  src={thumbUrl(image.src, 800)}
+                  src={thumbUrl(image.src, 400)}
+                  srcSet={thumbSrcSet(image.src, [400, 800])}
+                  sizes="(max-width: 768px) 50vw, 33vw"
                   alt={image.alt}
                   className="h-full w-full"
                   imageClassName="object-cover transition duration-500 group-hover:scale-105"

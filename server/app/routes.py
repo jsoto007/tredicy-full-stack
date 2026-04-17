@@ -149,6 +149,12 @@ ALLOWED_IMAGE_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 ALLOWED_UPLOAD_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | {"pdf", "txt", "doc", "docx"}
 UPLOAD_RATE_LIMIT_MESSAGE = "Too many uploads. Please wait a moment and try again."
 
+# In-process cache for resized image thumbnails.
+# Key: (safe_filename, width_px)  Value: (bytes, content_type)
+# Bounded to 300 entries (FIFO eviction) to cap memory use.
+_THUMB_CACHE_MAX = 300
+_thumb_cache: dict[tuple[str, int], tuple[bytes, str]] = {}
+
 DAY_TO_INDEX = {day: index for index, day in enumerate(WEEK_DAYS)}
 INDEX_TO_DAY = {index: day for day, index in DAY_TO_INDEX.items()}
 NON_BLOCKING_APPOINTMENT_STATUSES = {
@@ -2360,7 +2366,14 @@ def serve_uploaded_file(filename):
         data = stored.data
         content_type = stored.content_type or "application/octet-stream"
         if thumb_width and content_type.startswith("image/"):
-            data, content_type = _resize_image_bytes(data, content_type, thumb_width)
+            _cache_key = (safe_name, thumb_width)
+            if _cache_key in _thumb_cache:
+                data, content_type = _thumb_cache[_cache_key]
+            else:
+                data, content_type = _resize_image_bytes(data, content_type, thumb_width)
+                if len(_thumb_cache) >= _THUMB_CACHE_MAX:
+                    _thumb_cache.pop(next(iter(_thumb_cache)))
+                _thumb_cache[_cache_key] = (data, content_type)
         return _with_cache_headers(
             send_file(
                 BytesIO(data),
@@ -2395,7 +2408,14 @@ def serve_uploaded_file(filename):
         payload = None
 
     if thumb_width and guessed_type.startswith("image/") and payload is not None:
-        data, content_type = _resize_image_bytes(payload, guessed_type, thumb_width)
+        _cache_key = (safe_name, thumb_width)
+        if _cache_key in _thumb_cache:
+            data, content_type = _thumb_cache[_cache_key]
+        else:
+            data, content_type = _resize_image_bytes(payload, guessed_type, thumb_width)
+            if len(_thumb_cache) >= _THUMB_CACHE_MAX:
+                _thumb_cache.pop(next(iter(_thumb_cache)))
+            _thumb_cache[_cache_key] = (data, content_type)
         return _with_cache_headers(
             send_file(BytesIO(data), mimetype=content_type, download_name=safe_name, as_attachment=False)
         )
