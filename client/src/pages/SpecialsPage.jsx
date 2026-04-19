@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
 import { apiGet } from '../lib/api.js';
+import Accolades from '../sections/Accolades.jsx';
 
 export default function SpecialsPage() {
   const [specials, setSpecials] = useState([]);
@@ -87,6 +88,8 @@ export default function SpecialsPage() {
           )}
         </div>
       </main>
+
+      <Accolades />
     </>
   );
 }
