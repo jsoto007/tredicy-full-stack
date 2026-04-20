@@ -101,3 +101,4 @@ The dev server proxies `/api/*` to `http://127.0.0.1:5000`, keeping credentialed
 - Update CORS origins in `app/__init__.py` if production hosts differ from local defaults.
 # black-work-tattoo
 # melodi-nails-full-stack
+# cafe-nelo
