@@ -16,6 +16,8 @@ class TimestampMixin:
     )
 
 
+
+
 class AdminAccount(TimestampMixin, db.Model):
     __tablename__ = "admin_accounts"
 
