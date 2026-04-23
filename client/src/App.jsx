@@ -28,6 +28,7 @@ import ClientDashboardPage from './pages/portal/ClientDashboardPage.jsx';
 import ClientReservationsPage from './pages/portal/ClientReservationsPage.jsx';
 import ClientProfilePage from './pages/portal/ClientProfilePage.jsx';
 import Policies from './pages/Policies.jsx';
+import LicensePage from './pages/LicensePage.jsx';
 
 export default function App() {
   return (
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/activate-account" element={<ActivateAccount />} />
         <Route path="/policies/terms" element={<Policies />} />
         <Route path="/policies" element={<Navigate to="/policies/terms" replace />} />
+        <Route path="/license" element={<LicensePage />} />
 
         <Route path="/portal/*" element={<ClientPortalLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
