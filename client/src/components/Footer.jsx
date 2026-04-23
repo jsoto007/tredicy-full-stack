@@ -221,6 +221,9 @@ export default function Footer() {
               <a href="#about" className="transition hover:text-white">
                 About
               </a>
+              <Link to="/license" className="transition hover:text-white">
+                License
+              </Link>
               <a href="#top" className="mt-2 text-ts-muted transition hover:text-ts-gold">
                 Back to top ↑
               </a>
