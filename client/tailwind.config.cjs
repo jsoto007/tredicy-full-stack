@@ -6,7 +6,7 @@ module.exports = {
       fontFamily: {
         heading: ['"Cormorant Garamond"', 'Georgia', '"Times New Roman"', 'serif'],
         body:    ['Inter', '"Helvetica Neue"', 'system-ui', '-apple-system', 'sans-serif'],
-        mistral: ['Pacifico', 'cursive'],
+        mistral: ['Mistral', 'cursive'],
         impact:  ['Impact', 'Haettenschweider', '"Arial Narrow Bold"', 'sans-serif'],
       },
       colors: {
