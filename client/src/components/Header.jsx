@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import trediciLogo from '../assets/tredici-logo.png';
 
 const NAV_ITEMS = [
   { label: 'Menu', to: '/menu' },
@@ -106,14 +107,9 @@ export default function Header() {
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        {/* Logo / wordmark */}
-        <Link to="/" className="flex flex-col leading-none focus:outline-none focus-visible:underline" aria-label="Tredici Social — home">
-          <span className="font-heading text-xl font-medium tracking-[0.12em] text-white">
-            Tredici Social
-          </span>
-          <span className="text-[9px] font-semibold uppercase tracking-[0.5em] text-ts-gold">
-            Bronxville · New York
-          </span>
+        {/* Logo */}
+        <Link to="/" className="focus:outline-none focus-visible:underline" aria-label="Tredici Social — home">
+          <img src={trediciLogo} alt="Tredici Social" className="h-10 w-auto" />
         </Link>
 
         {/* Desktop nav */}

@@ -1,4 +1,5 @@
 import FadeIn from '../components/FadeIn.jsx';
+import trediciLogo from '../assets/tredici-logo.png';
 
 // Replace HERO_IMAGE_URL with a real high-res food or interior photo.
 // The dark overlay ensures text remains legible over any image.
@@ -51,14 +52,9 @@ export default function Hero() {
           Contemporary Italian · Bronxville, New York
         </p>
 
-        {/* Wordmark */}
-        <div className="flex flex-col items-center leading-none" aria-label="Tredici Social">
-          <span className="font-mistral text-7xl text-white sm:text-8xl lg:text-9xl">
-            tredici
-          </span>
-          <span className="font-impact text-2xl uppercase tracking-[0.45em] text-ts-scarlet sm:text-3xl">
-            social
-          </span>
+        {/* Logo */}
+        <div className="flex items-center justify-center" aria-label="Tredici Social">
+          <img src={trediciLogo} alt="Tredici Social" className="w-64 sm:w-80 lg:w-96" />
         </div>
 
         {/* Supporting copy */}
