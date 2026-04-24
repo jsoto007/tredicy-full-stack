@@ -51,12 +51,15 @@ export default function Hero() {
           Contemporary Italian · Bronxville, New York
         </p>
 
-        {/* Headline */}
-        <h1 className="font-heading text-5xl font-medium leading-[1.05] tracking-[0.02em] text-white sm:text-6xl lg:text-7xl">
-          Modern Italian
-          <br />
-          <em className="not-italic text-ts-gold">in Bronxville</em>
-        </h1>
+        {/* Wordmark */}
+        <div className="flex flex-col items-center leading-none" aria-label="Tredici Social">
+          <span className="font-mistral text-7xl text-white sm:text-8xl lg:text-9xl">
+            tredici
+          </span>
+          <span className="font-impact text-2xl uppercase tracking-[0.45em] text-ts-scarlet sm:text-3xl">
+            social
+          </span>
+        </div>
 
         {/* Supporting copy */}
         <p className="mx-auto max-w-xl text-base leading-relaxed text-ts-light-text/75">

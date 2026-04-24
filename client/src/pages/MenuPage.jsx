@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import FadeIn from '../components/FadeIn.jsx';
 import { apiGet } from '../lib/api.js';
+import Accolades from '../sections/Accolades.jsx';
 
 const TAG_LABELS = {
   v: { label: 'Vegetarian', short: 'V', bg: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
@@ -160,6 +161,8 @@ export default function MenuPage() {
           </a>
         </div>
       </main>
+
+      <Accolades />
     </>
   );
 }
